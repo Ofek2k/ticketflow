@@ -2022,6 +2022,43 @@ async function loadCurrentUserProfile() {
     };
   }
 
+
+  const PUSH_WORKER_BASE = "https://ticketflow-push.galaxyskin350.workers.dev";
+async function enablePushForThisDevice() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    alert("הדפדפן לא תומך Push.");
+    return;
+  }
+
+  const reg = await navigator.serviceWorker.register("/sw.js");
+
+  const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json());
+
+  const sub = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(publicKey),
+  });
+
+  await fetch(`${PUSH_WORKER_BASE}/subscribe`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      userId: "anonymous", // בהמשך נחליף ל-userId אמיתי מהמערכת
+      subscription: sub,
+    }),
+  });
+
+  alert("✅ נרשמת להתראות במכשיר הזה!");
+}
+
+// helper
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+}
+
   // === LOAD DATA FROM SUPABASE ===
 // === LOAD DATA FROM SUPABASE ===
 async function loadAllData() {
@@ -2792,6 +2829,7 @@ function getTimelineData(days = 14) {
     } else if (activePage === "PROFILE") {
       viewShell.appendChild(renderProfileView());
     }
+    <button onclick="enablePush()" class="btn">הפעל התראות</button>
     const canSeeAnalytics =
       currentUser.role === ROLE.OWNER ||
       currentUser.role === ROLE.MANAGER ||
@@ -4264,6 +4302,56 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
+</script>
+<script>
+  const WORKER_BASE = "https://YOUR_WORKER_SUBDOMAIN.workers.dev"; // לשנות לכתובת שלך
+  const VAPID_PUBLIC_KEY = "YOUR_VAPID_PUBLIC_KEY"; // לשים את ה-publicKey
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const raw = atob(base64);
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; ++i) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  async function enablePush() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      alert("הדפדפן לא תומך ב-Push");
+      return;
+    }
+
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") {
+      alert("צריך לאשר התראות כדי לקבל Push");
+      return;
+    }
+
+    const reg = await navigator.serviceWorker.register("/sw.js");
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+
+    // מזהה משתמש – כרגע נשתמש במייל אם יש לך currentUser
+    const userId = (window.currentUser && (currentUser.email || currentUser.id)) || "anonymous";
+
+    const res = await fetch(`${WORKER_BASE}/subscribe`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, subscription: sub }),
+    });
+
+    const txt = await res.text();
+    if (!res.ok) throw new Error(txt);
+
+    alert("✅ התראות הופעלו בהצלחה!");
+  }
+
+  // כפתור זמני להפעלה
+  window.enablePush = enablePush;
 </script>
 </body>
 </html>
