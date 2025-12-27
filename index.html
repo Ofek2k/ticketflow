@@ -1,0 +1,4045 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <title>TicketFlow - מערכת תקלות</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #080815;
+      --bg-soft: #060518;
+      --card-bg: #0b1020;
+      --accent: #ec4899;      /* ורוד */
+      --accent-soft: #a855f7; /* סגול */
+      --text: #f9fafb;
+      --text-soft: #cbd5f5;
+      --danger: #f97373;
+      --success: #4ade80;
+      --radius-lg: 18px;
+      --shadow-card: 0 22px 50px rgba(15,23,42,0.85);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1d2238 0, #050314 45%, #02010b 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+    }
+    .app-root {
+      width: 100%;
+      max-width: 1400px;
+      margin: 16px;
+      border-radius: 24px;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(15,23,42,0.98));
+      box-shadow: 0 28px 80px rgba(0,0,0,0.75);
+      display: flex;
+      flex-direction: row;
+    }
+    @media (max-width: 900px) {
+      .app-root { flex-direction: column; margin: 0; border-radius: 0; }
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 260px;
+      background: radial-gradient(circle at top, #1e293b 0, #020617 70%);
+      border-inline-start: 1px solid rgba(148,163,184,0.2);
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    @media (max-width: 900px) {
+      .sidebar { width: 100%; flex-direction: row; align-items: center; overflow-x: auto; }
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-inline: 4px;
+    }
+    .brand-logo {
+      width: 72;
+      height: 72;
+      border-radius: 14px;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 18px;
+      color: white;
+      box-shadow: 0 16px 35px rgba(236,72,153,0.7);
+    }
+    .brand-text-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .brand-text-sub {
+      font-size: 0.7rem;
+      color: var(--text-soft);
+    }
+    .sidebar-section-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-soft);
+      margin: 6px 4px 4px;
+    }
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    @media (max-width: 900px) {
+      .nav-list { flex-direction: row; flex-wrap: nowrap; }
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      color: var(--text-soft);
+      font-size: 0.8rem;
+      transition: background 0.15s, color 0.15s, transform 0.1s;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .analytics-kpi-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+
+.analytics-kpi-card {
+  flex: 1 1 120px;
+  border-radius: 14px;
+  padding: 8px 10px;
+  border: 1px solid rgba(148,163,184,0.35);
+  background: radial-gradient(circle at top, rgba(236,72,153,0.20), rgba(15,23,42,0.96));
+  box-shadow: 0 10px 24px rgba(15,23,42,0.85);
+}
+
+.analytics-kpi-label {
+  font-size: 0.7rem;
+  color: #cbd5f5;
+  margin-bottom: 2px;
+}
+
+.analytics-kpi-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+    .nav-item:hover {
+      background: rgba(15,23,42,0.85);
+      color: var(--text);
+      transform: translateY(-1px);
+    }
+    .nav-item.active {
+      background: linear-gradient(135deg, #ec4899, #a855f7);
+      color: white;
+      border-color: rgba(248,187,247,0.8);
+      box-shadow: 0 14px 25px rgba(236,72,153,0.7);
+    }
+    .nav-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(148,163,184,0.5);
+    }
+    .nav-item.active .nav-dot { background: white; }
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid rgba(30,64,175,0.6);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.75rem;
+    }
+    /* === KPI ROW === */
+.analytics-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+@media (max-width: 900px) {
+  .analytics-kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.analytics-kpi-card {
+  border-radius: 16px;
+  padding: 10px 12px;
+  background: radial-gradient(circle at top left, rgba(236,72,153,0.25), rgba(15,23,42,0.96));
+  border: 1px solid rgba(148,163,184,0.45);
+  box-shadow: 0 16px 35px rgba(15,23,42,0.9);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ==== PIE עם זוהר וטקסט על העוגה ==== */
+.pie-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.pie-chart {
+  position: relative;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 1px solid rgba(148,163,184,0.6);
+  box-shadow: 0 15px 35px rgba(15,23,42,0.9);
+  overflow: hidden;
+}
+
+/* טקסט + זוהר בפנים כשעומדים עם העכבר על קטגוריה */
+.pie-chart::after {
+  content: attr(data-hover-label);
+  position: absolute;
+  inset: 24%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  text-align: center;
+  color: #f9fafb;
+  opacity: 0;
+  transform: translateY(4px);
+  background: radial-gradient(circle at center, rgba(15,23,42,0.85), transparent 70%);
+  transition:
+    opacity 0.18s ease-out,
+    transform 0.18s ease-out,
+    box-shadow 0.18s ease-out;
+}
+
+.pie-chart.pie-hover::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.pie-chart.pie-hover {
+  box-shadow: 0 0 28px var(--pie-hover-color, rgba(236,72,153,0.7));
+}
+
+.pie-legend {
+  font-size: 0.72rem;
+}
+
+/* אפקט תלת־מימד לעוגת האנליטיקה */
+.pie-3d {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  border: 1px solid rgba(148,163,184,0.6);
+  box-shadow: 0 18px 40px rgba(15,23,42,0.95);
+  position: relative;
+  transform: perspective(700px) rotateX(18deg);
+  transform-origin: center 60%;
+  overflow: hidden;
+}
+
+/* היילייט למעלה של ה"צלחת" */
+.pie-3d::before {
+  content: "";
+  position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 0,
+    rgba(255,255,255,0.35),
+    transparent 55%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.analytics-kpi-label {
+  font-size: 0.7rem;
+  color: #cbd5f5;
+}
+
+.analytics-kpi-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.analytics-kpi-sub {
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 20% 20%, #facc15, #eab308 40%, #0f172a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 0.8rem;
+      color: #0f172a;
+    }
+    .user-meta { flex: 1; overflow: hidden; }
+    .user-meta-name {
+      font-weight: 600;
+      font-size: 0.78rem;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+    .user-meta-role {
+      font-size: 0.68rem;
+      color: var(--text-soft);
+    }
+    .logout-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-soft);
+      font-size: 0.7rem;
+      cursor: pointer;
+      padding: 3px 5px;
+      border-radius: 999px;
+    }
+    .logout-btn:hover {
+      color: #fecaca;
+      border-color: #fecaca;
+    }
+
+    /* כפתור מצב גרף + כלי אנליטיקה */
+/* כפתור מצב גרף */
+/* כפתור מצב גרף בעיגול */
+/* כפתור בעיגול, אייקון באמצע */
+.analytics-header-tools {
+  margin-inline-start: auto;
+}
+
+/* פריסה מיוחדת לכרטיס KPI בצד ימין של האנליטיקה */
+.timeline-chart.kpi-layout {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;   /* מרכז אנכית את הקלפים */
+  min-height: 0;             /* שלא יגדיל סתם את הגובה מעבר למה שצריך */
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* שיהיו כמה שיותר “משתלטים” על הרוחב */
+.analytics-kpi-row {
+  width: 100%;
+}
+
+.analytics-kpi-card {
+  flex: 1 1 0;
+}
+
+/* ===== PIE (תלת מימד "זז" בהובר) ===== */
+.analytics-pie-svg {
+  width: 130px;
+  height: 130px;
+  overflow: visible;
+}
+
+.pie-slice {
+  transform-box: fill-box;      /* שהטרנספורם יעבוד לפי הצורה עצמה */
+  transform-origin: 50% 50%;
+  transition: transform 0.25s ease-out, filter 0.25s ease-out;
+  cursor: pointer;
+}
+
+/* כשעוברים עם העכבר – הפלח יוצא החוצה ומאיר */
+.pie-slice:hover {
+  transform: translate(var(--dx, 0), var(--dy, 0)) scale(1.04);
+  filter: drop-shadow(0 0 10px rgba(236,72,153,0.9));
+}
+
+.analytics-mode-btn {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  border: 2px solid #fb7185;
+  background: radial-gradient(circle at 30% 20%, #111827, #020617);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.analytics-mode-btn.active {
+  box-shadow: 0 0 0 2px rgba(251,113,133,0.4);
+}
+
+.analytics-mode-icon {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.analytics-mode-bar {
+  width: 5px;
+  border-radius: 999px 999px 0 0;
+  background: #f9fafb;
+}
+
+.analytics-mode-bar:nth-child(1) { height: 10px; }
+.analytics-mode-bar:nth-child(2) { height: 16px; }
+.analytics-mode-bar:nth-child(3) { height: 13px; }
+.analytics-mode-bar:nth-child(4) { height: 20px; }
+
+/* צ'יפים לבחירת דימנשן */
+.analytics-filter-toggle {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 10px;
+  flex-wrap: wrap;
+}
+.analytics-filter-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.4);
+  background: transparent;
+  color: #e5e7eb;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+.analytics-filter-chip.active {
+  background: linear-gradient(90deg, #ec4899, #a855f7);
+  border-color: transparent;
+  color: #0f172a;
+}
+
+/* מצב עוגה + ברים */
+.chart-grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr);
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .chart-grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* ===== כרטיסי נושא בצד ימין (Topic Overview) ===== */
+
+.topic-overview {
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+.topic-card {
+  flex: 1;
+  position: relative;
+  padding: 18px 12px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #0f172a, #1e1b4b);
+  border: 1px solid rgba(236,72,153,0.35);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.35s ease;
+  overflow: hidden;
+}
+
+.topic-card::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(90deg, #ec4899, #a855f7, #22d3ee);
+  opacity: 0;
+  filter: blur(12px);
+  transition: opacity 0.35s;
+}
+
+.topic-card:hover::before {
+  opacity: 0.9;
+}
+
+.topic-card:hover {
+  transform: scale(1.12);
+  box-shadow: 0 0 35px rgba(236,72,153,0.45);
+  z-index: 5;
+}
+
+.topic-card-inner {
+  position: relative;
+  z-index: 1; /* שהטקסט יהיה מעל הזוהר */
+}
+
+.topic-icon {
+  font-size: 26px;
+  margin-bottom: 6px;
+}
+
+.topic-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.topic-count {
+  margin-top: 6px;
+  font-size: 1.4rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, #ec4899, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.chart-card-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.chart-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  margin-bottom: 2px;
+}
+
+.chart-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.chart-bar-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 0.7rem;
+}
+
+.chart-bar-label {
+  min-width: 70px;
+  white-space: nowrap;
+}
+
+.chart-bar-outer {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(15,23,42,0.9);
+  margin-inline-start: 6px;
+}
+
+.chart-bar-inner {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ec4899, #a855f7);
+  transition: width 0.3s ease-out;
+}
+
+.chart-bar-inner:hover {
+  filter: brightness(1.08);
+}
+
+.chart-bar-value {
+  margin-inline-start: 4px;
+  font-size: 0.7rem;
+}
+
+/* גרף עמודות גדול */
+.big-bar-chart {
+  position: relative;
+  padding: 48px 16px 24px 40px;
+  font-size: 0.72rem;
+  min-height: 220px;
+}
+
+.big-bar-chart-axis-y {
+  position: absolute;
+  left: 26px;
+  top: 80px;
+  bottom: 26px;
+  width: 1px;
+  background: rgba(148,163,184,0.6);
+}
+
+.big-bar-chart-axis-x {
+  position: absolute;
+  left: 26px;
+  right: 18px;
+  bottom: 26px;
+  height: 1px;
+  background: rgba(148,163,184,0.6);
+}
+
+.big-bar-chart-bars {
+  margin-left: 32px;
+  margin-right: 8px;
+  margin-top: 48px;
+  height: 180px;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.big-bar-chart-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative; /* בשביל tooltip */
+}
+
+.big-bar-chart-bar-rect {
+  width: 18px;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, #fb7185, #a855f7);
+  box-shadow: 0 10px 20px rgba(15,23,42,0.85);
+  transition: height 0.4s ease-out, transform 0.15s ease-out;
+}
+.big-bar-chart-bar-rect:hover {
+  transform: translateY(-4px);
+}
+/* אזור הרחבות אנליטיקה מתחת לגרפים */
+.analytics-extras {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.8fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .analytics-extras {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.analytics-extra-card-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.top-list {
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.25);
+  padding: 8px 10px;
+  background: radial-gradient(circle at top, rgba(15,23,42,0.7), rgba(15,23,42,0.95));
+  font-size: 0.74rem;
+}
+
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+}
+
+.top-row-rank {
+  opacity: 0.7;
+  min-width: 18px;
+}
+
+.top-row-name {
+  flex: 1;
+  margin-inline: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.top-row-count {
+  font-weight: 600;
+}
+
+/* כפתור ייצוא */
+.export-btn {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(251,113,133,0.8);
+  background: transparent;
+  color: #f9fafb;
+  font-size: 0.7rem;
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+.export-btn:hover {
+  background: rgba(251,113,133,0.15);
+}
+
+/* גרף תקלות לאורך זמן (בר-צ'ארט צר) */
+.timeline-chart {
+  border-radius: 12px;
+  border: 1px solid rgba(148,163,184,0.25);
+  background: radial-gradient(circle at top, rgba(15,23,42,0.7), rgba(15,23,42,0.97));
+  padding: 8px 10px 10px 24px;
+  font-size: 0.72rem;
+  position: relative;
+}
+/* מעטפת אחידה לכל ה"מסך" שנמצא בתוך ה-main */
+.view-shell {
+  margin-top: 8px;
+  min-height: 420px;              /* פה קובעים גובה אחיד למסכים */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: fadeSlideIn 0.28s ease-out;
+}
+
+/* במסכים קטנים אפשר קצת להקטין */
+@media (max-width: 900px) {
+  .view-shell {
+    min-height: 360px;
+  }
+}
+
+/* אנימציית מעבר רכה בין מסכים */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.timeline-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 120px;
+  margin-top: 4px;
+}
+
+.timeline-bar {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+}
+
+.timeline-bar-rect {
+  width: 5px;
+  border-radius: 999px 999px 0 0;
+  background: linear-gradient(180deg, #22d3ee, #0ea5e9);
+  transition: height 0.25s ease-out, transform 0.12s ease-out;
+}
+.timeline-bar-rect:hover {
+  transform: translateY(-3px);
+}
+
+.timeline-bar-label {
+  position: absolute;
+  bottom: -16px;
+  font-size: 0.65rem;
+  white-space: nowrap;
+  transform: rotate(-40deg);
+  transform-origin: top center;
+  opacity: 0.8;
+}
+
+/* tooltip קיים לעמודות הגדולות – אפשר להשתמש גם כאן עם title */
+
+.big-bar-chart-bar-label {
+  text-align: center;
+  max-width: 80px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.big-bar-chart-bar-value {
+  font-size: 0.7rem;
+  opacity: 0.9;
+}
+
+/* Tooltip של העמודות */
+.bar-tooltip {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, 0) translateY(-100%);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(15,23,42,0.96);
+  border: 1px solid rgba(148,163,184,0.9);
+  font-size: 0.7rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+  z-index: 20;
+}
+
+
+
+/* גריד של שני קלפים כשלא במצב גרף מלא */
+.chart-grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .chart-grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* לג'נד + ברים הקטנים במצב הרגיל */
+.chart-card-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.chart-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  margin-bottom: 2px;
+}
+
+.chart-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.chart-bar-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 0.7rem;
+}
+
+.chart-bar-label {
+  min-width: 70px;
+  white-space: nowrap;
+}
+
+.chart-bar-outer {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(15,23,42,0.9);
+  margin-inline-start: 6px;
+}
+
+.chart-bar-inner {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #ec4899, #a855f7);
+}
+
+.chart-bar-value {
+  margin-inline-start: 4px;
+  font-size: 0.7rem;
+}
+
+
+    /* MAIN */
+    .main {
+      flex: 1;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      background: radial-gradient(circle at 0 0, rgba(236,72,153,0.15), transparent 60%);
+    }
+    @media (max-width: 900px) {
+      .main { padding: 12px; }
+    }
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .page-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+    .page-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-soft);
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      border: 1px solid rgba(148,163,184,0.4);
+      color: var(--text-soft);
+      background: rgba(15,23,42,0.75);
+    }
+    .btn {
+      border-radius: 999px;
+      border: none;
+      padding: 7px 14px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(15,23,42,0.9);
+      color: var(--text);
+      border: 1px solid rgba(148,163,184,0.5);
+      transition: background 0.15s, transform 0.1s, box-shadow 0.1s;
+    }
+    .btn:hover {
+      background: rgba(30,64,175,0.9);
+      box-shadow: 0 10px 22px rgba(15,23,42,0.8);
+      transform: translateY(-1px);
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #ec4899, #a855f7);
+      border-color: rgba(248,187,247,0.7);
+      color: white;
+      box-shadow: 0 16px 40px rgba(236,72,153,0.9);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #fb7185, #c084fc);
+    }
+    .btn-ghost {
+      background: transparent;
+      border-color: rgba(148,163,184,0.35);
+    }
+    .analytics-filter-toggle {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 10px;
+  flex-wrap: wrap;
+}
+
+    .analytics-filter-chip {
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.4);
+    background: transparent;
+    color: #e5e7eb;
+    font-size: 0.7rem;
+    cursor: pointer;
+    }
+
+    .analytics-filter-chip.active {
+    background: linear-gradient(90deg, #ec4899, #a855f7);
+    border-color: transparent;
+    color: #0f172a;
+    }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: minmax(0, 2.1fr) minmax(0, 1.4fr);
+      gap: 12px;
+    }
+    @media (max-width: 1050px) {
+      .grid-two { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    .card {
+      background:
+        radial-gradient(circle at top left, rgba(236,72,153,0.22), transparent 50%),
+        radial-gradient(circle at bottom right, rgba(79,70,229,0.4), #050816);
+      border-radius: var(--radius-lg);
+      padding: 14px 14px 12px;
+      box-shadow: var(--shadow-card);
+      border: 1px solid rgba(148,163,184,0.3);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(135deg,
+        rgba(148,163,184,0.03),
+        rgba(236,72,153,0.1),
+        rgba(15,23,42,0.9));
+      mix-blend-mode: soft-light;
+      opacity: 0.8;
+    }
+    .card-content {
+      position: relative;
+      z-index: 1;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .card-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .card-subtitle {
+      font-size: 0.7rem;
+      color: var(--text-soft);
+    }
+
+    .field-label {
+      font-size: 0.7rem;
+      color: var(--text-soft);
+      margin-bottom: 2px;
+      display: block;
+      font-weight: 600;
+    }
+    .input, .select, .textarea {
+      width: 100%;
+      padding: 7px 9px;
+      font-size: 0.8rem;
+      border-radius: 999px;
+      border: 1px solid rgba(75,85,99,0.8);
+      background: radial-gradient(circle at top, #020617, #020617 60%, #020617);
+      color: var(--text);
+      outline: none;
+      transition: border 0.12s, box-shadow 0.12s, background 0.12s;
+    }
+    .textarea {
+      border-radius: 14px;
+      min-height: 90px;
+      resize: vertical;
+    }
+    .input:focus, .select:focus, .textarea:focus {
+      border-color: #f9a8d4;
+      box-shadow: 0 0 0 1px rgba(236,72,153,0.7);
+      background: radial-gradient(circle at top, #020617, #020617 60%, #020617);
+    }
+    .input[disabled] {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background: rgba(15,23,42,0.7);
+    }
+    .select option {
+      background-color: #020617;
+      color: var(--text);
+    }
+
+    .tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 3px;
+    }
+    .tag {
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 0.7rem;
+      border: 1px solid rgba(248,187,247,0.5);
+      color: var(--text-soft);
+      background: rgba(15,23,42,0.7);
+    }
+
+    .status-pill {
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 0.7rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .status-open { background: rgba(59,130,246,0.18); color: #bfdbfe; border: 1px solid rgba(59,130,246,0.7); }
+    .status-inprog { background: rgba(245,158,11,0.18); color: #fed7aa; border: 1px solid rgba(245,158,11,0.65); }
+    .status-trans { background: rgba(147,51,234,0.18); color: #e9d5ff; border: 1px solid rgba(168,85,247,0.65); }
+    .status-res { background: rgba(34,197,94,0.18); color: #bbf7d0; border: 1px solid rgba(34,197,94,0.65); }
+    .status-closed { background: rgba(148,163,184,0.25); color: #e5e7eb; border: 1px solid rgba(148,163,184,0.75); }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+    .table th, .table td {
+      padding: 6px 4px;
+      text-align: right;
+      border-bottom: 1px solid rgba(30,41,59,0.8);
+    }
+    .table th {
+      font-size: 0.7rem;
+      color: var(--text-soft);
+      font-weight: 600;
+    }
+    .table tr:hover td {
+      background: linear-gradient(90deg, rgba(236,72,153,0.18), transparent);
+      cursor: pointer;
+    }
+    .th-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+    .th-filter-btn,
+    .th-sort-btn {
+    border: none;
+    background: transparent;
+    color: #e5e7eb;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.7rem;
+    }
+    .th-filter-btn:hover,
+    .th-sort-btn:hover {
+    color: #f9a8d4;
+    }
+
+    .filter-popup {
+    position: fixed;
+    background: rgba(15,23,42,0.98);
+    border-radius: 12px;
+    border: 1px solid rgba(148,163,184,0.75);
+    padding: 8px;
+    font-size: 0.75rem;
+    box-shadow: 0 20px 45px rgba(0,0,0,0.85);
+    z-index: 999;
+    min-width: 190px;
+    }
+    .filter-popup h4 {
+    margin: 0 0 4px;
+    font-size: 0.78rem;
+    }
+    .filter-popup .filter-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-top: 6px;
+    }
+    .filter-popup .btn-inline {
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.6);
+    background: transparent;
+    color: #e5e7eb;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    cursor: pointer;
+    }
+    .filter-popup .btn-inline:hover {
+    border-color: #f9a8d4;
+    color: #f9a8d4;
+    }
+
+    .chart-grid-2 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.6fr);
+  gap: 12px;
+}
+@media (max-width: 900px) {
+  .chart-grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+    .chart-card-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    }
+
+    .chart-legend-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    margin-bottom: 2px;
+    }
+
+    .chart-legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    }
+
+    .chart-bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+    font-size: 0.7rem;
+    }
+
+    .chart-bar-label {
+    min-width: 70px;
+    white-space: nowrap;
+    }
+
+    .chart-bar-outer {
+    flex: 1;
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(15,23,42,0.9);
+    margin-inline-start: 6px;
+    }
+
+    .chart-bar-inner {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #ec4899, #a855f7);
+    }
+
+    .chart-bar-value {
+    margin-inline-start: 4px;
+    font-size: 0.7rem;
+    }
+
+    .comment-bubble {
+      background: radial-gradient(circle at top, rgba(236,72,153,0.18), rgba(15,23,42,0.92));
+      border-radius: 14px;
+      padding: 7px 9px;
+      border: 1px solid rgba(148,163,184,0.35);
+      font-size: 0.75rem;
+    }
+    .comment-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--text-soft);
+      margin-bottom: 3px;
+    }
+    .comment-body {
+      white-space: pre-wrap;
+      font-size: 0.76rem;
+    }
+
+    .audit-row {
+      border-radius: 10px;
+      padding: 6px 8px;
+      border: 1px dashed rgba(148,163,184,0.4);
+      font-size: 0.7rem;
+    }
+
+    .grid-2cols {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 8px;
+    }
+    @media (max-width: 600px) {
+      .grid-2cols { grid-template-columns: minmax(0,1fr); }
+    }
+
+    /* HERO */
+    .hero-banner {
+      position: relative;
+      border-radius: 20px;
+      padding: 12px 14px;
+      margin-top: 8px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      background: linear-gradient(120deg, rgba(15,23,42,0.95), rgba(76,29,149,0.9));
+      border: 1px solid rgba(248,187,247,0.5);
+      box-shadow: 0 18px 40px rgba(15,23,42,0.9);
+    }
+    .hero-banner::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 0 0, rgba(251,113,133,0.35), transparent 55%);
+      mix-blend-mode: screen;
+      opacity: 0.8;
+      pointer-events: none;
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .hero-text { max-width: 60%; }
+    .hero-title {
+      font-size: 0.95rem;
+      font-weight: 650;
+    }
+    .brand-logo-img {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;   /* חשוב ללוגו ללא רקע */
+  background: transparent;  /* מבטל רקע שחור */
+  border-radius: 0;      /* אם אתה לא רוצה עיגול */
+  box-shadow: none;
+
+}
+
+
+    .hero-sub {
+      font-size: 0.75rem;
+      color: #e5e7eb;
+      opacity: 0.9;
+      margin-top: 3px;
+    }
+    .hero-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 0.7rem;
+    }
+    .hero-stat-pill {
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: rgba(15,23,42,0.75);
+      border: 1px solid rgba(248,187,247,0.7);
+      min-width: 90px;
+      text-align: center;
+    }
+    .hero-stat-pill strong {
+      display: block;
+      font-size: 0.9rem;
+    }
+    @media (max-width: 700px) {
+      .hero-content { flex-direction: column; align-items: flex-start; }
+      .hero-text { max-width: 100%; }
+    }
+
+    /* LOGIN + GIF */
+    .login-wrapper {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;   /* חדש – סידור בעמודה */
+  align-items: center;
+  justify-content: center;
+  gap: 16px;                /* רווח בין ה-GIF לטופס */
+  padding: 16px;
+  position: relative;
+  background: #020617;
+  overflow: hidden;
+}
+    .login-gif-wrapper {
+  width: 100%;
+  max-width: 380px;
+  height: 180px;
+  margin-bottom: 14px;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(148,163,184,0.35);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.6);
+  background: black;
+}
+
+.login-gif-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.7;
+  filter: saturate(1.2) brightness(0.9);
+
+}
+    .login-card {
+      max-width: 380px;
+      width: 100%;
+      padding: 20px 18px 16px;
+      border-radius: 24px;
+      background: radial-gradient(circle at 0 0, rgba(236,72,153,0.25), transparent 60%),
+                  linear-gradient(145deg, #020617, #020617 45%, #020617);
+      box-shadow: 0 28px 70px rgba(15,23,42,0.9);
+      border: 1px solid rgba(148,163,184,0.45);
+      color: var(--text);
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+    .login-card::before {
+      content: "";
+      position: absolute;
+      inset: -40px;
+      background: conic-gradient(
+        from 130deg,
+        rgba(236,72,153,0.0),
+        rgba(236,72,153,0.12),
+        rgba(248,113,113,0.28),
+        rgba(30,64,175,0.0)
+      );
+      opacity: 0.85;
+      mix-blend-mode: screen;
+      pointer-events: none;
+    }
+    .login-card-content {
+      position: relative;
+      z-index: 1;
+    }
+    .login-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 16px;   /* נותן “אוויר” מסביב ללוגו */
+    }
+
+    .empty-state {
+      font-size: 0.75rem;
+      color: var(--text-soft);
+      text-align: center;
+      padding: 10px 0;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15,23,42,0.96);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.78rem;
+      border: 1px solid rgba(148,163,184,0.7);
+      color: #e5e7eb;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.8);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 9999;
+    }
+        .th-filter-btn.th-filter-active {
+    color: #fb7185;           /* ורוד שמסמן פילטר פעיל */
+    font-weight: 700;
+    }
+
+    .th-filter-btn.th-filter-active:hover {
+    color: #f973c2;
+    }
+    .toast-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 20%, #f9a8d4, #ec4899 70%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+<div dir="rtl">
+<div id="root"></div>
+<div id="toast-root"></div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2.48.0/dist/umd/supabase.js"></script>
+
+
+<script>
+  // ========== 1. יצירת Supabase ==========
+  const SUPABASE_URL = "https://tymratzaavokyhbcycgb.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5bXJhdHphYXZva3loYmN5Y2diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwNTE0ODIsImV4cCI6MjA4MDYyNzQ4Mn0.Y73HK3Jgg1FD--o3KMt3A-GbY8S2hfRyr6M-IABu6NY";
+
+  const supabase = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+  );
+
+  function showError(message) {
+    console.error(message);
+    alert(message);
+  }
+
+  // ========== 2. פונקציית ההרשמה – כאן!!! ==========
+// טיפול בטופס הרשמה
+async function handleSignupSubmit(event) {
+  event.preventDefault();
+
+  const email = document.getElementById("signup-email")?.value.trim();
+  const password = document.getElementById("signup-password")?.value.trim();
+  const fullName = document.getElementById("signup-fullname")?.value.trim() || "";
+  const phone = document.getElementById("signup-phone")?.value.trim() || "";
+  const unit = document.getElementById("signup-unit")?.value.trim() || "";
+
+  if (!email || !password) {
+    showError("חובה למלא אימייל וסיסמה");
+    return;
+  }
+
+  try {
+    // 1) הרשמה ב-Auth
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+
+    console.log("signUp result:", signUpData, signUpError);
+
+    if (signUpError) {
+      showError("שגיאה בהרשמה: " + signUpError.message);
+      return;
+    }
+
+    const newAuthUser = signUpData.user;
+    if (!newAuthUser) {
+      showError("ההרשמה הצליחה אבל אין משתמש ב-Auth (כנראה צריך אישור מייל).");
+      return;
+    }
+
+    // 2) להוסיף שורה בטבלת users
+    const nowIso = new Date().toISOString();
+
+    const profileRow = {
+      auth_user_id: newAuthUser.id,
+      email,
+      full_name: fullName,
+      phone,
+      unit,
+      role: ROLE.USER,
+      requested_role: ROLE.USER,
+      role_status: "Pending",
+      is_frozen: false,
+      created_at: nowIso,
+    };
+
+    const { error: insertError } = await supabase
+      .from("users")
+      .insert(profileRow);
+
+    if (insertError) {
+      console.error("insert profile error:", insertError);
+      showError("המשתמש נוצר ב-Auth אבל לא נשמר ב-users: " + insertError.message);
+      return;
+    }
+
+    // 3) להתחבר אוטומטית (למקרה שאין אימות מייל)
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({ email, password });
+
+    if (signInError) {
+      // במקרה ויש עדיין אימות מייל חובה
+      alert(
+        "ההרשמה הצליחה – עכשיו תתחבר עם המשתמש החדש.\n" +
+        "אם יש אימות במייל, תאשר קודם את הקישור שנשלח אליך."
+      );
+      // להציג מסך כניסה
+      showLoginView?.();  // אם יש לך פונקציה כזאת
+      return;
+    }
+
+    alert("ההרשמה הצליחה! מחוברים עכשיו למערכת.");
+    await init();   // טוען את כל הנתונים למסך הבית
+  } catch (err) {
+    console.error(err);
+    showError("שגיאה בהרשמה: " + err.message);
+  }
+}
+
+let currentUserProfile = null;
+
+// טוען את המשתמש מה-Auth ואם אין לו שורה בטבלת users – יוצר אחת אוטומטית
+async function loadCurrentUserProfile() {
+  // 1) משתמש מחובר מה-Auth
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+
+  if (userError) {
+    console.error("auth.getUser error:", userError);
+    showError("שגיאה בבדיקת התחברות: " + userError.message);
+    showAuthSection("login");
+    return null;
+  }
+
+  const authUser = userData?.user;
+  if (!authUser) {
+    console.log("אין משתמש מחובר ב-Auth");
+    showAuthSection("login");
+    return null;
+  }
+
+  // 2) נסה להביא שורה מ-users לפי auth_user_id
+  let { data: profileRow, error: profileError } = await supabase
+    .from("users")
+    .select("*")
+    .eq("auth_user_id", authUser.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error("שגיאה בקריאה ל-users:", profileError);
+    showError("שגיאה בקריאת פרטי המשתמש: " + profileError.message);
+    showAuthSection("login");
+    return null;
+  }
+
+  // 3) אם אין שורה – ליצור אחת אוטומטית
+  if (!profileRow) {
+    console.warn("לא נמצאה רשומה בטבלת users – יוצר אחת חדשה אוטומטית.");
+
+    const nowIso = new Date().toISOString();
+
+    const autoProfile = {
+      auth_user_id: authUser.id,
+      email: authUser.email || "",
+      full_name: "",
+      phone: "",
+      unit: "",
+      role: ROLE.USER,
+      requested_role: ROLE.USER,
+      role_status: "Pending",
+      is_frozen: false,
+      created_at: nowIso,
+    };
+
+    const { data: insertedRow, error: insertError } = await supabase
+      .from("users")
+      .insert(autoProfile)
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("שגיאה ביצירת רשומת users אוטומטית:", insertError);
+      alert(
+        "נכנסת עם משתמש Auth אבל לא הצלחתי ליצור רשומה בטבלת users:\n" +
+        insertError.message
+      );
+      await supabase.auth.signOut();
+      showAuthSection("login");
+      return null;
+    }
+
+    profileRow = insertedRow;
+  }
+
+  currentUserProfile = profileRow;
+  console.log("currentUserProfile:", currentUserProfile);
+  return currentUserProfile;
+}
+
+
+</script>
+
+
+<script>
+
+  // === CONSTANTS ===
+  const ROLE = {
+    OWNER: "OWNER",
+    MANAGER: "MANAGER",
+    COMPANY_CMD: "COMPANY_CMD",
+    HATAP: "HATAP",
+    PLHIK: "PLHIK",
+    HR: "HR",
+    MAMRAM: "MAMRAM",
+    APP: "APP",
+    NETWORK: "NETWORK",
+    USER: "USER",
+    HML: "HML",
+    TECHNICIAN: "TECHNICIAN",
+  };
+
+  const ROLE_LABEL = {
+    OWNER: "בעלים",
+    MANAGER: "מנהל",
+    COMPANY_CMD: 'מ"פ',
+    HATAP: 'חט"פ',
+    PLHIK: 'פלחי"ק',
+    HR: 'מש"א',
+    MAMRAM: 'ממר"ם',
+    APP: "אפליקציה",
+    NETWORK: "רשת",
+    USER: "משתמש",
+    HML: 'חמ"ל',
+    TECHNICIAN: "טכנאי",
+  };
+
+  const SELECTABLE_ROLES = [
+    ROLE.MANAGER,
+    ROLE.COMPANY_CMD,
+    ROLE.HATAP,
+    ROLE.PLHIK,
+    ROLE.HR,
+    ROLE.MAMRAM,
+    ROLE.APP,
+    ROLE.NETWORK,
+    ROLE.USER,
+  ];
+
+  const STATUS = {
+    OPEN: "OPEN",
+    IN_PROGRESS: "IN_PROGRESS",
+    TRANSFERRED: "TRANSFERRED",
+    RESOLVED: "RESOLVED",
+    CLOSED: "CLOSED",
+  };
+
+  const STATUS_LABEL = {
+    OPEN: "פתוחה",
+    IN_PROGRESS: "בטיפול",
+    TRANSFERRED: "הועברה",
+    RESOLVED: "נפתרה",
+    CLOSED: "נסגרה",
+  };
+
+  const STATUS_COLOR = {
+    OPEN: "#60a5fa",
+    IN_PROGRESS: "#fbbf24",
+    TRANSFERRED: "#a855f7",
+    RESOLVED: "#4ade80",
+    CLOSED: "#94a3b8",
+  };
+
+  const TICKET_TOPICS = [
+    { value: "רשת", label: "רשת" },
+    { value: "אמצעי", label: "אמצעי" },
+    { value: "תוכנה", label: "תוכנה" },
+    { value: "הרשאות", label: "הרשאות" },
+    { value: "חומרה", label: "חומרה" },
+    { value: "אחר", label: "אחר" },
+  ];
+
+  // === GLOBAL STATE ===
+  const rootEl = document.getElementById("root");
+  const toastRoot = document.getElementById("toast-root");
+
+  let units = [];  // רשימת חטיבות
+  let authUser = null;     // Supabase auth user
+  let currentUser = null;  // row from users table (אצלך)
+  let users = [];
+  let tickets = [];
+  let comments = [];
+  let audits = [];
+  let counters = { ticketNumber: 1000 };
+
+  let activePage = "HOME_MAIN"; // HOME_MAIN / TICKET_CREATE / TICKET_DETAILS / ANALYTICS / ROLE_APPROVAL / PROFILE
+  let selectedTicketId = null;
+  let showClosedFilter = false;
+  let analyticsMode = "grid";     
+  let analyticsDim = "STATUS";      // מה מפלחים: סטטוס / ROLE / TOPIC / UNIT
+  let analyticsViewMode = "BAR";    // "BAR" = גרף עמודות, "PIE" = עוגה
+
+
+  // === UTILS ===
+  function roleLabel(role) {
+    return ROLE_LABEL[role] || role || "";
+  }
+
+  function statusClass(status) {
+    switch (status) {
+      case STATUS.OPEN:
+        return "status-pill status-open";
+      case STATUS.IN_PROGRESS:
+        return "status-pill status-inprog";
+      case STATUS.TRANSFERRED:
+        return "status-pill status-trans";
+      case STATUS.RESOLVED:
+        return "status-pill status-res";
+      case STATUS.CLOSED:
+        return "status-pill status-closed";
+      default:
+        return "status-pill status-open";
+    }
+  }
+
+  function shortId(id) {
+    return (id || "").slice(0, 6);
+  }
+
+  function formatDate(tsOrIso) {
+    if (!tsOrIso) return "";
+    const d = typeof tsOrIso === "number" ? new Date(tsOrIso) : new Date(tsOrIso);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleString("he-IL");
+  }
+
+  function showToast(msg) {
+    toastRoot.innerHTML = "";
+    const div = document.createElement("div");
+    div.className = "toast";
+    div.innerHTML = `
+      <div class="toast-icon">✓</div>
+      <div>${msg}</div>
+    `;
+    toastRoot.appendChild(div);
+    setTimeout(() => {
+      if (div.parentNode === toastRoot) toastRoot.removeChild(div);
+    }, 2500);
+  }
+
+  function navigate(page, options = {}) {
+    activePage = page;
+    if (options.ticketId) selectedTicketId = options.ticketId;
+    if (typeof options.showClosed === "boolean") showClosedFilter = options.showClosed;
+    render();
+  }
+
+  // === DATA MAPPING (Supabase -> JS objects) ===
+  function mapUserRow(row) {
+    return {
+      id: row.id,
+      unitId: row.unit_id,
+      authUserId: row.auth_user_id,
+      email: row.email,
+      fullName: row.full_name,
+      phone: row.phone,
+      unit: row.unit,
+      role: row.role,
+      requestedRole: row.requested_role,
+      roleStatus: row.role_status,
+      isFrozen: !!row.is_frozen,
+      createdAt: row.created_at,
+    };
+  }
+
+  function mapTicketRow(row) {
+    return {
+      id: row.id,
+      ticketNumber: row.ticket_number,
+      title: row.title,
+      description: row.description,
+      topic: row.topic,
+      createdByUserId: row.created_by_user_id,
+      createdByName: row.created_by_name,
+      createdByPhone: row.created_by_phone,
+      createdByEmail: row.created_by_email,
+      unit: row.unit,
+      assignedRole: row.assigned_role,
+      assignedUserId: row.assigned_user_id,
+      assignedUserName: row.assigned_user_name,
+      status: row.status,
+      isClosed: row.is_closed,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  function mapCommentRow(row) {
+    return {
+      id: row.id,
+      ticketId: row.ticket_id,
+      text: row.content,                 // ✅ content ולא text
+      authorUserId: row.author_user_id,
+      authorName: row.author_name || "", // ✅ שם נכון
+      authorRole: row.author_role,
+      createdAt: row.created_at,
+    };
+
+
+  }
+
+  function mapAuditRow(row) {
+    return {
+      id: row.id,
+      ticketId: row.ticket_id,
+      field: row.field,
+      oldValue: row.old_value,
+      newValue: row.new_value,
+      changedAt: row.changed_at,
+      changedByUserId: row.changed_by_user_id,
+      changedByName: row.changed_by_name,
+      changedByRole: row.changed_by_role,
+    };
+  }
+
+  // === LOAD DATA FROM SUPABASE ===
+// === LOAD DATA FROM SUPABASE ===
+async function loadAllData() {
+  try {
+    // 1) מי מחובר ב-Auth?
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError) {
+      console.error("auth.getUser error:", authError);
+      authUser = null;
+      currentUser = null;
+      return;
+    }
+
+    authUser = user || null;
+
+    // אם אף אחד לא מחובר – אין מה לטעון דאטה
+    if (!authUser) {
+      currentUser = null;
+      users = [];
+      tickets = [];
+      comments = [];
+      audits = [];
+      return;
+    }
+
+    // 2) טבלת users
+    const { data: usersRows, error: usersError } = await supabase
+      .from("users")
+      .select("*");
+
+    if (usersError) {
+      console.error("users load error:", usersError);
+      users = [];
+    } else {
+      users = (usersRows || []).map(mapUserRow);
+    }
+
+    // 3) המשתמש הנוכחי מתוך users לפי auth_user_id
+    currentUser =
+      users.find((u) => u.authUserId === authUser.id) || null;
+
+    // אם לא מצאנו – נמשיך בלי קריסה, אבל זה מה שמדליק את ההודעה שלך
+    if (!currentUser) {
+      console.warn(
+        "Logged-in auth user but no matching row in users table for auth_user_id:",
+        authUser.id
+      );
+    }
+
+
+    // 2.5) טבלת units (חטיבות)
+    const { data: unitRows, error: unitsError } = await supabase
+      .from("units")
+      .select("*")
+      .eq("is_active", true)
+      .order("name", { ascending: true });
+
+    if (unitsError) {
+      console.error("units load error:", unitsError);
+      units = [];
+    } else {
+      units = unitRows || [];
+    }
+
+
+    // 4) טבלת tickets
+    const { data: ticketRows, error: ticketsError } = await supabase
+      .from("tickets")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (ticketsError) {
+      console.error("tickets load error:", ticketsError);
+      tickets = [];
+    } else {
+      tickets = (ticketRows || []).map(mapTicketRow);
+    }
+
+    // 5) טבלת הערות (ticket_comments)
+    try {
+      const { data: commentRows, error: commentsError } = await supabase
+        .from("ticket_comments")
+        .select("*");
+
+      if (commentsError) {
+        console.warn("ticket_comments load error (אפשר להתעלם אם עוד לא יצרת את הטבלה):", commentsError.message);
+        comments = [];
+      } else {
+        comments = (commentRows || []).map(mapCommentRow);
+      }
+    } catch (e) {
+      console.warn("ticket_comments table probably not ready yet:", e.message);
+      comments = [];
+    }
+
+    // 6) טבלת audits (אם קיימת)
+    try {
+      const { data: auditRows, error: auditsError } = await supabase
+        .from("audits")
+        .select("*");
+
+      if (auditsError) {
+        console.warn("audits load error (אפשר להתעלם אם עוד לא יצרת את הטבלה):", auditsError.message);
+        audits = [];
+      } else {
+        audits = (auditRows || []).map(mapAuditRow);
+      }
+    } catch (e) {
+      console.warn("audits table probably not ready yet:", e.message);
+      audits = [];
+    }
+
+    // 7) counters (למספרי תקלות) – גם כאן אפשר לחיות בלי בינתיים
+    try {
+      const { data: counterRows, error: countersError } = await supabase
+        .from("counters")
+        .select("*");
+
+      if (!countersError && counterRows && counterRows.length) {
+        const row = counterRows.find((r) => r.name === "ticketNumber");
+        if (row && typeof row.value === "number") {
+          counters.ticketNumber = row.value;
+        }
+      }
+    } catch (e) {
+      console.warn("counters table probably not ready yet:", e.message);
+    }
+  } catch (err) {
+    console.error("loadAllData failed:", err);
+    authUser = null;
+    currentUser = null;
+  }
+}
+
+
+  async function nextTicketNumber() {
+    counters.ticketNumber = (counters.ticketNumber || 1000) + 1;
+    const { error } = await supabase
+      .from("counters")
+      .upsert({ name: "ticketNumber", value: counters.ticketNumber });
+    if (error) console.error("counter upsert error", error);
+    return counters.ticketNumber;
+  }
+
+  // === FILTERS ===
+  function filterTicketsForMe() {
+    if (!currentUser) return [];
+    const role = currentUser.role;
+    let relevant = [];
+
+    if (role === ROLE.USER || role === ROLE.HML) {
+      relevant = tickets.filter((t) => t.createdByUserId === currentUser.id);
+    } else {
+      relevant = tickets.filter(
+        (t) =>
+          t.createdByUserId === currentUser.id ||
+          (t.assignedRole && t.assignedRole === role)
+      );
+    }
+
+    return relevant
+      .filter((t) => (!!t.isClosed) === showClosedFilter)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+  function filterTicketsOwner() {
+    return tickets
+      .filter((t) => (!!t.isClosed) === showClosedFilter)
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  }
+
+
+  // === ANALYTICS HELPERS ===
+
+// בונה ספירה {label,count} לפי פונקציה שמחזירה מפתח
+function aggregateCounts(list, keyFn) {
+  const map = new Map();
+  list.forEach((item) => {
+    const key = keyFn(item) || "לא הוגדר";
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+  return Array.from(map.entries())
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+// מחזיר נתוני פילוח לפי הדימנשן הנבחר
+function getAnalyticsDimensionData(dim) {
+  switch (dim) {
+    case "status":
+      return aggregateCounts(tickets, (t) => STATUS_LABEL[t.status] || t.status);
+    case "role":
+      return aggregateCounts(tickets, (t) =>
+        t.assignedRole ? roleLabel(t.assignedRole) : "ללא הקצאה"
+      );
+    case "topic":
+      return aggregateCounts(tickets, (t) => t.topic || "לא סומן");
+    case "unit":
+      return aggregateCounts(tickets, (t) => t.unit || "לא סומן");
+    default:
+      return [];
+  }
+}
+
+// טופ פותחי תקלות
+function getTopCreators(limit = 8) {
+  const arr = aggregateCounts(
+    tickets,
+    (t) => t.createdByName || t.createdByEmail || "ללא שם"
+  );
+  return arr.slice(0, limit);
+}
+
+// טיימליין – כמה תקלות בכל יום ב־14 ימים אחרונים
+function getTimelineData(days = 14) {
+  const map = new Map();
+  const now = new Date();
+
+  // יצירת רשימת ימים מראש
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10); // YYYY-MM-DD
+    map.set(key, 0);
+  }
+
+  tickets.forEach((t) => {
+    const d = new Date(t.createdAt);
+    if (Number.isNaN(d.getTime())) return;
+    const key = d.toISOString().slice(0, 10);
+    if (map.has(key)) {
+      map.set(key, map.get(key) + 1);
+    }
+  });
+
+  return Array.from(map.entries()).map(([iso, count]) => ({
+    iso,
+    label: iso.slice(5).replace("-", "/"), // MM/DD
+    count,
+  }));
+}
+
+  // === ROOT RENDER ===
+  function render() {
+    if (!authUser) {
+      renderLogin();
+      return;
+    }
+    if (!currentUser || !currentUser.fullName || !currentUser.phone) {
+      renderOnboarding();
+      return;
+    }
+    renderApp();
+  }
+
+  // === LOGIN / SIGNUP ===
+  function renderLogin() {
+    rootEl.innerHTML = "";
+    const wrapper = document.createElement("div");
+    wrapper.className = "login-wrapper";
+
+    // GIF למעלה
+    const gifWrap = document.createElement("div");
+    gifWrap.className = "login-gif-wrapper";
+    gifWrap.innerHTML = `<img src="welcome.gif" />`;
+
+    const card = document.createElement("div");
+    card.className = "login-card";
+    card.innerHTML = `
+      <div class="login-card-content">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <img src="logo.png" class="brand-logo-img" />
+          <div>
+            <div class="brand-text-title">TicketFlow</div>
+            <div class="brand-text-sub">מערכת תקלות בין דרגים</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+          <button type="button" id="tab-login" class="btn btn-primary" style="flex:1;justify-content:center;font-size:0.78rem;">
+            התחברות
+          </button>
+          <button type="button" id="tab-signup" class="btn btn-ghost" style="flex:1;justify-content:center;font-size:0.78rem;">
+            הרשמה
+          </button>
+        </div>
+
+        <form id="login-form">
+          <label class="field-label">אימייל</label>
+          <input class="input" style="margin-bottom:6px;" type="email" name="email" required />
+          <label class="field-label">סיסמה</label>
+          <input class="input" style="margin-bottom:8px;" type="password" name="password" required />
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px;" type="submit">
+            התחברות
+          </button>
+        </form>
+
+        <form id="signup-form" style="display:none;margin-top:4px;">
+          <label class="field-label">אימייל</label>
+          <input class="input" style="margin-bottom:6px;" type="email" name="email" required />
+          <label class="field-label">סיסמה</label>
+          <input class="input" style="margin-bottom:6px;" type="password" name="password" required minlength="4" />
+          <p style="font-size:0.7rem;color:#cbd5f5;margin-bottom:6px;">
+            משתמש חדש ייווצר כ־"משתמש". אחרי ההתחברות הראשונה תמלא פרטי פרופיל.
+          </p>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px;" type="submit">
+            הרשמה
+          </button>
+        </form>
+      </div>
+    `;
+
+    wrapper.appendChild(gifWrap);
+    wrapper.appendChild(card);
+    rootEl.appendChild(wrapper);
+
+    const tabLogin = card.querySelector("#tab-login");
+    const tabSignup = card.querySelector("#tab-signup");
+    const loginForm = card.querySelector("#login-form");
+    const signupForm = card.querySelector("#signup-form");
+
+    function setMode(mode) {
+      if (mode === "login") {
+        loginForm.style.display = "";
+        signupForm.style.display = "none";
+        tabLogin.classList.add("btn-primary");
+        tabLogin.classList.remove("btn-ghost");
+        tabSignup.classList.add("btn-ghost");
+        tabSignup.classList.remove("btn-primary");
+      } else {
+        loginForm.style.display = "none";
+        signupForm.style.display = "";
+        tabSignup.classList.add("btn-primary");
+        tabSignup.classList.remove("btn-ghost");
+        tabLogin.classList.add("btn-ghost");
+        tabLogin.classList.remove("btn-primary");
+      }
+    }
+
+    tabLogin.addEventListener("click", () => setMode("login"));
+    tabSignup.addEventListener("click", () => setMode("signup"));
+
+    loginForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = loginForm.email.value.trim();
+      const password = loginForm.password.value.trim();
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        alert("אימייל או סיסמה לא נכונים");
+        return;
+      }
+
+      await loadAllData();
+
+      if (!currentUser) {
+        alert("נכנסת עם משתמש Auth אבל אין רשומה בטבלת users. תוודא שהמשתמש קיים שם.");
+        return;
+      }
+
+      if (currentUser.isFrozen && currentUser.role !== ROLE.OWNER) {
+        alert("המשתמש שלך מוקפא. פנה לבעלים.");
+        await supabase.auth.signOut();
+        authUser = null;
+        currentUser = null;
+        return renderLogin();
+      }
+
+      showToast("התחברת בהצלחה");
+      render();
+    });
+
+    signupForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = signupForm.email.value.trim();
+      const password = signupForm.password.value.trim();
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        alert("שגיאה בהרשמה: " + error.message);
+        return;
+      }
+
+      const newAuthUser = data.user;
+      if (!newAuthUser) {
+        alert("שגיאה בהרשמה (אין user ב־Auth)");
+        return;
+      }
+
+      const nowIso = new Date().toISOString();
+      const profileRow = {
+        auth_user_id: newAuthUser.id,
+        email,
+        full_name: "",
+        phone: "",
+        unit: "",
+        role: ROLE.USER,
+        requested_role: ROLE.USER,
+        role_status: "Pending",
+        is_frozen: false,
+        created_at: nowIso,
+      };
+
+      const { error: profileErr } = await supabase
+        .from("users")
+        .insert(profileRow);
+
+      if (profileErr) {
+        alert("המשתמש נוצר ב-Auth אבל לא נשמר ב-users: " + profileErr.message);
+      }
+
+      await loadAllData();
+      showToast("ההרשמה הצליחה – נשלים פרטי פרופיל");
+      render();
+    });
+  }
+
+  
+
+  // === ONBOARDING ===
+  function renderOnboarding() {
+    rootEl.innerHTML = "";
+    const wrapper = document.createElement("div");
+    wrapper.className = "login-wrapper";
+
+    const card = document.createElement("div");
+    card.className = "login-card";
+
+    card.innerHTML = `
+      <div class="login-card-content">
+        <h2 style="font-size:1.05rem;font-weight:650;margin-bottom:4px;">הגדרת פרופיל ראשונית</h2>
+        <p style="font-size:0.78rem;color:#cbd5f5;margin-bottom:12px;">
+          נשתמש בפרטים האלה לשיוך תקלות ותצוגות לפי דרג.
+        </p>
+        <form id="onb-form">
+          <label class="field-label">שם מלא</label>
+          <input class="input" style="margin-bottom:6px;" name="fullName" required value="${currentUser?.fullName || ""}" />
+          <label class="field-label">טלפון</label>
+          <input class="input" style="margin-bottom:6px;" name="phone" required value="${currentUser?.phone || ""}" />
+          <label class="field-label">חטיבה (לא חובה)</label>
+          <select class="select" style="margin-bottom:6px;" name="unit">
+            <option value="">ללא חטיבה</option>
+            <option value="חטיבת שומרון">חטיבת שומרון</option>
+            <option value="חטיבת אפרים">חטיבת אפרים</option>
+            <option value="חטיבת עציון">חטיבת עציון</option>
+            <option value="חטיבת יהודה">חטיבת יהודה</option>
+            <option value="חטיבת מנשה">חטיבת מנשה</option>
+            <option value="חטיבת בינימין">חטיבת בינימין</option>
+          </select>
+
+          <label class="field-label">בקשה לתפקיד</label>
+          <select name="requestedRole" class="select" style="margin-bottom:6px;">
+            ${SELECTABLE_ROLES.map(
+              (r) => `
+                <option value="${r}" ${
+                currentUser?.requestedRole === r ? "selected" : ""
+              }>${roleLabel(r)}</option>`
+            ).join("")}
+          </select>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px;" type="submit">
+            שמירה והמשך
+          </button>
+        </form>
+      </div>
+    `;
+
+    wrapper.appendChild(card);
+    rootEl.appendChild(wrapper);
+
+    const form = card.querySelector("#onb-form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fullName = form.fullName.value.trim();
+      const phone = form.phone.value.trim();
+      const unit = form.unit.value || "";
+      const requestedRole = form.requestedRole.value;
+
+      const { error } = await supabase
+        .from("users")
+        .update({
+          full_name: fullName,
+          phone,
+          unit,
+          requested_role: requestedRole,
+          role_status: currentUser.role === ROLE.OWNER ? "Approved" : "Pending",
+        })
+        .eq("id", currentUser.id);
+
+      if (error) {
+        alert("שגיאה בעדכון פרופיל: " + error.message);
+        return;
+      }
+
+      await loadAllData();
+      showToast("פרטי הפרופיל נשמרו");
+      render();
+    });
+  }
+
+  // === LOGOUT ===
+  async function logout() {
+    await supabase.auth.signOut();
+    authUser = null;
+    currentUser = null;
+    users = [];
+    tickets = [];
+    comments = [];
+    audits = [];
+    renderLogin();
+  }
+
+  // === APP LAYOUT ===
+  function renderApp() {
+    rootEl.innerHTML = "";
+
+    const app = document.createElement("div");
+    app.className = "app-root";
+
+    const sidebar = renderSidebar();
+    const main = renderMain();
+
+    app.appendChild(main); // RTL – main משמאל
+    app.appendChild(sidebar);
+
+    rootEl.appendChild(app);
+  }
+
+  function renderSidebar() {
+    const div = document.createElement("aside");
+    div.className = "sidebar";
+
+    div.innerHTML = `
+      <div class="brand">
+        <img src="logo.png" class="brand-logo-img" />
+        <div>
+          <div class="brand-text-title">TicketFlow</div>
+          <div class="brand-text-sub">מערכת ניהול תקלות</div>
+        </div>
+      </div>
+      <div class="sidebar-section-title">ניווט</div>
+      <div class="nav-list" id="nav-main"></div>
+      <div class="sidebar-section-title">כללי</div>
+      <div class="nav-list" id="nav-extra"></div>
+      <div class="sidebar-footer">
+        <div class="avatar">${(currentUser.fullName || "?").charAt(0)}</div>
+        <div class="user-meta">
+          <div class="user-meta-name">${currentUser.fullName || "משתמש"}</div>
+          <div class="user-meta-role">${roleLabel(currentUser.role)}</div>
+        </div>
+        <button class="logout-btn" type="button">יציאה</button>
+      </div>
+    `;
+
+    div.querySelector(".logout-btn").addEventListener("click", logout);
+
+    const navMain = div.querySelector("#nav-main");
+    const navExtra = div.querySelector("#nav-extra");
+
+    const mainItems = [
+      { id: "HOME_MAIN", label: "התקלות הרלוונטיות אליי", subtitle: "" },
+    ];
+
+    if (currentUser.role === ROLE.OWNER || currentUser.role === ROLE.MANAGER) {
+      mainItems.unshift({
+        id: "HOME_OWNER",
+        label: "כל התקלות",
+        subtitle: "פתוחות / סגורות",
+      });
+    }
+
+    mainItems.forEach((item) => {
+      const el = document.createElement("div");
+      el.className = "nav-item" + (activePage === item.id ? " active" : "");
+      el.innerHTML = `
+        <div>
+          <div>${item.label}</div>
+          ${
+            item.subtitle
+              ? `<div style="font-size:0.68rem;color:#cbd5f5;">${item.subtitle}</div>`
+              : ""
+          }
+        </div>
+        <div class="nav-dot"></div>
+      `;
+      el.addEventListener("click", () => navigate(item.id));
+      navMain.appendChild(el);
+    });
+
+    const extraItems = [
+      { id: "PROFILE", label: "הפרופיל שלי" },
+      { id: "TICKET_CREATE", label: "פתיחת תקלה חדשה" },
+    ];
+
+
+    const canSeeAnalytics =
+      currentUser.role === ROLE.OWNER ||
+      currentUser.role === ROLE.MANAGER ||
+      currentUser.role === ROLE.COMPANY_CMD;
+
+    if (canSeeAnalytics) {
+      extraItems.push({ id: "ANALYTICS", label: "אנליטיקה" });
+    }
+
+    if (currentUser.role === ROLE.OWNER) {
+      extraItems.push({ id: "ROLE_APPROVAL", label: "אישור תפקידים" });
+    }
+
+    extraItems.forEach((item) => {
+      const el = document.createElement("div");
+      el.className = "nav-item" + (activePage === item.id ? " active" : "");
+      el.innerHTML = `<div>${item.label}</div><div class="nav-dot"></div>`;
+      el.addEventListener("click", () => navigate(item.id));
+      navExtra.appendChild(el);
+    });
+
+    return div;
+  }
+
+  function renderMain() {
+    const div = document.createElement("main");
+    div.className = "main";
+
+    const header = document.createElement("div");
+    header.className = "page-header";
+
+    const titleBox = document.createElement("div");
+    const title = document.createElement("div");
+    title.className = "page-title";
+    const subtitle = document.createElement("div");
+    subtitle.className = "page-subtitle";
+
+    if (activePage === "HOME_OWNER") {
+      title.textContent = "ניהול כל התקלות";
+      subtitle.textContent = showClosedFilter
+        ? "מציג תקלות סגורות"
+        : "מציג תקלות פתוחות בלבד";
+    } else if (activePage === "HOME_MAIN") {
+      title.textContent = "התקלות הרלוונטיות אליי";
+      subtitle.textContent = showClosedFilter
+        ? "תקלות סגורות"
+        : "תקלות פתוחות בלבד";
+    } else if (activePage === "TICKET_CREATE") {
+      title.textContent = "פתיחת תקלה חדשה";
+      subtitle.textContent = "טופס פתיחת קריאת שירות";
+    } else if (activePage === "TICKET_DETAILS") {
+      const ticket = tickets.find((t) => t.id === selectedTicketId);
+      title.textContent = ticket
+        ? `תקלה #${ticket.ticketNumber || shortId(ticket.id)}`
+        : "תקלה";
+      subtitle.textContent = ticket ? ticket.title : "";
+    } else if (activePage === "ANALYTICS") {
+      title.textContent = "אנליטיקה";
+      subtitle.textContent = "פילוח תקלות לפי סטטוס ויוצר";
+    } else if (activePage === "ROLE_APPROVAL") {
+      title.textContent = "אישור תפקידי משתמשים";
+      subtitle.textContent = "בעלים מאשר/דוחה בקשות תפקיד";
+    } else if (activePage === "PROFILE") {
+      title.textContent = "הפרופיל שלי";
+      subtitle.textContent = "עדכון פרטים ובקשת תפקיד";
+    }
+
+    titleBox.appendChild(title);
+    titleBox.appendChild(subtitle);
+    header.appendChild(titleBox);
+
+    const headerRight = document.createElement("div");
+    headerRight.style.display = "flex";
+    headerRight.style.alignItems = "center";
+    headerRight.style.gap = "8px";
+
+    const chip = document.createElement("div");
+    chip.className = "chip";
+    chip.innerHTML = `<span>תפקיד:</span><strong>${roleLabel(
+      currentUser.role
+    )}</strong>`;
+    headerRight.appendChild(chip);
+
+    if (["HOME_OWNER", "HOME_MAIN"].includes(activePage)) {
+      const btnFilter = document.createElement("button");
+      btnFilter.className = "btn btn-ghost";
+      btnFilter.textContent = showClosedFilter
+        ? "הצג פתוחות בלבד"
+        : "הצג תקלות סגורות";
+      btnFilter.addEventListener("click", () => {
+        showClosedFilter = !showClosedFilter;
+        render();
+      });
+      headerRight.appendChild(btnFilter);
+    }
+
+    const btnNew = document.createElement("button");
+    btnNew.className = "btn btn-primary";
+    btnNew.textContent = "+ תקלה חדשה";
+    btnNew.addEventListener("click", () => navigate("TICKET_CREATE"));
+    headerRight.appendChild(btnNew);
+
+    header.appendChild(headerRight);
+    div.appendChild(header);
+
+    const viewShell = document.createElement("div");
+    viewShell.className = "view-shell";
+
+    // HERO במסכי הבית
+    if (["HOME_OWNER", "HOME_MAIN"].includes(activePage)) {
+      const hero = document.createElement("div");
+      hero.className = "hero-banner";
+
+      const openCount = tickets.filter((t) => !t.isClosed).length;
+      const closedCount = tickets.filter((t) => !!t.isClosed).length;
+      const myCount = filterTicketsForMe().length;
+
+      hero.innerHTML = `
+        <div class="hero-content">
+          <div class="hero-text">
+            <div class="hero-title">ברוך הבא ל־TicketFlow</div>
+            <div class="hero-sub">
+              לוח שליטה על כל התקלות. עיצוב נקי, זרימה ברורה, וכל הדאטה במקום אחד.
+            </div>
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat-pill">
+              <span>תקלות פתוחות</span>
+              <strong>${openCount}</strong>
+            </div>
+            <div class="hero-stat-pill">
+              <span>תקלות סגורות</span>
+              <strong>${closedCount}</strong>
+            </div>
+            <div class="hero-stat-pill">
+              <span>רלוונטיות אליי</span>
+              <strong>${myCount}</strong>
+            </div>
+          </div>
+        </div>
+      `;
+      viewShell.appendChild(hero);
+    }
+
+    if (activePage === "HOME_OWNER") {
+      viewShell.appendChild(renderTicketsTable(filterTicketsOwner(), "כל התקלות"));
+    } else if (activePage === "HOME_MAIN") {
+      viewShell.appendChild(
+        renderTicketsTable(
+          filterTicketsForMe(),
+          showClosedFilter
+            ? "תקלות סגורות הרלוונטיות אליי"
+            : "תקלות פתוחות הרלוונטיות אליי"
+        )
+      );
+    } else if (activePage === "TICKET_CREATE") {
+      viewShell.appendChild(renderCreateTicket());
+    } else if (activePage === "TICKET_DETAILS") {
+      viewShell.appendChild(renderTicketDetails());
+    } else if (activePage === "ROLE_APPROVAL") {
+      viewShell.appendChild(renderRoleApprovalView());
+    } else if (activePage === "PROFILE") {
+      viewShell.appendChild(renderProfileView());
+    }
+    const canSeeAnalytics =
+      currentUser.role === ROLE.OWNER ||
+      currentUser.role === ROLE.MANAGER ||
+      currentUser.role === ROLE.COMPANY_CMD;
+
+    if (activePage === "ANALYTICS" && !canSeeAnalytics) {
+      showToast("אין לך הרשאה לצפות באנליטיקה");
+      activePage = "HOME_MAIN";
+    }
+    else if (activePage === "ANALYTICS") {
+      viewShell.appendChild(renderAnalyticsView());
+    }
+    div.appendChild(viewShell);
+    return div;
+  }
+
+  // === TABLE OF TICKETS (פשוטה יותר) ===
+  function renderTicketsTable(list, titleText) {
+    const card = document.createElement("div");
+    card.className = "card";
+    const inner = document.createElement("div");
+    inner.className = "card-content";
+
+    inner.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="card-title">${titleText}</div>
+          <div class="card-subtitle">${list.length} תקלות</div>
+        </div>
+      </div>
+    `;
+
+    if (!list.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "אין תקלות לתצוגה.";
+      inner.appendChild(empty);
+      card.appendChild(inner);
+      return card;
+    }
+
+    const table = document.createElement("table");
+    table.className = "table";
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>כותרת</th>
+          <th>נושא</th>
+          <th>אצל מי</th>
+          <th>סטטוס</th>
+          <th>נפתח</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+    const tbody = table.querySelector("tbody");
+
+    list.forEach((t) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="font-family:monospace;">${t.ticketNumber || shortId(
+          t.id
+        )}</td>
+        <td>${t.title}</td>
+        <td>${t.topic || ""}</td>
+        <td>${t.assignedUserName || roleLabel(t.assignedRole) || "-"}</td>
+        <td><span class="${statusClass(t.status)}">${STATUS_LABEL[t.status]}</span></td>
+        <td>${formatDate(t.createdAt)}</td>
+      `;
+      tr.addEventListener("click", () =>
+        navigate("TICKET_DETAILS", { ticketId: t.id })
+      );
+      tbody.appendChild(tr);
+    });
+
+    inner.appendChild(table);
+    card.appendChild(inner);
+    return card;
+  }
+
+  // === CREATE TICKET ===
+  function renderCreateTicket() {
+    const wrap = document.createElement("div");
+    wrap.className = "grid-two";
+
+    const formCard = document.createElement("div");
+    formCard.className = "card";
+    const inner = document.createElement("div");
+    inner.className = "card-content";
+
+    inner.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="card-title">פרטי פותח התקלה</div>
+          <div class="card-subtitle">הפרטים ישמשו את הטכנאים ליצירת קשר</div>
+        </div>
+      </div>
+      <div class="grid-2cols">
+        <div>
+          <label class="field-label">שם מלא</label>
+          <input class="input" value="${currentUser.fullName}" disabled />
+        </div>
+        <div>
+          <label class="field-label">טלפון</label>
+          <input class="input" value="${currentUser.phone}" disabled />
+        </div>
+      </div>
+      <div class="grid-2cols" style="margin-top:6px;">
+        <div>
+          <label class="field-label">אימייל</label>
+          <input class="input" value="${currentUser.email}" disabled />
+        </div>
+        <div>
+          <label class="field-label">חטיבה</label>
+          <input class="input" value="${currentUser.unit || "—"}" disabled />
+        </div>
+      </div>
+      <hr style="border:none;border-bottom:1px solid rgba(30,41,59,0.9);margin:10px 0 8px;" />
+      <div class="card-header" style="margin-bottom:6px;">
+        <div>
+          <div class="card-title">פרטי התקלה</div>
+          <div class="card-subtitle">נושא, כותרת ופירוט</div>
+        </div>
+        <div class="tags-row">
+          <span class="tag">אין מחיקה – רק סגירה</span>
+          <span class="tag">אחרי שהטכנאי בטיפול פותח התקלה לא עורך</span>
+        </div>
+      </div>
+      <form id="ticket-form">
+        <div class="grid-2cols">
+          <div>
+            <label class="field-label">נושא התקלה</label>
+            <select class="select" name="topic" required>
+              <option value="">בחר נושא…</option>
+              ${TICKET_TOPICS.map(
+                (t) => `<option value="${t.value}">${t.label}</option>`
+              ).join("")}
+            </select>
+          </div>
+          <div>
+            <label class="field-label">הקצאה ראשונית</label>
+            <select class="select" name="targetRole" required>
+              <option value="${ROLE.HATAP}">${roleLabel(ROLE.HATAP)}</option>
+              <option value="${ROLE.HR}">${roleLabel(ROLE.HR)}</option>
+            </select>
+            <div class="card-subtitle" style="margin-top:2px;">
+              משתמש רגיל יכול לבחור רק בין חט"פ למש"א.
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <label class="field-label">כותרת התקלה</label>
+          <input class="input" name="title" required placeholder="כותרת קצרה וברורה..." />
+        </div>
+        <div style="margin-top:6px;">
+          <label class="field-label">פירוט התקלה</label>
+          <textarea class="textarea" name="description" required placeholder="תאר את הבעיה, איפה היא מתרחשת, ומה כבר ניסית..."></textarea>
+        </div>
+        <div style="margin-top:8px;">
+          <label class="field-label">תמונות (סימולציה)</label>
+          <input class="input" placeholder="במערכת אמיתית כאן נעלה קבצים" disabled />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;">
+          <button type="button" class="btn btn-ghost" id="btn-cancel">ביטול</button>
+          <button type="submit" class="btn btn-primary">פתח תקלה</button>
+        </div>
+      </form>
+    `;
+
+    formCard.appendChild(inner);
+    wrap.appendChild(formCard);
+
+    const sideCard = document.createElement("div");
+    sideCard.className = "card";
+    const sideContent = document.createElement("div");
+    sideContent.className = "card-content";
+    sideContent.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="card-title">איך התקלה זורמת במערכת?</div>
+          <div class="card-subtitle">מפת דרגי טיפול</div>
+        </div>
+      </div>
+      <ol style="font-size:0.75rem;color:#f9fafb;line-height:1.6;margin-top:4px;padding-right:18px;">
+        <li>החייל פותח תקלה – נוצר טיקט עם כל הפרטים והחטיבה (אם יש).</li>
+        <li>הטיקט מוקצה לתפקיד (חט"פ / מש"א / מ"פ / אפליקציה / רשת...).</li>
+        <li>טכנאי מעדכן סטטוס ומוסיף הערות, וכל שינוי נכנס ל־Audit log.</li>
+        <li>בעלים/מנהלים רואים ניתוח במסך האנליטיקה.</li>
+        <li>אין מחיקה של תקלות – רק סימון כ"נסגרה".</li>
+      </ol>
+    `;
+    sideCard.appendChild(sideContent);
+    wrap.appendChild(sideCard);
+
+    const form = inner.querySelector("#ticket-form");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const topic = form.topic.value;
+      const targetRole = form.targetRole.value;
+      const title = form.title.value.trim();
+      const description = form.description.value.trim();
+      if (!topic || !targetRole || !title || !description) return;
+
+      const nowIso = new Date().toISOString();
+      const ticketNumber = await nextTicketNumber();
+
+      const ticketRow = {
+        ticket_number: ticketNumber,
+        title,
+        description,
+        topic,
+        created_by_user_id: currentUser.id,
+        created_by_name: currentUser.fullName,
+        created_by_phone: currentUser.phone,
+        created_by_email: currentUser.email,
+        unit: currentUser.unit || "",
+        assigned_role: targetRole,
+        assigned_user_id: null,
+        assigned_user_name: null,
+        status: STATUS.OPEN,
+        is_closed: false,
+        created_at: nowIso,
+        updated_at: nowIso,
+      };
+
+      const { data: inserted, error } = await supabase
+        .from("tickets")
+        .insert(ticketRow)
+        .select()
+        .single();
+
+      if (error) {
+        alert("שגיאה ביצירת תקלה: " + error.message);
+        return;
+      }
+
+      const auditRow = {
+        ticket_id: inserted.id,
+        field: "CREATE",
+        old_value: null,
+        new_value: JSON.stringify({ title: inserted.title, topic: inserted.topic }),
+        changed_at: nowIso,
+        changed_by_user_id: currentUser.authUserId, 
+        changed_by_name: currentUser.fullName,
+        changed_by_role: currentUser.role,
+      };
+
+      const { error: auditErr } = await supabase
+        .from("audits")
+        .insert(auditRow);
+      if (auditErr) console.error("audit create error", auditErr);
+
+      await loadAllData();
+      showToast("התקלה נפתחה בהצלחה");
+      navigate("TICKET_DETAILS", { ticketId: inserted.id });
+    });
+
+    inner
+      .querySelector("#btn-cancel")
+      .addEventListener("click", () => navigate("HOME_MAIN"));
+
+    return wrap;
+  }
+
+  // === TICKET DETAILS ===
+  function renderTicketDetails() {
+    const ticket = tickets.find((t) => t.id === selectedTicketId);
+    if (!ticket) {
+      const card = document.createElement("div");
+      card.className = "card";
+      const inner = document.createElement("div");
+      inner.className = "card-content";
+      inner.innerHTML = `<div class="empty-state">התקלה לא נמצאה.</div>`;
+      card.appendChild(inner);
+      return card;
+    }
+
+    const wrap = document.createElement("div");
+    wrap.className = "grid-two";
+
+    const left = document.createElement("div");
+    left.className = "card";
+    const leftInner = document.createElement("div");
+    leftInner.className = "card-content";
+
+    const creatorCanEdit =
+      ticket.createdByUserId === currentUser.id &&
+      ticket.status === STATUS.OPEN;
+    const isOwner = currentUser.role === ROLE.OWNER;
+    const isManager = currentUser.role === ROLE.MANAGER;
+    const isTech =
+      currentUser.role === ticket.assignedRole ||
+      currentUser.id === ticket.assignedUserId;
+
+    leftInner.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="card-title">${ticket.title}</div>
+          <div class="card-subtitle">
+            נפתח ע"י ${ticket.createdByName} (${ticket.createdByPhone || ""}) • ${formatDate(
+      ticket.createdAt
+    )}
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div class="${statusClass(ticket.status)}">${
+      STATUS_LABEL[ticket.status]
+    }</div>
+          <div style="font-size:0.7rem;color:#cbd5f5;margin-top:2px;">
+            נושא: ${ticket.topic || ""}<br/>
+            חטיבה: ${ticket.unit || "—"}<br/>
+            מוקצה ל: ${
+              ticket.assignedUserName ||
+              roleLabel(ticket.assignedRole) ||
+              "לא מוקצה"
+            }
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <label class="field-label">פירוט התקלה</label>
+        <textarea class="textarea" id="ticket-desc" ${
+          creatorCanEdit || isOwner || isTech ? "" : "disabled"
+        }>${ticket.description || ""}</textarea>
+        <div class="card-subtitle" style="margin-top:3px;">
+          ${
+            creatorCanEdit
+              ? "ניתן לערוך עד שהתקלה עוברת לטיפול."
+              : "לא ניתן לערוך – התקלה בטיפול/סגורה."
+          }
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <label class="field-label">סטטוס</label>
+        <select class="select" id="ticket-status" ${
+          isOwner || isManager || isTech ? "" : "disabled"
+        }>
+          ${Object.values(STATUS)
+            .map(
+              (st) =>
+                `<option value="${st}" ${
+                  ticket.status === st ? "selected" : ""
+                }>${STATUS_LABEL[st]}</option>`
+            )
+            .join("")}
+        </select>
+        <div class="card-subtitle" style="margin-top:3px;">
+          אין מחיקה – לסגירת תקלה בחר "נסגרה".
+        </div>
+      </div>
+      <div style="margin-top:8px;">
+        <label class="field-label">הקצאה לתפקיד</label>
+        <select class="select" id="ticket-role" ${
+          isOwner || isManager || currentUser.role === ROLE.HR ? "" : "disabled"
+        }>
+          ${SELECTABLE_ROLES.map(
+            (r) => `
+              <option value="${r}" ${
+              ticket.assignedRole === r ? "selected" : ""
+            }>
+                ${roleLabel(r)}
+              </option>`
+          ).join("")}
+        </select>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;">
+        <button type="button" class="btn btn-ghost" id="btn-back">חזרה</button>
+        <button type="button" class="btn btn-primary" id="btn-save">שמירת שינויים</button>
+      </div>
+    `;
+
+    left.appendChild(leftInner);
+    wrap.appendChild(left);
+
+    const right = document.createElement("div");
+    right.className = "card";
+    const rightInner = document.createElement("div");
+    rightInner.className = "card-content";
+
+    const ticketComments = comments
+      .filter((c) => c.ticketId === ticket.id)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+    const ticketAudits = audits
+      .filter((a) => a.ticketId === ticket.id)
+      .sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt))
+      .slice(0, 5);
+
+    rightInner.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="card-title">הערות / לוג טכנאי</div>
+          <div class="card-subtitle">${ticketComments.length} הערות</div>
+        </div>
+      </div>
+      <div id="comments-list" style="max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-top:6px;"></div>
+      <form id="comment-form" style="margin-top:8px;">
+        <label class="field-label">הוסף הערה</label>
+        <textarea class="textarea" id="comment-text" placeholder="עדכון טכני/הערה לפותח התקלה..." ${
+          isTech || isOwner || isManager ? "" : "disabled"
+        }></textarea>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px;" ${
+          isTech || isOwner || isManager ? "" : "disabled"
+        } type="submit">
+          שמירת הערה
+        </button>
+      </form>
+      <hr style="border:none;border-bottom:1px solid rgba(30,41,59,0.9);margin:10px 0 6px;" />
+      <div class="card-title" style="font-size:0.78rem;margin-bottom:4px;">Audit אחרונים</div>
+      <div id="audit-mini" style="display:flex;flex-direction:column;gap:4px;"></div>
+    `;
+
+    const commentsList = rightInner.querySelector("#comments-list");
+    if (!ticketComments.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "אין עדיין הערות.";
+      commentsList.appendChild(empty);
+    } else {
+      ticketComments.forEach((c) => {
+        const div = document.createElement("div");
+        div.className = "comment-bubble";
+        div.innerHTML = `
+          <div class="comment-meta">
+            <span>${c.authorName} • ${roleLabel(c.authorRole)}</span>
+            <span>${formatDate(c.createdAt)}</span>
+          </div>
+          <div class="comment-body">${c.text}</div>
+        `;
+        commentsList.appendChild(div);
+      });
+    }
+
+    const auditMini = rightInner.querySelector("#audit-mini");
+    if (!ticketAudits.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "אין עדיין היסטוריית שינויים.";
+      auditMini.appendChild(empty);
+    } else {
+      ticketAudits.forEach((a) => {
+        const div = document.createElement("div");
+        div.className = "audit-row";
+        div.innerHTML = `
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+            <span>${a.changedByName || "מערכת"}</span>
+            <span style="font-size:0.65rem;color:#9ca3af;">${formatDate(
+              a.changedAt
+            )}</span>
+          </div>
+          <div style="font-size:0.68rem;color:#e5e7eb;">
+            פעולה: <strong>${a.field}</strong>
+            ${
+              a.field === "CREATE"
+                ? ""
+                : ` – ${a.oldValue || ""} → ${a.newValue || ""}`
+            }
+          </div>
+        `;
+        auditMini.appendChild(div);
+      });
+    }
+
+    right.appendChild(rightInner);
+    wrap.appendChild(right);
+
+    leftInner
+      .querySelector("#btn-back")
+      .addEventListener("click", () => navigate("HOME_MAIN"));
+
+    leftInner.querySelector("#btn-save").addEventListener("click", async () => {
+      const newDesc = leftInner.querySelector("#ticket-desc").value;
+      const newStatus = leftInner.querySelector("#ticket-status").value;
+      const newRole = leftInner.querySelector("#ticket-role").value;
+
+      const nowIso = new Date().toISOString();
+      const updates = {};
+      const auditRows = [];
+
+      function pushAudit(field, oldVal, newVal) {
+        if (oldVal === newVal) return;
+        auditRows.push({
+          ticket_id: ticket.id,
+          field,
+          old_value: oldVal,
+          new_value: newVal,
+          changed_at: nowIso,
+          changed_by_user_id: currentUser.authUserId,
+          changed_by_name: currentUser.fullName,
+          changed_by_role: currentUser.role,
+        });
+      }
+
+      if (ticket.description !== newDesc) {
+        updates.description = newDesc;
+        pushAudit("description", "(ישן)", "(עודכן)");
+      }
+
+      if (ticket.status !== newStatus) {
+        updates.status = newStatus;
+        updates.is_closed = newStatus === STATUS.CLOSED;
+        pushAudit("status", STATUS_LABEL[ticket.status], STATUS_LABEL[newStatus]);
+      }
+
+      if (ticket.assignedRole !== newRole) {
+        updates.assigned_role = newRole;
+        updates.assigned_user_id = null;
+        updates.assigned_user_name = null;
+        pushAudit(
+          "assignedRole",
+          roleLabel(ticket.assignedRole),
+          roleLabel(newRole)
+        );
+      }
+
+      if (Object.keys(updates).length === 0) {
+        showToast("אין שינויים לשמור");
+        return;
+      }
+
+      updates.updated_at = nowIso;
+
+      const { error: updateErr } = await supabase
+        .from("tickets")
+        .update(updates)
+        .eq("id", ticket.id);
+
+      if (updateErr) {
+        alert("שגיאה בעדכון תקלה: " + updateErr.message);
+        return;
+      }
+
+      if (auditRows.length) {
+        const { error: auditErr } = await supabase
+          .from("audits")
+          .insert(auditRows);
+        if (auditErr) console.error("audit update error", auditErr);
+      }
+
+      await loadAllData();
+      showToast("השינויים נשמרו");
+      navigate("TICKET_DETAILS", { ticketId: ticket.id });
+    });
+
+    const commentForm = rightInner.querySelector("#comment-form");
+commentForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const textarea = commentForm.querySelector("#comment-text");
+  const text = textarea.value.trim();
+  if (!text) return;
+
+  const nowIso = new Date().toISOString();
+
+  const commentRow = {
+    ticket_id: ticket.id,
+    content: text,                     // ✅ content
+    author_user_id: currentUser.id,
+    author_role: currentUser.role,
+    author_name: currentUser.fullName, // ✅ צריך עמודה author_name בטבלה
+    created_at: nowIso,                // אם בטבלה יש default אפשר גם בלי
+  };
+
+  const { error: commentErr } = await supabase
+    .from("ticket_comments")
+    .insert(commentRow);
+
+  if (commentErr) {
+    alert("שגיאה בשמירת הערה: " + commentErr.message);
+    return;
+  }
+
+  // אופציונלי: Audit
+  const auditRow = {
+    ticket_id: ticket.id,
+    field: "comment",
+    old_value: null,
+    new_value: text,
+    changed_at: nowIso,
+    changed_by_user_id: authUser.id,
+    changed_by_name: currentUser.fullName,
+    changed_by_role: currentUser.role,
+  };
+
+  const { error: auditErr } = await supabase.from("audits").insert(auditRow);
+  if (auditErr) console.error("audit comment error", auditErr);
+
+  textarea.value = ""; // ✅ שלא יישאר טקסט
+  await loadAllData();
+  showToast("ההערה נוספה");
+  navigate("TICKET_DETAILS", { ticketId: ticket.id });
+});
+
+    return wrap;
+  }
+
+
+function makeLocalDateKey(dateLike) {
+  const d = (dateLike instanceof Date) ? dateLike : new Date(dateLike);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;   // YYYY-MM-DD מקומי, בלי ענייני UTC
+}
+
+// יוצר DOM של כרטיסי נושא (Topic Overview) לפי buckets.TOPIC
+function createTopicOverview(topicBuckets) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "topic-overview";
+
+  const entries = Object.entries(topicBuckets || {});
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "אין עדיין תקלות לפי נושא.";
+    wrapper.appendChild(empty);
+    return wrapper;
+  }
+
+  // אפשר למיין לפי כמות מהגדול לקטן
+  entries.sort((a, b) => b[1] - a[1]);
+
+  entries.forEach(([topic, count]) => {
+    const card = document.createElement("div");
+    card.className = "topic-card";
+
+    const inner = document.createElement("div");
+    inner.className = "topic-card-inner";
+
+    inner.innerHTML = `
+      <div class="topic-icon">📊</div>
+      <div class="topic-title">${topic}</div>
+      <div class="topic-count">${count}</div>
+    `;
+
+    card.appendChild(inner);
+    wrapper.appendChild(card);
+  });
+
+  return wrapper;
+}
+
+function renderAnalyticsView() {
+  const card = document.createElement("div");
+  card.className = "card";
+  const inner = document.createElement("div");
+  inner.className = "card-content";
+
+  // ========= שינוי מרכזי: פילטור אנליטיקה לפי חטיבה עבור מ"פ =========
+  // הערות:
+  // 1) זה פילטור UI בלבד (לא RLS).
+  // 2) למ"פ אנחנו מציגים רק תקלות של החטיבה שלו (currentUser.unit).
+  // 3) לכל השאר – הכל נשאר כרגיל.
+  const isCompanyCmd =
+    (typeof ROLE !== "undefined" &&
+      currentUser?.role === ROLE.COMPANY_CMD) ||
+    currentUser?.role === 'מ"פ' ||
+    currentUser?.role === "מ״פ";
+
+  const effectiveTickets = isCompanyCmd
+    ? (tickets || []).filter(
+        (t) => (t?.unit || "") === (currentUser?.unit || "")
+      )
+    : (tickets || []);
+
+  if (!effectiveTickets.length) {
+    inner.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="card-title">אנליטיקה</div>
+          <div class="card-subtitle">אין עדיין תקלות להצגה.</div>
+        </div>
+      </div>
+      <div class="empty-state">
+        כשיהיו תקלות במערכת – הגרפים יופיעו כאן.
+      </div>
+    `;
+    card.appendChild(inner);
+    return card;
+  }
+
+  // ---------- חישוב דאטה מהטיקטים ----------
+
+  const buckets = {
+    STATUS: {},
+    ROLE: {},
+    TOPIC: {},
+    UNIT: {},
+  };
+  const byCreator = {};
+
+  // טיימליין – 14 ימים אחרונים (מפתח תאריך מקומי)
+  const today = new Date();
+  const days = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(today.getDate() - i);
+    const key = makeLocalDateKey(d);
+    const label = `${d.getDate()}/${d.getMonth() + 1}`;
+    days.push({ key, label, count: 0 });
+  }
+
+  effectiveTickets.forEach((t) => {
+    // סטטוס
+    const stKey = STATUS_LABEL[t.status] || "לא צויין";
+    buckets.STATUS[stKey] = (buckets.STATUS[stKey] || 0) + 1;
+
+    // תפקיד מוקצה
+    const roleKey = t.assignedUserName
+      ? `${t.assignedUserName} (${roleLabel(t.assignedRole)})`
+      : roleLabel(t.assignedRole || "לא מוקצה");
+    buckets.ROLE[roleKey] = (buckets.ROLE[roleKey] || 0) + 1;
+
+    // נושא
+    const topicKey = t.topic || "לא צויין";
+    buckets.TOPIC[topicKey] = (buckets.TOPIC[topicKey] || 0) + 1;
+
+    // חטיבה
+    const unitKey = t.unit || "לא צויין";
+    buckets.UNIT[unitKey] = (buckets.UNIT[unitKey] || 0) + 1;
+
+    // פותח תקלה
+    const creator = t.createdByName || t.createdByEmail || "לא ידוע";
+    byCreator[creator] = (byCreator[creator] || 0) + 1;
+
+    // טיימליין לפי תאריך פתיחה (מפתח מקומי, בלי toISOString)
+    const dateKey = makeLocalDateKey(t.createdAt);
+    const day = days.find((d) => d.key === dateKey);
+    if (day) day.count++;
+  });
+
+  const totalTickets = effectiveTickets.length;
+
+  // ---------- כותרת + כפתור מצב גרף ----------
+
+  const header = document.createElement("div");
+  header.className = "card-header";
+
+  const leftHead = document.createElement("div");
+  leftHead.innerHTML = `
+    <div class="card-title">אנליטיקה</div>
+    <div class="card-subtitle">
+      פילוח תקלות לפי סטטוס, תפקיד, נושא וחטיבה + טיימליין 14 ימים אחרונים.
+    </div>
+  `;
+
+  const rightHead = document.createElement("div");
+  rightHead.className = "analytics-header-tools";
+
+  const modeBtn = document.createElement("button");
+  modeBtn.type = "button";
+  modeBtn.className =
+    "analytics-mode-btn" + (analyticsViewMode === "BAR" ? " active" : "");
+  modeBtn.id = "analytics-mode-toggle";
+
+  modeBtn.innerHTML = `
+    <div class="analytics-mode-icon">
+      <div class="analytics-mode-bar"></div>
+      <div class="analytics-mode-bar"></div>
+      <div class="analytics-mode-bar"></div>
+      <div class="analytics-mode-bar"></div>
+    </div>
+  `;
+
+  modeBtn.title =
+    analyticsViewMode === "BAR" ? "מעבר למצב עוגה" : "מעבר למצב גרף עמודות";
+
+  modeBtn.addEventListener("click", () => {
+    analyticsViewMode = analyticsViewMode === "BAR" ? "PIE" : "BAR";
+    render(); // מרענן את כל המסך
+  });
+
+  rightHead.appendChild(modeBtn);
+  header.appendChild(leftHead);
+  header.appendChild(rightHead);
+
+  inner.appendChild(header);
+
+  // ---------- Top פותחי תקלות (פס עליון קטן) ----------
+
+  const creatorsArr = Object.entries(byCreator)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
+
+  if (creatorsArr.length) {
+    const topStrip = document.createElement("div");
+    topStrip.style.marginTop = "8px";
+    topStrip.innerHTML = `
+      <div class="card-subtitle" style="margin-bottom:4px;">
+        Top פותחי תקלות
+      </div>
+    `;
+    const stripInner = document.createElement("div");
+    stripInner.style.display = "flex";
+    stripInner.style.gap = "6px";
+    stripInner.style.fontSize = "0.75rem";
+
+    creatorsArr.forEach(([name, count]) => {
+      const pill = document.createElement("div");
+      pill.className = "hero-stat-pill";
+      pill.innerHTML = `
+        <span>${name}</span>
+        <strong>${count}</strong>
+      `;
+      stripInner.appendChild(pill);
+    });
+
+    topStrip.appendChild(stripInner);
+    inner.appendChild(topStrip);
+  }
+
+  // ---------- טאבים: סטטוס / תפקיד / נושא / חטיבה ----------
+
+  const tabsRow = document.createElement("div");
+  tabsRow.className = "analytics-filter-toggle";
+  tabsRow.style.marginTop = "10px";
+
+  const dims = [
+    { id: "STATUS", label: "סטטוס" },
+    { id: "ROLE", label: "תפקיד מוקצה" },
+    { id: "TOPIC", label: "נושא תקלה" },
+    { id: "UNIT", label: "חטיבה" },
+  ];
+
+  dims.forEach((d) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className =
+      "analytics-filter-chip" + (analyticsDim === d.id ? " active" : "");
+    btn.textContent = d.label;
+    btn.addEventListener("click", () => {
+      analyticsDim = d.id;
+      render();
+    });
+    tabsRow.appendChild(btn);
+  });
+
+  inner.appendChild(tabsRow);
+
+  // ---------- GRID ראשי: צד שמאל – KPI, צד ימין – מצב עוגה/גרף ----------
+
+  const grid = document.createElement("div");
+  grid.className = "chart-grid-2";
+  grid.style.marginTop = "8px";
+
+  // === כרטיס KPI במקום גרף "תקלות לפי ימים" ===
+  const kpiCard = document.createElement("div");
+  kpiCard.className = "timeline-chart kpi-layout"; // משתמש באותו סטייל חיצוני
+
+  const now = new Date();
+  const weekAgo = new Date();
+  weekAgo.setDate(now.getDate() - 7);
+
+  let openCount = 0;
+  let createdLast7 = 0;
+  let closedLast7 = 0;
+  let overdue = 0;
+
+  effectiveTickets.forEach((t) => {
+    const created = new Date(t.createdAt);
+    const isClosed = t.isClosed || t.status === STATUS.CLOSED;
+
+    if (!isClosed) {
+      openCount++;
+      if (created < weekAgo) {
+        overdue++;
+      }
+    }
+
+    if (created >= weekAgo) {
+      createdLast7++;
+      if (isClosed) {
+        closedLast7++;
+      }
+    }
+  });
+
+  kpiCard.innerHTML = `
+    <div class="card-title" style="font-size:0.78rem;margin-bottom:4px;">
+      מדדי מערכת (7 ימים אחרונים)
+    </div>
+    <div class="analytics-kpi-row">
+      <div class="analytics-kpi-card">
+        <div class="analytics-kpi-label">פתוחות עכשיו</div>
+        <div class="analytics-kpi-value">${openCount}</div>
+      </div>
+      <div class="analytics-kpi-card">
+        <div class="analytics-kpi-label">נפתחו ב-7 ימים</div>
+        <div class="analytics-kpi-value">${createdLast7}</div>
+      </div>
+      <div class="analytics-kpi-card">
+        <div class="analytics-kpi-label">נסגרו ב-7 ימים</div>
+        <div class="analytics-kpi-value">${closedLast7}</div>
+      </div>
+      <div class="analytics-kpi-card">
+        <div class="analytics-kpi-label">פתוחות מעל שבוע</div>
+        <div class="analytics-kpi-value">${overdue}</div>
+      </div>
+    </div>
+  `;
+
+  grid.appendChild(kpiCard);
+
+  // === ימין: פילוח לפי הדימנשן הנבחר, במצב PIE/BAR ===
+
+  const dimCard = document.createElement("div");
+  dimCard.className = "card";
+  const dimInner = document.createElement("div");
+  dimInner.className = "card-content";
+
+  const dimMap = {
+    STATUS: "סטטוס",
+    ROLE: "תפקיד מוקצה",
+    TOPIC: "נושא תקלה",
+    UNIT: "חטיבה",
+  };
+
+  const currentBuckets = buckets[analyticsDim] || {};
+  const entries = Object.entries(currentBuckets).sort((a, b) => b[1] - a[1]);
+  const maxDim = entries.length ? Math.max(...entries.map(([, c]) => c)) : 0;
+
+  dimInner.innerHTML = `
+    <div class="card-title" style="font-size:0.8rem;margin-bottom:6px;">
+      פילוח לפי ${dimMap[analyticsDim] || ""}
+      <span style="font-size:0.7rem;color:#cbd5f5;">(${analyticsViewMode === "BAR" ? "מצב גרף" : "מצב עוגה"})</span>
+    </div>
+  `;
+
+  if (!entries.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "אין נתונים להצגה בפילוח הזה.";
+    dimInner.appendChild(empty);
+  } else {
+    // מצב PIE – עוגת SVG עם פלחים נפרדים ש"יוצאים" בהובר
+    if (analyticsViewMode === "PIE") {
+      const total = entries.reduce((sum, [, c]) => sum + c, 0) || 1;
+
+      const colors = [
+        "#f97373",
+        "#22c55e",
+        "#3b82f6",
+        "#facc15",
+        "#a855f7",
+        "#38bdf8",
+        "#fb923c",
+        "#e11d48",
+      ];
+
+      const pieWrapper = document.createElement("div");
+      pieWrapper.style.display = "flex";
+      pieWrapper.style.alignItems = "center";
+      pieWrapper.style.gap = "10px";
+      pieWrapper.style.marginBottom = "8px";
+
+      // --- יצירת SVG ---
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, "svg");
+      svg.setAttribute("viewBox", "0 0 160 160");
+      svg.classList.add("analytics-pie-svg");
+
+      const cx = 80;
+      const cy = 80;
+      const r = 60;
+
+      // אם יש רק קטגוריה אחת – מציירים עיגול מלא
+      if (entries.length === 1) {
+        const [label, count] = entries[0];
+        const frac = count / total;
+        const color = colors[0];
+
+        const circle = document.createElementNS(svgNS, "circle");
+        circle.setAttribute("cx", String(cx));
+        circle.setAttribute("cy", String(cy));
+        circle.setAttribute("r", String(r));
+        circle.setAttribute("fill", color);
+        circle.classList.add("pie-slice");
+        circle.setAttribute(
+          "title",
+          `${label} – ${count} (${Math.round(frac * 100)}%)`
+        );
+
+        circle.style.setProperty("--dx", `0px`);
+        circle.style.setProperty("--dy", `0px`);
+
+        svg.appendChild(circle);
+      } else {
+        let currentAngle = -90; // מתחילים למעלה (12:00)
+        const rad = (deg) => (deg * Math.PI) / 180;
+
+        entries.forEach(([label, count], idx) => {
+          const frac = count / total;
+          const sliceAngle = frac * 360;
+          const startAngle = currentAngle;
+          const endAngle = currentAngle + sliceAngle;
+
+          const largeArc = sliceAngle > 180 ? 1 : 0;
+
+          const x1 = cx + r * Math.cos(rad(startAngle));
+          const y1 = cy + r * Math.sin(rad(startAngle));
+          const x2 = cx + r * Math.cos(rad(endAngle));
+          const y2 = cy + r * Math.sin(rad(endAngle));
+
+          const d = [
+            `M ${cx} ${cy}`,
+            `L ${x1} ${y1}`,
+            `A ${r} ${r} 0 ${largeArc} 1 ${x2} ${y2}`,
+            "Z",
+          ].join(" ");
+
+          const path = document.createElementNS(svgNS, "path");
+          path.setAttribute("d", d);
+          path.setAttribute("fill", colors[idx % colors.length]);
+          path.classList.add("pie-slice");
+
+          const midAngle = (startAngle + endAngle) / 2;
+          const dx = Math.cos(rad(midAngle)) * 10;
+          const dy = Math.sin(rad(midAngle)) * 10;
+          path.style.setProperty("--dx", `${dx}px`);
+          path.style.setProperty("--dy", `${dy}px`);
+
+          path.setAttribute(
+            "title",
+            `${label} – ${count} (${Math.round(frac * 100)}%)`
+          );
+
+          svg.appendChild(path);
+          currentAngle = endAngle;
+        });
+      }
+
+      // --- לג'נד בצד ימין ---
+      const legend = document.createElement("div");
+      legend.style.fontSize = "0.72rem";
+
+      entries.forEach(([label, count], idx) => {
+        const row = document.createElement("div");
+        row.className = "chart-legend-row";
+        const dot = document.createElement("div");
+        dot.className = "chart-legend-dot";
+        dot.style.background = colors[idx % colors.length];
+        const text = document.createElement("div");
+        const percent = Math.round((count / total) * 100);
+        text.textContent = `${label} – ${count} (${percent}%)`;
+        row.appendChild(dot);
+        row.appendChild(text);
+        legend.appendChild(row);
+      });
+
+      pieWrapper.appendChild(svg);
+      pieWrapper.appendChild(legend);
+      dimInner.appendChild(pieWrapper);
+    } else {
+      // מצב BAR – גרף עמודות גדול
+      const big = document.createElement("div");
+      big.className = "big-bar-chart";
+
+      const axisY = document.createElement("div");
+      axisY.className = "big-bar-chart-axis-y";
+      const axisX = document.createElement("div");
+      axisX.className = "big-bar-chart-axis-x";
+
+      const barsWrap = document.createElement("div");
+      barsWrap.className = "big-bar-chart-bars";
+
+      const maxBars = Math.min(entries.length, 8);
+      const slice = entries.slice(0, maxBars);
+
+      slice.forEach(([label, count]) => {
+        const bar = document.createElement("div");
+        bar.className = "big-bar-chart-bar";
+
+        const rect = document.createElement("div");
+        rect.className = "big-bar-chart-bar-rect";
+
+        // גובה בפיקסלים (לא אחוזים)
+        let h = 0;
+        if (count > 0 && maxDim > 0) {
+          const minH = 20;
+          const maxH = 170;
+          h = minH + (count / maxDim) * (maxH - minH);
+        }
+        rect.style.height = `${h}px`;
+
+        const labelEl = document.createElement("div");
+        labelEl.className = "big-bar-chart-bar-label";
+        labelEl.textContent = label;
+
+        const valEl = document.createElement("div");
+        valEl.className = "big-bar-chart-bar-value";
+        valEl.textContent = count;
+
+        bar.appendChild(rect);
+        bar.appendChild(valEl);
+        bar.appendChild(labelEl);
+        barsWrap.appendChild(bar);
+      });
+
+      big.appendChild(axisY);
+      big.appendChild(axisX);
+      big.appendChild(barsWrap);
+      dimInner.appendChild(big);
+    }
+  }
+
+  const totalP = document.createElement("div");
+  totalP.style.fontSize = "0.72rem";
+  totalP.style.marginTop = "8px";
+  totalP.textContent = `סה״כ תקלות במערכת: ${totalTickets}`;
+  dimInner.appendChild(totalP);
+
+  dimCard.appendChild(dimInner);
+  grid.appendChild(dimCard);
+
+  inner.appendChild(grid);
+
+  // ---------- Top פותחי תקלות (רשימה תחתונה) ----------
+
+  const topCard = document.createElement("div");
+  topCard.className = "top-list";
+  topCard.style.marginTop = "10px";
+
+  const tTitle = document.createElement("div");
+  tTitle.className = "analytics-extra-card-title";
+  tTitle.textContent = "Top פותחי תקלות (עד 5)";
+  topCard.appendChild(tTitle);
+
+  const sortedCreators = Object.entries(byCreator)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  if (!sortedCreators.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "אין עדיין תקלות.";
+    topCard.appendChild(empty);
+  } else {
+    sortedCreators.forEach(([name, count], idx) => {
+      const row = document.createElement("div");
+      row.className = "top-row";
+      row.innerHTML = `
+        <div class="top-row-rank">${idx + 1}.</div>
+        <div class="top-row-name">${name}</div>
+        <div class="top-row-count">${count}</div>
+      `;
+      topCard.appendChild(row);
+    });
+  }
+
+  inner.appendChild(topCard);
+
+  card.appendChild(inner);
+  return card;
+}
+
+
+ /* ===================== ROLE APPROVES ======================== */
+    function renderRoleApprovalView() {
+  const card = document.createElement("div");
+  card.className = "card";
+  const inner = document.createElement("div");
+  inner.className = "card-content";
+
+  const isOwner = currentUser?.role === ROLE.OWNER;
+  if (!isOwner) {
+    inner.innerHTML = `<div class="empty-state">אין לך הרשאה למסך הזה.</div>`;
+    card.appendChild(inner);
+    return card;
+  }
+
+  const pending = users
+    .filter(u => (u.roleStatus === "Pending") && (u.requestedRole && u.requestedRole !== u.role))
+    .sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+  inner.innerHTML = `
+    <div class="card-header">
+      <div>
+        <div class="card-title">אישור תפקידי משתמשים</div>
+        <div class="card-subtitle">בקשות שממתינות לאישור</div>
+      </div>
+    </div>
+  `;
+
+  if (!pending.length) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "אין כרגע בקשות ממתינות.";
+    inner.appendChild(empty);
+    card.appendChild(inner);
+    return card;
+  }
+
+  const table = document.createElement("table");
+  table.className = "table";
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>שם</th>
+        <th>אימייל</th>
+        <th>חטיבה</th>
+        <th>תפקיד נוכחי</th>
+        <th>מבוקש</th>
+        <th>פעולות</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  `;
+
+  const tbody = table.querySelector("tbody");
+
+  pending.forEach(u => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${u.fullName || "—"}</td>
+      <td style="font-family:monospace;">${u.email || "—"}</td>
+      <td>${u.unit || "—"}</td>
+      <td>${roleLabel(u.role)}</td>
+      <td><strong>${roleLabel(u.requestedRole)}</strong></td>
+      <td>
+        <button class="btn btn-primary" data-act="approve" style="padding:4px 10px;font-size:0.72rem;">אישור</button>
+        <button class="btn btn-ghost" data-act="reject" style="padding:4px 10px;font-size:0.72rem;">דחייה</button>
+      </td>
+    `;
+
+    const approveBtn = tr.querySelector('[data-act="approve"]');
+    const rejectBtn = tr.querySelector('[data-act="reject"]');
+
+    approveBtn.addEventListener("click", async () => {
+      const { error } = await supabase.from("users").update({
+        role: u.requestedRole,
+        role_status: "Approved",
+      }).eq("id", u.id);
+
+      if (error) return alert("שגיאה באישור: " + error.message);
+
+      await loadAllData();
+      showToast("המשתמש אושר ועודכן");
+      render();
+    });
+
+    rejectBtn.addEventListener("click", async () => {
+      const { error } = await supabase.from("users").update({
+        role_status: "Rejected",
+      }).eq("id", u.id);
+
+      if (error) return alert("שגיאה בדחייה: " + error.message);
+
+      await loadAllData();
+      showToast("הבקשה נדחתה");
+      render();
+    });
+
+    tbody.appendChild(tr);
+  });
+
+  inner.appendChild(table);
+  card.appendChild(inner);
+  return card;
+}
+
+
+
+  // === PROFILE VIEW ===
+  function renderProfileView() {
+    const card = document.createElement("div");
+    card.className = "card";
+    const inner = document.createElement("div");
+    inner.className = "card-content";
+
+    const isOwner = currentUser.role === ROLE.OWNER;
+
+    inner.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="card-title">הפרופיל שלי</div>
+          <div class="card-subtitle">
+            עדכון פרטים ובקשת תפקיד.
+          </div>
+        </div>
+      </div>
+      <form id="profile-form" style="margin-top:8px;">
+        <div class="grid-2cols">
+          <div>
+            <label class="field-label">שם מלא</label>
+            <input class="input" name="fullName" required value="${
+              currentUser.fullName || ""
+            }" />
+          </div>
+          <div>
+            <label class="field-label">טלפון</label>
+            <input class="input" name="phone" required value="${
+              currentUser.phone || ""
+            }" />
+          </div>
+        </div>
+        <div style="margin-top:6px;">
+
+        <label class="field-label">חטיבה (אופציונלי)</label>
+        <select class="select" name="unitId">
+          <option value="">ללא חטיבה</option>
+          ${(units || []).map(u => `
+            <option value="${u.id}" ${currentUser.unitId === u.id ? "selected" : ""}>
+              ${u.name}
+            </option>
+          `).join("")}
+        </select>
+
+        </div>
+        <hr style="border:none;border-bottom:1px solid rgba(30,41,59,0.9);margin:10px 0 8px;" />
+        <div class="grid-2cols">
+          <div>
+            <label class="field-label">אימייל</label>
+            <input class="input" value="${currentUser.email}" disabled />
+          </div>
+          <div>
+            <label class="field-label">תפקיד נוכחי</label>
+            <input class="input" value="${roleLabel(
+              currentUser.role
+            )}" disabled />
+          </div>
+        </div>
+        <div style="margin-top:6px;">
+          <label class="field-label">בקשה לתפקיד</label>
+          <select class="select" name="requestedRole" ${
+            isOwner ? "disabled" : ""
+          }>
+            ${SELECTABLE_ROLES.map(
+              (r) => `
+                <option value="${r}" ${
+                currentUser.requestedRole === r ? "selected" : ""
+              }>
+                  ${roleLabel(r)}
+                </option>`
+            ).join("")}
+          </select>
+          <div class="card-subtitle" style="margin-top:3px;">
+            ${
+              isOwner
+                ? 'כבעלים אין שינוי תפקיד – אתה נשאר "בעלים".'
+                : currentUser.roleStatus === "Pending"
+                ? "בקשת התפקיד שלך ממתינה לאישור בעלים."
+                : currentUser.roleStatus === "Rejected"
+                ? "הבקשה נדחתה. שינוי כאן יפתח בקשה חדשה."
+                : "שינוי כאן ישלח בקשה חדשה לאישור."
+            }
+          </div>
+        </div>
+        <div style="margin-top:8px;">
+          <label class="field-label">סטטוס בקשת תפקיד</label>
+          <input class="input" value="${
+            currentUser.roleStatus === "Approved"
+              ? "מאושר"
+              : currentUser.roleStatus === "Rejected"
+              ? "נדחה"
+              : "ממתין לאישור"
+          }" disabled />
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;">
+          <button type="button" class="btn btn-ghost" id="profile-cancel">ביטול</button>
+          <button type="submit" class="btn btn-primary">שמירת פרופיל</button>
+        </div>
+      </form>
+    `;
+
+    card.appendChild(inner);
+
+    const form = inner.querySelector("#profile-form");
+    inner
+      .querySelector("#profile-cancel")
+      .addEventListener("click", () => navigate("HOME_MAIN"));
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const fullName = form.fullName.value.trim();
+      const phone = form.phone.value.trim();
+      const unitId = form.unitId.value || null;
+      const unitName = unitId ? (units.find(u => u.id === unitId)?.name || "") : "";
+      const newRequestedRole = isOwner
+        ? currentUser.requestedRole
+        : form.requestedRole.value;
+
+      let roleStatus = currentUser.roleStatus;
+      if (!isOwner && newRequestedRole !== currentUser.role) {
+        // בקשה חדשה
+        roleStatus = "Pending";
+      }
+
+      const { error } = await supabase
+      .from("users")
+      .update({
+        full_name: fullName,
+        phone,
+        unit_id: unitId,     // ✅ הבחירה האמיתית
+        unit: unitName,      // אופציונלי: לשמירה אחורה/תצוגה ישנה
+        requested_role: newRequestedRole,
+        role_status: roleStatus,
+      })
+      .eq("id", currentUser.id);
+
+
+      if (error) {
+        alert("שגיאה בעדכון פרופיל: " + error.message);
+        return;
+      }
+
+      await loadAllData();
+      showToast("הפרופיל עודכן");
+      navigate("HOME_MAIN");
+    });
+    
+    return card;
+  }
+
+  // === BOOTSTRAP ===
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    await loadAllData();  // טוען משתמש, users, tickets וכו'
+    render();             // מצייר או מסך התחברות או את האפליקציה
+  } catch (err) {
+    console.error("bootstrap error:", err);
+    alert("קרתה שגיאה בטעינת האפליקציה: " + err.message);
+  }
+});
+
+</script>
+</body>
+</html>
