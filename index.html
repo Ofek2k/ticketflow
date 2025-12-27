@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>TicketFlow - מערכת תקלות</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <style>
     :root {
       --bg: #080815;
@@ -1417,6 +1417,8 @@
     font-weight: 700;
     }
 
+
+
     .th-filter-btn.th-filter-active:hover {
     color: #f973c2;
     }
@@ -1431,6 +1433,177 @@
       font-size: 0.65rem;
       color: white;
     }
+
+/* ===== Responsive foundation ===== */
+:root{
+  --container-max: 1200px;
+  --gutter: 16px;
+}
+
+html, body { height: 100%; }
+body { overflow-x: hidden; }
+
+.container,
+.page,
+.app-shell,
+main {
+  width: min(var(--container-max), calc(100% - (var(--gutter) * 2)));
+  margin-inline: auto;
+}
+
+/* טקסטים שיתכווצו יפה */
+.card-title { font-size: clamp(1.0rem, 1.2vw + 0.6rem, 1.35rem); }
+.card-subtitle { font-size: clamp(0.85rem, 0.6vw + 0.65rem, 1.0rem); }
+
+/* כפתורים ושדות */
+button, input, select, textarea {
+  max-width: 100%;
+}
+
+/* תמונות/מדיה */
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* טבלאות/רשימות רחבות */
+.table-wrap, .overflow-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ===== Grid adjustments you already use ===== */
+/* ברירת מחדל: דסקטופ 2 עמודות */
+.chart-grid-2{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* טאבלט: עדיין 2, אבל יותר מרווח */
+@media (max-width: 1024px){
+  :root{ --gutter: 14px; }
+  .chart-grid-2{ gap: 10px; }
+}
+
+/* טלפון: יורד לעמודה אחת */
+@media (max-width: 720px){
+  :root{ --gutter: 12px; }
+  .chart-grid-2{
+    grid-template-columns: 1fr;
+  }
+
+  /* תפריטים/שורת כלים שלא יישברו */
+  .analytics-header-tools { margin-top: 8px; }
+}
+
+/* טלפון קטן מאוד */
+@media (max-width: 390px){
+  :root{ --gutter: 10px; }
+  .card { border-radius: 14px; }
+}
+.analytics-kpi-row{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 900px){
+  .analytics-kpi-row{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px){
+  .analytics-kpi-row{
+    grid-template-columns: 1fr;
+  }
+}
+/* קונטיינר – על טאבלט/מובייל מבטל "מקסימום רוחב" כדי שלא יראה צר */
+@media (max-width: 1024px){
+  .container, .page, .app-shell, main, .content, .wrap {
+    width: calc(100% - 24px) !important;
+    max-width: none !important;
+  }
+}
+/* קונטיינר – על טאבלט/מובייל מבטל "מקסימום רוחב" כדי שלא יראה צר */
+@media (max-width: 1024px){
+  .container, .page, .app-shell, main, .content, .wrap {
+    width: calc(100% - 24px) !important;
+    max-width: none !important;
+  }
+}
+/* בסיס נכון למסך: לא "נועלים" גובה קשיח שמייצר שטחים ריקים */
+html, body { height: auto; }
+body { min-height: 100dvh; overflow-x: hidden; }
+
+/* אם יש לך wrapper ראשי של האפליקציה */
+#app, .app, .app-root, .layout, .shell {
+  min-height: 100dvh;
+  height: auto !important;
+}
+/* גובה תפריט תחתון – תתאים אם אצלך הוא גדול/קטן */
+:root { --bottom-nav-h: 74px; }
+
+main, .main, .content, .page-content {
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom)) !important;
+}
+/* ביטול forced full-height שגורם לשטח שחור */
+body, html {
+  height: auto !important;
+}
+
+.app, .app-shell, .layout, .page, main {
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+:root {
+  --bottom-nav-h: 72px; /* תואם לגובה התפריט שלך */
+}
+
+main, .page, .content {
+  padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom)) !important;
+}
+
+.background, .bg, .bg-layer, .page-bg {
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+/* Mobile: app takes full width */
+@media (max-width: 768px) {
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* החלף כאן את ה-wrapper הראשי שלך אם השם שונה */
+  .app, .app-shell, .layout, main {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* שהכרטיסים יתפסו רוחב מלא */
+  .card, .card-content {
+    width: 100% !important;
+  }
+}
+body { display:flex; justify-content:center; }
+@media (max-width: 768px) {
+  body {
+    display: block !important;
+  }
+}
+@media (max-width: 768px) {
+  .app, .app-shell, .layout {
+    transform: none !important;
+    zoom: 1 !important;
+  }
+}
+
+
   </style>
 </head>
 <body>
