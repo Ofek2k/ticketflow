@@ -1602,6 +1602,10 @@ body { display:flex; justify-content:center; }
     zoom: 1 !important;
   }
 }
+.pie-slice:hover,
+.pie-slice.is-active {
+  transform: translate(var(--dx, 0px), var(--dy, 0px));
+}
 
 
   </style>
@@ -3776,6 +3780,53 @@ function renderAnalyticsView() {
 
         svg.appendChild(circle);
       } else {
+        
+             // ===== Tap-to-pop on mobile (and click on desktop) =====
+      svg.style.touchAction = "manipulation";
+
+      let activeSlice = null;
+
+      function setActiveSlice(el) {
+        if (activeSlice && activeSlice !== el) {
+          activeSlice.classList.remove("is-active");
+        }
+        activeSlice = el;
+        if (activeSlice) activeSlice.classList.add("is-active");
+      }
+
+      function clearActiveSlice() {
+        if (activeSlice) activeSlice.classList.remove("is-active");
+        activeSlice = null;
+      }
+
+      // לחיצה/טאצ' על פלח => מפעיל את אותה אנימציה כמו hover
+      svg.addEventListener(
+        "pointerdown",
+        (e) => {
+          const slice =
+            e.target && e.target.closest ? e.target.closest(".pie-slice") : null;
+          if (!slice) return;
+
+          if (slice.classList.contains("is-active")) {
+            slice.classList.remove("is-active");
+            activeSlice = null;
+          } else {
+            setActiveSlice(slice);
+          }
+
+          // מונע zoom/selection מוזר באייפון
+          e.preventDefault();
+        },
+        { passive: false }
+      );
+
+      // טאצ' מחוץ לגרף => מבטל בחירה
+      document.addEventListener("pointerdown", (e) => {
+        if (!svg.contains(e.target)) clearActiveSlice();
+      });
+ 
+        
+        
         let currentAngle = -90; // מתחילים למעלה (12:00)
         const rad = (deg) => (deg * Math.PI) / 180;
 
