@@ -2829,7 +2829,7 @@ function getTimelineData(days = 14) {
     } else if (activePage === "PROFILE") {
       viewShell.appendChild(renderProfileView());
     }
-    <button onclick="enablePush()" class="btn">הפעל התראות</button>
+
     const canSeeAnalytics =
       currentUser.role === ROLE.OWNER ||
       currentUser.role === ROLE.MANAGER ||
