@@ -1,6 +1,6 @@
 /* /sw.js */
 
-self.addEventListener("install", (event) => {
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
@@ -9,56 +9,25 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("push", (event) => {
+  // Expect JSON payload: { title, body, url }
   let data = { title: "TicketFlow", body: "", url: "/" };
 
-  if (event.data) {
-    try {
-      data = event.data.json();
-    } catch {
-      data.body = event.data.text();
-    }
+  try {
+    if (event.data) data = { ...data, ...event.data.json() };
+  } catch (e) {
+    // If payload isn't JSON, show a generic message
+    data.body = "New notification";
   }
 
   event.waitUntil(
     self.registration.showNotification(data.title || "TicketFlow", {
       body: data.body || "",
       data: { url: data.url || "/" },
-      // אופציונלי:
       // icon: "/icon-192.png",
       // badge: "/badge-72.png",
     })
   );
 });
-
-self.addEventListener("push", (event) => {
-  let data = {};
-  try { data = event.data ? event.data.json() : {}; }
-  catch { data = { title: "TicketFlow", body: event.data?.text?.() || "" }; }
-
-  const title = data.title || "TicketFlow";
-  const options = {
-    body: data.body || "",
-    data: { url: data.url || "/" },
-  };
-
-  event.waitUntil(self.registration.showNotification(title, options));
-});
-
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  const url = event.notification?.data?.url || "/";
-
-  event.waitUntil((async () => {
-    const all = await clients.matchAll({ type: "window", includeUncontrolled: true });
-    for (const c of all) {
-      if ("focus" in c) return c.focus();
-    }
-    return clients.openWindow(url);
-  })());
-});
-
-
-
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
@@ -66,9 +35,14 @@ self.addEventListener("notificationclick", (event) => {
 
   event.waitUntil(
     (async () => {
-      const allClients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-      const existing = allClients.find((c) => c.url.includes(url) && "focus" in c);
-      if (existing) return existing.focus();
+      const all = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+
+      // focus any open window/tab
+      for (const c of all) {
+        if ("focus" in c) return c.focus();
+      }
+
+      // otherwise open
       if (self.clients.openWindow) return self.clients.openWindow(url);
     })()
   );
