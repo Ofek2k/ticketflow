@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <title>TicketFlow - מערכת תקלות</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#020617">
+
   <style>
     :root {
       --bg: #080815;
@@ -2022,42 +2025,74 @@ async function loadCurrentUserProfile() {
     };
   }
 
+const PUSH_WORKER_BASE = "https://ticketflow-push.galaxyskin350.workers.dev";
 
-  const PUSH_WORKER_BASE = "https://ticketflow-push.galaxyskin350.workers.dev";
-async function enablePushForThisDevice() {
-  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-    alert("הדפדפן לא תומך Push.");
-    return;
-  }
-
-  const reg = await navigator.serviceWorker.register("/sw.js");
-
-  const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json());
-
-  const sub = await reg.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(publicKey),
-  });
-
-  await fetch(`${PUSH_WORKER_BASE}/subscribe`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      userId: "anonymous", // בהמשך נחליף ל-userId אמיתי מהמערכת
-      subscription: sub,
-    }),
-  });
-
-  alert("✅ נרשמת להתראות במכשיר הזה!");
-}
-
-// helper
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = atob(base64);
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
+
+async function getOrRegisterSW() {
+  const reg = await navigator.serviceWorker.register("/sw.js");
+  return reg;
+}
+
+async function ensurePushAutoForUser(userId) {
+  // כבר שמרנו בעבר? (כדי שלא יציק כל כניסה)
+  const saved = localStorage.getItem("tf_push_enabled") === "1";
+  const savedFor = localStorage.getItem("tf_push_user") || "";
+
+  // אם המשתמש התחלף – נרשום מחדש לפי userId החדש
+  const userChanged = savedFor && savedFor !== String(userId);
+
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+
+  // אם כבר מאושר ושמור ולא התחלף משתמש – לא מציקים
+  if (saved && !userChanged && Notification.permission === "granted") {
+    return;
+  }
+
+  // אם כבר חסום – לא נטרטר
+  if (Notification.permission === "denied") {
+    return;
+  }
+
+  // 1) בקשת הרשאה (רק פעם אחת, אם זה default)
+  if (Notification.permission === "default") {
+    const res = await Notification.requestPermission();
+    if (res !== "granted") return;
+  }
+
+  // 2) רישום SW + subscription (או קיים)
+  const reg = await getOrRegisterSW();
+  let sub = await reg.pushManager.getSubscription();
+
+  if (!sub || userChanged) {
+    const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json());
+
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
+    });
+  }
+
+  // 3) לשלוח ל-Worker ולשמור לפי userId אמיתי
+  await fetch(`${PUSH_WORKER_BASE}/subscribe`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      userId: String(userId),
+      subscription: sub,
+    }),
+  });
+
+  // 4) לסמן לוקאלית שלא נבקש שוב
+  localStorage.setItem("tf_push_enabled", "1");
+  localStorage.setItem("tf_push_user", String(userId));
+}
+
 
   // === LOAD DATA FROM SUPABASE ===
 // === LOAD DATA FROM SUPABASE ===
@@ -2103,6 +2138,10 @@ async function loadAllData() {
     // 3) המשתמש הנוכחי מתוך users לפי auth_user_id
     currentUser =
       users.find((u) => u.authUserId === authUser.id) || null;
+      // ✅ Push Auto גם כשיש session קיים
+    if (currentUser) {
+      ensurePushAutoForUser(currentUser.id).catch(console.error);
+    }
 
     // אם לא מצאנו – נמשיך בלי קריסה, אבל זה מה שמדליק את ההודעה שלך
     if (!currentUser) {
@@ -2422,6 +2461,11 @@ function getTimelineData(days = 14) {
 
       await loadAllData();
 
+      if (currentUser) {
+        ensurePushAutoForUser(currentUser.id).catch(console.error);
+      }
+
+
       if (!currentUser) {
         alert("נכנסת עם משתמש Auth אבל אין רשומה בטבלת users. תוודא שהמשתמש קיים שם.");
         return;
@@ -2565,8 +2609,12 @@ function getTimelineData(days = 14) {
       }
 
       await loadAllData();
+      if (currentUser) {
+        ensurePushAutoForUser(currentUser.id).catch(console.error);
+      }
       showToast("פרטי הפרופיל נשמרו");
       render();
+
     });
   }
 
@@ -2688,6 +2736,60 @@ function getTimelineData(days = 14) {
 
     return div;
   }
+
+async function pushTicketShort({ workerBaseUrl, userIds, ticketId, kind }) {
+  const map = {
+    created: `נפתח טיקט #${ticketId}`,
+    assigned: `הטיקט הוקצה (#${ticketId})`,
+    comment: `הערה חדשה בטיקט #${ticketId}`,
+    updated: `עודכן טיקט #${ticketId}`,
+  };
+
+  const msg = map[kind] || `עדכון בטיקט #${ticketId}`;
+
+  // Dedup + remove empties
+  const clean = Array.from(new Set((userIds || []).map(x => String(x || "").trim()))).filter(Boolean);
+  if (!clean.length) return;
+
+  await fetch(`${workerBaseUrl}/sendUsers`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      userIds: clean,
+      title: "TicketFlow",
+      body: msg,
+      url: `/?ticket=${encodeURIComponent(ticketId)}`,
+    }),
+  });
+}
+
+function getNotifyUserIdsForTicket(ticket, kind) {
+  const ids = new Set();
+
+  // תמיד: פותח התקלה
+  if (ticket?.createdByUserId) ids.add(String(ticket.createdByUserId));
+
+  // תמיד: בעלים + מנהלים
+  (users || []).forEach(u => {
+    if (u?.isFrozen) return;
+    if (u?.role === ROLE.OWNER || u?.role === ROLE.MANAGER) ids.add(String(u.id));
+  });
+
+  // מי שמטפל (תפקיד/יוזר מוקצה)
+  if (ticket?.assignedUserId) ids.add(String(ticket.assignedUserId));
+  else if (ticket?.assignedRole) {
+    (users || []).forEach(u => {
+      if (u?.isFrozen) return;
+      if (u?.role === ticket.assignedRole) ids.add(String(u.id));
+    });
+  }
+
+  // לא לשלוח לעצמי? (אם בא לך)
+  // ids.delete(String(currentUser?.id));
+
+  return Array.from(ids);
+}
+
 
   function renderMain() {
     const div = document.createElement("main");
@@ -3083,6 +3185,18 @@ function getTimelineData(days = 14) {
         .insert(auditRow);
       if (auditErr) console.error("audit create error", auditErr);
 
+      // ✅ Push על פתיחת טיקט
+      try {
+        const notifyIds = getNotifyUserIdsForTicket(mapTicketRow(inserted), "created");
+        await pushTicketShort({
+          workerBaseUrl: PUSH_WORKER_BASE,
+          userIds: notifyIds,
+          ticketId: inserted.ticket_number || inserted.id,
+          kind: "created",
+        });
+      } catch (e) {
+        console.warn("push created failed:", e);
+      }
       await loadAllData();
       showToast("התקלה נפתחה בהצלחה");
       navigate("TICKET_DETAILS", { ticketId: inserted.id });
@@ -3369,7 +3483,24 @@ function getTimelineData(days = 14) {
           .insert(auditRows);
         if (auditErr) console.error("audit update error", auditErr);
       }
+      // ✅ Push על עדכון טיקט
+      try {
+        // בונים "ticket" חדש ל-notify לפי מה שהולך להתעדכן
+        const updatedTicketLike = { ...ticket, ...updates };
+        const notifyIds = getNotifyUserIdsForTicket(updatedTicketLike, "updated");
 
+        let kind = "updated";
+        if (updates.assigned_role) kind = "assigned";
+
+        await pushTicketShort({
+          workerBaseUrl: PUSH_WORKER_BASE,
+          userIds: notifyIds,
+          ticketId: ticket.ticketNumber || ticket.id,
+          kind,
+        });
+      } catch (e) {
+        console.warn("push update failed:", e);
+      }
       await loadAllData();
       showToast("השינויים נשמרו");
       navigate("TICKET_DETAILS", { ticketId: ticket.id });
@@ -3419,6 +3550,18 @@ commentForm.addEventListener("submit", async (e) => {
   if (auditErr) console.error("audit comment error", auditErr);
 
   textarea.value = ""; // ✅ שלא יישאר טקסט
+  // ✅ Push על הערה חדשה
+  try {
+    const notifyIds = getNotifyUserIdsForTicket(ticket, "comment");
+    await pushTicketShort({
+      workerBaseUrl: PUSH_WORKER_BASE,
+      userIds: notifyIds,
+      ticketId: ticket.ticketNumber || ticket.id,
+      kind: "comment",
+    });
+  } catch (e) {
+    console.warn("push comment failed:", e);
+  }
   await loadAllData();
   showToast("ההערה נוספה");
   navigate("TICKET_DETAILS", { ticketId: ticket.id });
@@ -3427,6 +3570,68 @@ commentForm.addEventListener("submit", async (e) => {
     return wrap;
   }
 
+const PUSH_BASE = "https://ticketflow-push.galaxyskin350.workers.dev";
+const PUSH_USER_ID = "ofecyacovi@gmail.com";
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function registerSW() {
+  if (!("serviceWorker" in navigator)) return null;
+  const reg = await navigator.serviceWorker.register("/sw.js");
+  await navigator.serviceWorker.ready;
+  return reg;
+}
+
+async function ensurePushSubscribed(userId) {
+  const reg = await registerSW();
+  if (!reg) throw new Error("Service Worker not registered");
+
+  const perm = await Notification.requestPermission();
+  if (perm !== "granted") throw new Error("Permission not granted");
+
+  // אם כבר יש subscription – לא לעשות שוב
+  let sub = await reg.pushManager.getSubscription();
+  if (sub) return { ok: true, already: true };
+
+  // לקחת VAPID public key מהוורקר
+  const pkRes = await fetch(`${PUSH_BASE}/publicKey`);
+  const pkJson = await pkRes.json();
+  if (!pkJson?.publicKey) throw new Error("Missing publicKey");
+
+  sub = await reg.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: urlBase64ToUint8Array(pkJson.publicKey),
+  });
+
+  // לשמור ב-KV דרך הוורקר
+  const saveRes = await fetch(`${PUSH_BASE}/subscribe`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ userId, subscription: sub }),
+  });
+
+  const saveJson = await saveRes.json();
+  if (!saveJson?.ok) throw new Error("Subscribe save failed: " + JSON.stringify(saveJson));
+
+  return { ok: true, already: false, key: saveJson.key };
+}
+
+// להפעיל אוטומטית כשהדף נטען
+window.addEventListener("load", async () => {
+  try {
+    const r = await ensurePushSubscribed(PUSH_USER_ID);
+    console.log("Push OK:", r);
+  } catch (e) {
+    console.warn("Push failed:", e.message);
+  }
+});
 
 function makeLocalDateKey(dateLike) {
   const d = (dateLike instanceof Date) ? dateLike : new Date(dateLike);
