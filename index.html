@@ -4353,5 +4353,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   // כפתור זמני להפעלה
   window.enablePush = enablePush;
 </script>
+<script>
+(async () => {
+  if (!("serviceWorker" in navigator)) return;
+
+  const reg = await navigator.serviceWorker.register("/sw.js");
+  console.log("SW registered:", reg.scope);
+
+  // חשוב: אם זו פעם ראשונה, צריך רענון כדי שיהיה controller
+  if (!navigator.serviceWorker.controller) {
+    console.log("No controller yet -> reload once");
+    location.reload();
+  }
+})();
+</script>
 </body>
 </html>
