@@ -283,19 +283,23 @@
 
   // === REALTIME SETUP ===
   function setupRealtime() {
-    supabase.channel('public:tickets')
+    console.log("Setting up Realtime...");
+    
+    const channel = supabase.channel('public:tickets')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async (payload) => {
-        // רענון מידע רק אם זה לא אני שביצעתי את השינוי (למניעת הבהוב) או שזה אירוע חיצוני
-        // לשיפור חוויה, כאן נרענן תמיד כדי לראות שינויים של אחרים מיד
+        console.log("Ticket changed!", payload);
         await loadData();
         render();
         showToast("הנתונים התעדכנו", "refresh-cw");
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ticket_comments' }, async (payload) => {
+        console.log("Comment changed!", payload);
         await loadData();
-        render(); // יעדכן את הצ'אט אם פתוח
+        render();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Realtime status:", status);
+      });
   }
 
   function render() {
@@ -333,6 +337,7 @@
         const { error } = await supabase.auth.signInWithPassword({ email: form.email.value, password: form.password.value });
         if(error) throw error;
         await loadData();
+        setupRealtime();
         render();
       });
     };
@@ -370,6 +375,7 @@
       await withLoader(document.querySelector(".login-box"), async () => {
         await supabase.from("users").update({ full_name: e.target.fullName.value, phone: e.target.phone.value, unit: e.target.unit.value, role_status: "Pending" }).eq("id", currentUser.id);
         await loadData();
+        setupRealtime();
         render();
       });
     };
@@ -497,6 +503,7 @@
           }).select().single();
           if(error) throw error;
           await supabase.from("audits").insert({ ticket_id: t.id, field: "CREATE", new_value: t.title, changed_by_name: currentUser.fullName });
+          // תוקן: שולח התראה רק לאחרים, לא ליוצר עצמו (currentUser.id)
           pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: num, kind: "created" });
           await loadData();
           showToast("התקלה נפתחה בהצלחה!");
@@ -579,6 +586,7 @@
         e.preventDefault();
         await withLoader(cf.parentNode, async () => {
           await supabase.from("ticket_comments").insert({ ticket_id: t.id, content: cf.txt.value, author_user_id: currentUser.id, author_name: currentUser.fullName, author_role: currentUser.role });
+          // תוקן: לא שולח לעצמך
           pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: t.ticketNumber, kind: "comment" });
           await loadData();
           renderPage();
@@ -741,13 +749,22 @@
   async function ensurePushAutoForUser(userId) { if(!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
   async function pushTicketShort({ userIds, ticketId, kind }) { await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: [...new Set(userIds.map(String).filter(Boolean))], title: "TicketFlow", body: `עדכון בטיקט #${ticketId}`, url: `/?ticket=${ticketId}` }) }); }
   
+  // התיקון הקריטי: סינון מי שמקבל התראות
   function getNotifyUserIdsForTicket(ticket, actingUserId) {
     const ids = new Set();
+    // 1. היוצר (אם הוא לא זה שמבצע את הפעולה כרגע)
     if(ticket.createdByUserId && ticket.createdByUserId !== actingUserId) ids.add(ticket.createdByUserId);
+    
+    // 2. האחראי הספציפי
     if(ticket.assignedUserId && ticket.assignedUserId !== actingUserId) ids.add(ticket.assignedUserId);
+    
+    // 3. תפקיד אחראי (למשל HATAP) - רק אם לא מוקצה לאדם ספציפי
     else if (ticket.assignedRole) {
         users.forEach(u => {
-            if(u.role === ticket.assignedRole && !u.isFrozen && u.id !== actingUserId) ids.add(u.id);
+            // רק אם המשתמש הוא בתפקיד, לא מוקפא, והוא לא המשתמש שמבצע את הפעולה
+            if(u.role === ticket.assignedRole && !u.isFrozen && u.id !== actingUserId) {
+                ids.add(u.id);
+            }
         });
     }
     return [...ids];
