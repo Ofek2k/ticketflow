@@ -747,26 +747,57 @@
 
   function urlBase64ToUint8Array(base64String) { const padding = "=".repeat((4 - (base64String.length % 4)) % 4); const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/"); const rawData = atob(base64); return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0))); }
   async function ensurePushAutoForUser(userId) { if(!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
-  async function pushTicketShort({ userIds, ticketId, kind }) { await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: [...new Set(userIds.map(String).filter(Boolean))], title: "TicketFlow", body: `עדכון בטיקט #${ticketId}`, url: `/?ticket=${ticketId}` }) }); }
+// --- פונקציית שליחת התראה (גרסה נקייה) ---
+  async function pushTicketShort({ userIds, ticketId, kind }) {
+    // סינון כפילויות ומחרוזות ריקות
+    const cleanIds = [...new Set(userIds.map(String).filter(Boolean))];
+    
+    // אם אין למי לשלוח, עוצרים כאן
+    if (cleanIds.length === 0) return;
+
+    try {
+      await fetch(`${PUSH_WORKER_BASE}/sendUsers`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          userIds: cleanIds,
+          title: "TicketFlow",
+          body: kind === 'created' ? `תקלה חדשה #${ticketId}` : `עדכון בטיקט #${ticketId}`,
+          url: `/?ticket=${ticketId}`
+        })
+      });
+    } catch (err) {
+      console.error("Failed to send push:", err);
+    }
+  }
   
-  // התיקון הקריטי: סינון מי שמקבל התראות
+  // --- פונקציית חישוב למי לשלוח (גרסה מתוקנת) ---
   function getNotifyUserIdsForTicket(ticket, actingUserId) {
     const ids = new Set();
-    // 1. היוצר (אם הוא לא זה שמבצע את הפעולה כרגע)
-    if(ticket.createdByUserId && ticket.createdByUserId !== actingUserId) ids.add(ticket.createdByUserId);
+
+    // 1. תמיד לשלוח ליוצר התקלה (אם זה לא הוא שמבצע את הפעולה)
+    if(ticket.createdByUserId && ticket.createdByUserId !== actingUserId) {
+        ids.add(ticket.createdByUserId);
+    }
     
-    // 2. האחראי הספציפי
-    if(ticket.assignedUserId && ticket.assignedUserId !== actingUserId) ids.add(ticket.assignedUserId);
+    // 2. תמיד לשלוח לאחראי הישיר (אם קיים והוא לא המבצע)
+    if(ticket.assignedUserId && ticket.assignedUserId !== actingUserId) {
+        ids.add(ticket.assignedUserId);
+    }
     
-    // 3. תפקיד אחראי (למשל HATAP) - רק אם לא מוקצה לאדם ספציפי
+    // 3. שליחה לפי תפקיד (רק אם אין אחראי ספציפי)
+    // אם התקלה מוקצית ל-HATAP, נשלח לכל מי שהוא HATAP (חוץ ממי שמבצע את הפעולה)
     else if (ticket.assignedRole) {
         users.forEach(u => {
-            // רק אם המשתמש הוא בתפקיד, לא מוקפא, והוא לא המשתמש שמבצע את הפעולה
             if(u.role === ticket.assignedRole && !u.isFrozen && u.id !== actingUserId) {
                 ids.add(u.id);
             }
         });
     }
+
+    // הערה: אם תרצה שמנהלים יקבלו תמיד, תוסיף את השורה הזו:
+    // users.forEach(u => { if(u.role === 'MANAGER' && u.id !== actingUserId) ids.add(u.id); });
+
     return [...ids];
   }
 
