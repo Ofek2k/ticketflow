@@ -497,7 +497,6 @@
           }).select().single();
           if(error) throw error;
           
-          // --- FIX 1: Send all fields to audits AND ignore errors ---
           try {
               await supabase.from("audits").insert({ 
                   ticket_id: t.id, 
@@ -509,7 +508,6 @@
               });
           } catch (logErr) { console.warn("Log failed:", logErr); }
           
-          // --- FIX 2: Send push (robust) ---
           pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: num, kind: "created" });
           
           await loadData();
@@ -613,6 +611,14 @@
             </div>
             <div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא שיוך</option>${units.map(u=>`<option value="${u.id}" ${currentUser.unitId==u.id?'selected':''}>${escapeHtml(u.name)}</option>`).join('')}</select></div>
             <hr style="border:none;border-bottom:1px solid var(--border);margin:20px 0;"/>
+            
+            <div style="background: rgba(236, 72, 153, 0.1); padding: 15px; border-radius: 12px; border: 1px dashed #ec4899; margin-bottom: 20px; text-align: center;">
+                <div style="font-weight:bold; margin-bottom:8px; color:#ec4899;">בדיקת התראות לאייפון</div>
+                <button type="button" class="btn" style="width:100%; justify-content:center; background:#ec4899; color:white;" onclick="enableNotificationsManual()">
+                    <i data-lucide="bell"></i> לחץ כאן להפעלת התראות
+                </button>
+                <div style="font-size:0.75rem; margin-top:8px; opacity:0.7;">חובה ללחוץ כאן כדי לאשר הרשאה באייפון</div>
+            </div>
             <div class="field-group"><label class="label">אימייל</label><input class="input" value="${escapeHtml(currentUser.email)}" disabled /></div>
             <div class="grid-2cols">
                <div class="field-group"><label class="label">תפקיד נוכחי</label><input class="input" value="${roleLabel(currentUser.role)}" disabled /></div>
@@ -750,27 +756,27 @@
   // --- PUSH HELPERS ---
   function urlBase64ToUint8Array(base64String) { const padding = "=".repeat((4 - (base64String.length % 4)) % 4); const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/"); const rawData = atob(base64); return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0))); }
   async function ensurePushAutoForUser(userId) { if(!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
-  
   async function pushTicketShort({ userIds, ticketId, kind }) { 
-      // FIX 2: Safety check for empty list
+      // Safety check: if empty list, don't send
       const cleanIds = [...new Set(userIds.map(String).filter(Boolean))];
       if (cleanIds.length === 0) { console.log("No users to notify"); return; }
       
       await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: "TicketFlow", body: `עדכון בטיקט #${ticketId}`, url: `/?ticket=${ticketId}` }) }); 
   }
   
-function getNotifyUserIdsForTicket(ticket, actingUserId) {
+  // פונקציית ההתראות המלאה (עם כל התיקונים)
+  function getNotifyUserIdsForTicket(ticket, actingUserId) {
     const ids = new Set();
-
-    // תיקון: תמיכה גם בשמות משתנים מה-DB (עם קו תחתון) וגם מהאפליקציה
+    
+    // שליפת נתונים בטוחה (snake_case או camelCase)
     const creatorId = ticket.createdByUserId || ticket.created_by_user_id;
     const assigneeId = ticket.assignedUserId || ticket.assigned_user_id;
     const role = ticket.assignedRole || ticket.assigned_role;
 
-    console.group("🔍 דיבוג התאמת תפקידים (מתוקן)");
+    console.group("🔍 דיבוג התאמת תפקידים (סופי)");
     console.log(`🎯 תפקיד היעד: "${role}"`);
 
-    // 1. שליחה ליוצר
+    // 1. שליחה ליוצר התקלה
     if(creatorId && creatorId !== actingUserId) {
         ids.add(creatorId);
     }
@@ -778,7 +784,6 @@ function getNotifyUserIdsForTicket(ticket, actingUserId) {
     // 2. שליחה לפי תפקיד
     else if (role) {
         users.forEach(u => {
-            // התאמה לתפקיד + פעיל + לא אני
             if(u.role === role && !u.isFrozen && u.id !== actingUserId) {
                 ids.add(u.id);
                 console.log(`✅ נמצא משתמש מתאים: ${u.fullName} (${u.role})`);
@@ -789,14 +794,54 @@ function getNotifyUserIdsForTicket(ticket, actingUserId) {
     const finalIds = [...ids];
     console.log("📤 רשימה סופית:", finalIds);
     console.groupEnd();
-    
     return finalIds;
   }
+
+  // הפונקציה הידנית לאייפון (עם לוגים ברורים למשתמש)
+  async function enableNotificationsManual() {
+    try {
+      if (!("serviceWorker" in navigator)) { alert("❌ שגיאה: הדפדפן לא תומך ב-Service Worker"); return; }
+      if (!("PushManager" in window)) { alert("❌ שגיאה: האייפון לא מזהה תמיכה ב-Push. האם פתחת דרך מסך הבית?"); return; }
+
+      alert("⏳ מבקש הרשאה מאפל...");
+      const permission = await Notification.requestPermission();
+      alert(`📢 סטטוס הרשאה שהתקבל: ${permission}`);
+
+      if (permission !== 'granted') { alert("⚠️ המשתמש לא אישר או שההגדרות חוסמות."); return; }
+
+      alert("⏳ מנסה לייצר מפתח הצפנה (Subscribe)...");
+      const reg = await navigator.serviceWorker.ready;
+      let sub = await reg.pushManager.getSubscription();
+      
+      if (!sub) {
+          const res = await fetch(`${PUSH_WORKER_BASE}/publicKey`);
+          if(!res.ok) throw new Error("לא הצלחתי להביא מפתח ציבורי מהשרת");
+          const { publicKey } = await res.json();
+          const convertedKey = urlBase64ToUint8Array(publicKey);
+          sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey });
+      }
+
+      alert("✅ נוצר מנוי! שולח ל-Supabase...");
+      const saveRes = await fetch(`${PUSH_WORKER_BASE}/subscribe`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ userId: String(currentUser.id), subscription: sub })
+      });
+
+      if (saveRes.ok) alert("🎉 הצלחה! האייפון רשום. עכשיו נסה לשלוח לעצמך.");
+      else alert("❌ השרת החזיר שגיאה בשמירה: " + saveRes.status);
+
+    } catch (err) {
+      alert("💀 קרסה הפונקציה: " + err.message);
+      console.error(err);
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", async () => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
     await loadData();
     setupRealtime();
-    render();getNotifyUserIdsForTicket
+    render();
   });
 </script>
 </body>
