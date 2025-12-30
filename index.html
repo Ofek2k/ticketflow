@@ -759,23 +759,61 @@
       await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: "TicketFlow", body: `עדכון בטיקט #${ticketId}`, url: `/?ticket=${ticketId}` }) }); 
   }
   
-  function getNotifyUserIdsForTicket(ticket, actingUserId) {
+function getNotifyUserIdsForTicket(ticket, actingUserId) {
     const ids = new Set();
-    if(ticket.createdByUserId && ticket.createdByUserId !== actingUserId) ids.add(ticket.createdByUserId);
-    if(ticket.assignedUserId && ticket.assignedUserId !== actingUserId) ids.add(ticket.assignedUserId);
+
+    // --- לוג 1: הצגת כל המשתמשים במערכת ---
+    console.group("🔍 בדיקת מערכת התראות");
+    console.log("1. רשימת כל המשתמשים הקיימים במערכת:");
+    // מציג טבלה יפה עם שם ותפקיד בלבד
+    console.table(users.map(u => ({ 
+        Name: u.fullName, 
+        Role: u.role, 
+        ID: u.id,
+        IsFrozen: u.isFrozen
+    })));
+
+    // --- לוג 2: משתמשים עם התפקיד המבוקש ---
+    if (ticket.assignedRole) {
+        console.log(`2. התקלה מוקצית לתפקיד: "${ticket.assignedRole}"`);
+        const matchingUsers = users.filter(u => u.role === ticket.assignedRole);
+        
+        if (matchingUsers.length > 0) {
+            console.log(`   נמצאו ${matchingUsers.length} משתמשים עם התפקיד הזה:`);
+            console.table(matchingUsers.map(u => ({ Name: u.fullName, Role: u.role })));
+        } else {
+            console.warn(`⚠️ לא נמצאו משתמשים עם התפקיד "${ticket.assignedRole}"!`);
+        }
+    }
+
+    // --- הלוגיקה הרגילה (חישוב מי מקבל בפועל) ---
+    
+    // 1. שליחה ליוצר התקלה
+    if(ticket.createdByUserId && ticket.createdByUserId !== actingUserId) {
+        ids.add(ticket.createdByUserId);
+    }
+    
+    // 2. שליחה לפי תפקיד
     else if (ticket.assignedRole) {
         users.forEach(u => {
-            if(u.role === ticket.assignedRole && !u.isFrozen && u.id !== actingUserId) ids.add(u.id);
+            // התנאים: התפקיד תואם + לא מוקפא + לא אני עצמי
+            if(u.role === ticket.assignedRole && !u.isFrozen && u.id !== actingUserId) {
+                ids.add(u.id);
+            }
         });
     }
+
+    console.log("3. רשימת ה-IDs הסופית לשליחה:", [...ids]);
+    console.groupEnd();
+    
     return [...ids];
   }
-
+  
   document.addEventListener("DOMContentLoaded", async () => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
     await loadData();
     setupRealtime();
-    render();
+    render();getNotifyUserIdsForTicket
   });
 </script>
 </body>
