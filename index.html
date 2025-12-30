@@ -56,96 +56,112 @@
       border-inline-start: 1px solid var(--border);
       padding: 24px 20px; display: flex; flex-direction: column; gap: 24px; flex-shrink: 0;
     }
-    /* --- עיצוב מותאם לנייד (Bottom Navigation) --- */
+/* --- עיצוב פרימיום לנייד (Mobile App Style) --- */
 @media (max-width: 900px) {
   .app-root { 
     flex-direction: column; 
     height: 100vh; 
+    overflow: hidden; /* מונע גלילה כפולה */
   }
 
-  /* דחיפת התוכן למעלה כדי שלא יוסתר ע"י התפריט */
+  /* דוחפים את התוכן למעלה ומפנים מקום לתפריט */
   .main { 
-    padding: 20px; 
-    padding-bottom: 100px; /* רווח גדול למטה בשביל התפריט */
+    padding: 16px; 
+    padding-bottom: 100px; /* רווח גדול למטה כדי שהתוכן לא יוסתר */
+    width: 100%;
   }
 
   .sidebar {
-    position: fixed;        /* מקבע את התפריט למסך */
-    bottom: 0; left: 0; right: 0; /* מצמיד למטה */
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
     width: 100%;
     height: auto;
-    background: rgba(15, 23, 42, 0.95); /* צבע כהה עם שקיפות */
-    backdrop-filter: blur(12px);         /* אפקט זכוכית יוקרתי */
-    border-top: 1px solid rgba(255,255,255,0.1);
-    border-right: none;     /* ביטול הקו של המחשב */
     
-    /* סידור האלמנטים */
+    /* רקע כהה חצי-שקוף עם אפקט זכוכית */
+    background: rgba(15, 23, 42, 0.85); 
+    backdrop-filter: blur(20px);         
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    border-right: none;
+    
+    display: flex;
     flex-direction: row;
-    justify-content: space-around; /* מרווח שווה בין הכפתורים */
-    align-items: center;
-    padding: 10px 16px;
+    justify-content: space-around; /* פורס את הכפתורים לכל הרוחב */
+    align-items: flex-end;         /* מיישר לתחתית כדי שהכפתור הצף יבלוט */
+    padding: 12px 20px;
     
-    /* תמיכה באייפונים חדשים (Safe Area) */
-    padding-bottom: calc(10px + env(safe-area-inset-bottom));
-    z-index: 1000;
+    /* תמיכה ב-Safe Area של אייפון (הפס השחור למטה) */
+    padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    z-index: 9999;
+    box-shadow: 0 -4px 30px rgba(0,0,0,0.3); /* צל עדין כלפי מעלה */
   }
 
-  /* הסתרת אלמנטים שלא צריך בנייד */
-  .sidebar .brand, 
-  .sidebar .user-card, 
-  .sidebar .nav-label { 
-    display: none; 
-  }
+  /* הסתרת אלמנטים מיותרים */
+  .sidebar .brand, .sidebar .user-card, .sidebar .nav-label { display: none; }
+  .nav-group { display: contents; }
 
-  /* איחוד קבוצות הניווט */
-  .nav-group { 
-    display: contents; /* מבטל את הקבוצה ונותן לפריטים להסתדר בשורה אחת */
-  }
-
-  /* עיצוב הכפתורים עצמם */
+  /* כפתורי הניווט הרגילים */
   .nav-item {
-    flex-direction: column; /* אייקון מעל טקסט */
-    gap: 4px;
-    padding: 6px 0;
-    font-size: 0.65rem;     /* טקסט קטן */
-    background: transparent !important; /* ביטול רקע אפור */
-    width: 60px;            /* רווח לחיצה נוח */
-    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+    padding: 0;
+    background: transparent !important;
     border: none;
+    color: #64748b; /* צבע אפור לאייקונים לא פעילים */
+    font-size: 0.65rem;
+    font-weight: 500;
+    width: 60px;
+    height: 50px;
+    justify-content: center;
+    transition: all 0.3s ease;
   }
-
-  .nav-item:hover { transform: none; } /* ביטול אנימציית תזוזה בנייד */
-
+  
   .nav-item svg { 
     width: 24px; height: 24px; 
-    margin-bottom: 2px;
+    transition: transform 0.2s;
   }
 
-  /* הדגשה של כפתור פעיל - במקום רקע, נצבע את האייקון והטקסט */
+  /* מצב פעיל (Active) */
   .nav-item.active {
+    color: #ec4899; /* ורוד */
     background: transparent;
-    border: none;
   }
-  
-  .nav-item.active svg,
-  .nav-item.active span {
-    color: var(--accent);
-    filter: drop-shadow(0 0 8px rgba(236, 72, 153, 0.4));
+  .nav-item.active svg {
+    transform: translateY(-3px); /* קופץ קצת למעלה */
+    filter: drop-shadow(0 4px 10px rgba(236, 72, 153, 0.4)); /* זוהר */
   }
-  
-  /* טיפול מיוחד לכפתור "פתיחת תקלה" שיהיה בולט באמצע */
+
+  /* 🔥 כפתור "יצירת תקלה" המיוחד באמצע 🔥 */
   .nav-item[onclick*="CREATE"] {
-    position: relative;
-    top: -20px; /* מרים אותו למעלה */
+    position: absolute;
+    bottom: calc(20px + env(safe-area-inset-bottom)); /* צף מעל התפריט */
+    left: 50%;
+    transform: translateX(-50%); /* מרכוז בול באמצע */
+    
+    width: 58px; height: 58px;
+    border-radius: 50%; /* עיגול מושלם */
+    
+    /* גרדיאנט ורוד-סגול */
     background: linear-gradient(135deg, #ec4899, #8b5cf6) !important;
-    border-radius: 50%;
-    width: 48px; height: 48px;
-    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.5);
     color: white !important;
+    
+    /* אפקטים: צל זוהר ומסגרת "חיתוך" מהרקע */
+    box-shadow: 0 8px 20px rgba(236, 72, 153, 0.5);
+    border: 5px solid var(--bg); /* יוצר רווח מהתפריט */
+    
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10;
   }
-  .nav-item[onclick*="CREATE"] span { display: none; } /* מסתיר את הטקסט שלו */
-  .nav-item[onclick*="CREATE"] svg { width: 24px; height: 24px; margin: 0; color: white !important; }
+  
+  .nav-item[onclick*="CREATE"] svg { width: 28px; height: 28px; margin: 0; }
+  .nav-item[onclick*="CREATE"] span { display: none; } /* מעלים את הטקסט */
+  
+  /* לחיצה על כפתור הפלוס */
+  .nav-item[onclick*="CREATE"]:active { 
+    transform: translateX(-50%) scale(0.9); 
+  }
 }
+
 
     .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px; margin-bottom: 8px; }
     .brand img { width: 42px; height: 42px; filter: drop-shadow(0 0 10px rgba(236,72,153,0.4)); }
