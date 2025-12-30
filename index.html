@@ -262,6 +262,25 @@
     
     .grid-2cols { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; }
     @media(max-width:700px){ .grid-2cols { grid-template-columns: 1fr; gap: 20px; } }
+
+    /* אנימציית כניסה רכה לדפים */
+.page-animate {
+  animation: pageFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0; /* מתחיל נסתר */
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px); /* מתחיל קצת למטה */
+    filter: blur(2px); /* טשטוש קל בהתחלה למראה יוקרתי */
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
   </style>
 </head>
 <body>
@@ -452,8 +471,9 @@
     root.classList.toggle('menu-open');
   };
 
-  function renderApp() {
+function renderApp() {
     const root = document.getElementById("root");
+    
     root.innerHTML = `
       <div class="app-root">
         <header class="mobile-header">
@@ -462,7 +482,8 @@
              <img src="logo.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/906/906343.png'" style="width:32px;height:32px;">
              <span style="font-weight:800;font-size:1.1rem;color:white;">TicketFlow</span>
            </div>
-           <div style="width:32px;"></div> </header>
+           <div style="width:32px;"></div>
+        </header>
 
         <div class="sidebar-overlay" onclick="toggleMenu()"></div>
 
@@ -476,17 +497,17 @@
           
           <div class="nav-group">
             <div class="nav-label">ראשי</div>
-            <div class="nav-item ${activePage==='HOME'?'active':''}" onclick="nav('HOME'); toggleMenu()"><i data-lucide="layout-grid"></i><span>דשבורד</span></div>
-            <div class="nav-item ${activePage==='MY_TICKETS'?'active':''}" onclick="nav('MY_TICKETS'); toggleMenu()"><i data-lucide="list"></i><span>התקלות שלי</span></div>
-            <div class="nav-item ${activePage==='CREATE'?'active':''}" onclick="nav('CREATE'); toggleMenu()"><i data-lucide="plus-circle"></i><span>פתיחת תקלה</span></div>
+            <div class="nav-item ${activePage==='HOME'?'active':''}" onclick="nav('HOME')"><i data-lucide="layout-grid"></i><span>דשבורד</span></div>
+            <div class="nav-item ${activePage==='MY_TICKETS'?'active':''}" onclick="nav('MY_TICKETS')"><i data-lucide="list"></i><span>התקלות שלי</span></div>
+            <div class="nav-item ${activePage==='CREATE'?'active':''}" onclick="nav('CREATE')"><i data-lucide="plus-circle"></i><span>פתיחת תקלה</span></div>
           </div>
           
           <div class="nav-group">
             <div class="nav-label">ניהול</div>
-            ${['OWNER','MANAGER'].includes(currentUser.role) ? `<div class="nav-item ${activePage==='ALL_TICKETS'?'active':''}" onclick="nav('ALL_TICKETS'); toggleMenu()"><i data-lucide="layers"></i><span>כל התקלות</span></div>` : ''}
-            ${['OWNER','MANAGER','COMPANY_CMD'].includes(currentUser.role) ? `<div class="nav-item ${activePage==='ANALYTICS'?'active':''}" onclick="nav('ANALYTICS'); toggleMenu()"><i data-lucide="bar-chart-3"></i><span>אנליטיקה</span></div>` : ''}
-            <div class="nav-item ${activePage==='PROFILE'?'active':''}" onclick="nav('PROFILE'); toggleMenu()"><i data-lucide="user-circle"></i><span>פרופיל אישי</span></div>
-            ${currentUser.role === 'OWNER' ? `<div class="nav-item ${activePage==='ROLE_APPROVAL'?'active':''}" onclick="nav('ROLE_APPROVAL'); toggleMenu()"><i data-lucide="shield-check"></i><span>אישור תפקידים</span></div>` : ''}
+            ${['OWNER','MANAGER'].includes(currentUser.role) ? `<div class="nav-item ${activePage==='ALL_TICKETS'?'active':''}" onclick="nav('ALL_TICKETS')"><i data-lucide="layers"></i><span>כל התקלות</span></div>` : ''}
+            ${['OWNER','MANAGER','COMPANY_CMD'].includes(currentUser.role) ? `<div class="nav-item ${activePage==='ANALYTICS'?'active':''}" onclick="nav('ANALYTICS')"><i data-lucide="bar-chart-3"></i><span>אנליטיקה</span></div>` : ''}
+            <div class="nav-item ${activePage==='PROFILE'?'active':''}" onclick="nav('PROFILE')"><i data-lucide="user-circle"></i><span>פרופיל אישי</span></div>
+            ${currentUser.role === 'OWNER' ? `<div class="nav-item ${activePage==='ROLE_APPROVAL'?'active':''}" onclick="nav('ROLE_APPROVAL')"><i data-lucide="shield-check"></i><span>אישור תפקידים</span></div>` : ''}
           </div>
           
           <div class="user-card">
@@ -502,9 +523,15 @@
     renderPage();
     lucide.createIcons();
   }
-
   function renderPage() {
     const main = document.getElementById("main-content");
+    
+    // --- התחלת קוד חדש לאנימציה ---
+    main.classList.remove("page-animate"); // מסיר אנימציה קודמת
+    void main.offsetWidth; // "טריק" שמכריח את הדפדפן להבין שיש שינוי (Trigger Reflow)
+    main.classList.add("page-animate");    // מוסיף את האנימציה מחדש
+    // --- סוף קוד חדש ---
+
     main.innerHTML = "";
     
     // --- HOME DASHBOARD ---
