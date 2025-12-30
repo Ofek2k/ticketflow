@@ -56,7 +56,96 @@
       border-inline-start: 1px solid var(--border);
       padding: 24px 20px; display: flex; flex-direction: column; gap: 24px; flex-shrink: 0;
     }
-    @media (max-width: 900px) { .sidebar { width: 100%; flex-direction: row; align-items: center; padding: 12px; gap: 12px; overflow-x: auto; flex: 0 0 auto; } }
+    /* --- עיצוב מותאם לנייד (Bottom Navigation) --- */
+@media (max-width: 900px) {
+  .app-root { 
+    flex-direction: column; 
+    height: 100vh; 
+  }
+
+  /* דחיפת התוכן למעלה כדי שלא יוסתר ע"י התפריט */
+  .main { 
+    padding: 20px; 
+    padding-bottom: 100px; /* רווח גדול למטה בשביל התפריט */
+  }
+
+  .sidebar {
+    position: fixed;        /* מקבע את התפריט למסך */
+    bottom: 0; left: 0; right: 0; /* מצמיד למטה */
+    width: 100%;
+    height: auto;
+    background: rgba(15, 23, 42, 0.95); /* צבע כהה עם שקיפות */
+    backdrop-filter: blur(12px);         /* אפקט זכוכית יוקרתי */
+    border-top: 1px solid rgba(255,255,255,0.1);
+    border-right: none;     /* ביטול הקו של המחשב */
+    
+    /* סידור האלמנטים */
+    flex-direction: row;
+    justify-content: space-around; /* מרווח שווה בין הכפתורים */
+    align-items: center;
+    padding: 10px 16px;
+    
+    /* תמיכה באייפונים חדשים (Safe Area) */
+    padding-bottom: calc(10px + env(safe-area-inset-bottom));
+    z-index: 1000;
+  }
+
+  /* הסתרת אלמנטים שלא צריך בנייד */
+  .sidebar .brand, 
+  .sidebar .user-card, 
+  .sidebar .nav-label { 
+    display: none; 
+  }
+
+  /* איחוד קבוצות הניווט */
+  .nav-group { 
+    display: contents; /* מבטל את הקבוצה ונותן לפריטים להסתדר בשורה אחת */
+  }
+
+  /* עיצוב הכפתורים עצמם */
+  .nav-item {
+    flex-direction: column; /* אייקון מעל טקסט */
+    gap: 4px;
+    padding: 6px 0;
+    font-size: 0.65rem;     /* טקסט קטן */
+    background: transparent !important; /* ביטול רקע אפור */
+    width: 60px;            /* רווח לחיצה נוח */
+    justify-content: center;
+    border: none;
+  }
+
+  .nav-item:hover { transform: none; } /* ביטול אנימציית תזוזה בנייד */
+
+  .nav-item svg { 
+    width: 24px; height: 24px; 
+    margin-bottom: 2px;
+  }
+
+  /* הדגשה של כפתור פעיל - במקום רקע, נצבע את האייקון והטקסט */
+  .nav-item.active {
+    background: transparent;
+    border: none;
+  }
+  
+  .nav-item.active svg,
+  .nav-item.active span {
+    color: var(--accent);
+    filter: drop-shadow(0 0 8px rgba(236, 72, 153, 0.4));
+  }
+  
+  /* טיפול מיוחד לכפתור "פתיחת תקלה" שיהיה בולט באמצע */
+  .nav-item[onclick*="CREATE"] {
+    position: relative;
+    top: -20px; /* מרים אותו למעלה */
+    background: linear-gradient(135deg, #ec4899, #8b5cf6) !important;
+    border-radius: 50%;
+    width: 48px; height: 48px;
+    box-shadow: 0 4px 15px rgba(236, 72, 153, 0.5);
+    color: white !important;
+  }
+  .nav-item[onclick*="CREATE"] span { display: none; } /* מסתיר את הטקסט שלו */
+  .nav-item[onclick*="CREATE"] svg { width: 24px; height: 24px; margin: 0; color: white !important; }
+}
 
     .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px; margin-bottom: 8px; }
     .brand img { width: 42px; height: 42px; filter: drop-shadow(0 0 10px rgba(236,72,153,0.4)); }
@@ -426,7 +515,7 @@
           <button class="btn btn-primary" onclick="nav('CREATE')"><i data-lucide="plus"></i>תקלה חדשה</button>
         </header>
         <div class="grid-dashboard">
-          <div class="stat-card"><div class="stat-val" style="color:#ec4899;">${myOpen}</div><div class="stat-lbl">פתוחות בטיפולי</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:#ec4899;">${myOpen}</div><div class="stat-lbl">תקלות שאני פתחתי</div></div>
           <div class="stat-card"><div class="stat-val" style="color:#8b5cf6;">${totalOpen}</div><div class="stat-lbl">סה״כ פתוחות</div></div>
           <div class="stat-card"><div class="stat-val" style="color:#10b981;">${totalClosed}</div><div class="stat-lbl">תקלות שטופלו</div></div>
         </div>
@@ -508,8 +597,14 @@
               });
           } catch (logErr) { console.warn("Log failed:", logErr); }
           
-          pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: num, kind: "created" });
-          
+          // שליחה ביצירה: כותרת = שם הטיקט, גוף = פתיחת תקלה חדשה
+          pushTicketShort({ 
+              userIds: getNotifyUserIdsForTicket(t, currentUser.id), 
+              ticketId: num, 
+              title: t.title, 
+              message: `✨ נפתחה תקלה חדשה ע"י ${currentUser.fullName}` 
+          });
+
           await loadData();
           showToast("התקלה נפתחה בהצלחה!");
           nav("DETAILS", t.id);
@@ -590,8 +685,42 @@
       if(cf) cf.onsubmit = async (e) => {
         e.preventDefault();
         await withLoader(cf.parentNode, async () => {
-          await supabase.from("ticket_comments").insert({ ticket_id: t.id, content: cf.txt.value, author_user_id: currentUser.id, author_name: currentUser.fullName, author_role: currentUser.role });
-          pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: t.ticketNumber, kind: "comment" });
+          pushTicketShort({ 
+              userIds: getNotifyUserIdsForTicket(t, currentUser.id), 
+              ticketId: t.ticketNumber, 
+              title: t.title, 
+              message: `💬 תגובה חדשה מאת ${currentUser.fullName}: ${cf.txt.value}` 
+          });
+          window.updateTicket = async (tid) => {
+    // ... (קוד קיים של שליפת נתונים) ...
+    
+    await withLoader(document.querySelector(".card"), async () => {
+      // 1. שמירה בדאטהבייס
+      const { data: updatedTicket } = await supabase.from("tickets")
+        .update({ status:st, is_closed:isClosed, assigned_role:rl })
+        .eq("id", tid)
+        .select().single(); // חשוב: להוסיף select().single() כדי לקבל את הטיקט המעודכן!
+
+      // ... (קוד קיים של לוגים) ...
+
+      // 2. שליחת התראה
+      const changeText = isClosed ? "הסטטוס שונה ל-סגור 🔒" : `הסטטוס עודכן ל-${STATUS_LABEL[st] || st}`;
+      
+      // אנחנו צריכים את הכותרת המקורית, אם אין לך אותה במשתנה, תשתמש ב-ticketNumber או שתשלוף קודם
+      // בהנחה שהמשתנה tickets הגלובלי מעודכן או ששלפנו עכשיו:
+      const ticketTitle = updatedTicket?.title || `תקלה #${updatedTicket?.ticket_number}`;
+
+      pushTicketShort({ 
+          userIds: getNotifyUserIdsForTicket(updatedTicket, currentUser.id), 
+          ticketId: updatedTicket.ticket_number, 
+          title: ticketTitle, 
+          message: `🔄 ${changeText}`
+      });
+
+      await loadData(); render(); showToast("התקלה עודכנה בהצלחה!");
+    });
+  };
+
           await loadData();
           renderPage();
         });
@@ -725,7 +854,37 @@
   window.setDim = (d) => { analyticsDim=d; render(); };
   window.approve = async (uid, role) => { await withLoader(document.body, async () => { await supabase.from("users").update({ role, role_status: "Approved" }).eq("id", uid); await loadData(); render(); showToast("המשתמש אושר"); }); };
   
-  window.updateTicket = async (tid) => {
+
+  async function getNextNum() {
+    const {data} = await supabase.from("counters").select("value").eq("name","ticketNumber").single();
+    const next = (data?.value || 1000) + 1;
+    await supabase.from("counters").upsert({name:"ticketNumber", value:next});
+    return next;
+  }
+
+  // --- PUSH HELPERS ---
+  function urlBase64ToUint8Array(base64String) { const padding = "=".repeat((4 - (base64String.length % 4)) % 4); const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/"); const rawData = atob(base64); return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0))); }
+  async function ensurePushAutoForUser(userId) { if(!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
+// פונקציית שליחה משודרגת - תומכת בכותרת מותאמת ואייקון
+  async function pushTicketShort({ userIds, ticketId, title, message }) { 
+      const cleanIds = [...new Set(userIds.map(String).filter(Boolean))];
+      if (cleanIds.length === 0) { console.log("No users to notify"); return; }
+      
+      await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { 
+          method: "POST", 
+          headers: { "content-type": "application/json" }, 
+          body: JSON.stringify({ 
+              userIds: cleanIds, 
+              title: title,       // כאן נכנסת כותרת הטיקט
+              body: message,      // כאן נכנס מה שקרה (תת נושא)
+              url: `/?ticket=${ticketId}`,
+              icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" // שים כאן את הלינק ללוגו שלך
+          }) 
+      }); 
+  }
+
+
+    window.updateTicket = async (tid) => {
     const st = document.getElementById("upd-status").value;
     const rl = document.getElementById("upd-role").value;
     const isClosed = (st === 'RESOLVED');
@@ -745,24 +904,6 @@
       await loadData(); render(); showToast("התקלה עודכנה בהצלחה!");
     });
   };
-  
-  async function getNextNum() {
-    const {data} = await supabase.from("counters").select("value").eq("name","ticketNumber").single();
-    const next = (data?.value || 1000) + 1;
-    await supabase.from("counters").upsert({name:"ticketNumber", value:next});
-    return next;
-  }
-
-  // --- PUSH HELPERS ---
-  function urlBase64ToUint8Array(base64String) { const padding = "=".repeat((4 - (base64String.length % 4)) % 4); const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/"); const rawData = atob(base64); return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0))); }
-  async function ensurePushAutoForUser(userId) { if(!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
-  async function pushTicketShort({ userIds, ticketId, kind }) { 
-      // Safety check: if empty list, don't send
-      const cleanIds = [...new Set(userIds.map(String).filter(Boolean))];
-      if (cleanIds.length === 0) { console.log("No users to notify"); return; }
-      
-      await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: "TicketFlow", body: `עדכון בטיקט #${ticketId}`, url: `/?ticket=${ticketId}` }) }); 
-  }
   
   // פונקציית ההתראות המלאה (עם כל התיקונים)
   function getNotifyUserIdsForTicket(ticket, actingUserId) {

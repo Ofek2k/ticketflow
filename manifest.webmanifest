@@ -5,7 +5,6 @@
   "display": "standalone",
   "background_color": "#020617",
   "theme_color": "#020617",
-  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/906/906343.png",
