@@ -762,61 +762,36 @@
 function getNotifyUserIdsForTicket(ticket, actingUserId) {
     const ids = new Set();
 
-    console.group("🔍 דיבוג התאמת תפקידים והתראות");
-    
-    // --- בדיקת תפקיד היעד ---
-    console.log(`🎯 התפקיד שהוקצה לטיקט (היעד): "%c${ticket.assignedRole}%c"`, 'color: orange; font-weight: bold;', '');
+    // תיקון: תמיכה גם בשמות משתנים מה-DB (עם קו תחתון) וגם מהאפליקציה
+    const creatorId = ticket.createdByUserId || ticket.created_by_user_id;
+    const assigneeId = ticket.assignedUserId || ticket.assigned_user_id;
+    const role = ticket.assignedRole || ticket.assigned_role;
 
-    // 1. שליחה ליוצר התקלה
-    if(ticket.createdByUserId && ticket.createdByUserId !== actingUserId) {
-        console.log(`✅ מוסיף את היוצר: ${ticket.createdByName}`);
-        ids.add(ticket.createdByUserId);
+    console.group("🔍 דיבוג התאמת תפקידים (מתוקן)");
+    console.log(`🎯 תפקיד היעד: "${role}"`);
+
+    // 1. שליחה ליוצר
+    if(creatorId && creatorId !== actingUserId) {
+        ids.add(creatorId);
     }
     
-    // 1. שליחה לפותח תקלה
-    if(ticket.createdByUserId && ticket.createdByUserId !== actingUserId) {
-        ids.add(ticket.createdByUserId);
-    }
     // 2. שליחה לפי תפקיד
-    else if (ticket.assignedRole) {
-        console.log("👥 מתחיל מעבר על רשימת המשתמשים כדי למצוא התאמה לתפקיד...");
-        
+    else if (role) {
         users.forEach(u => {
-            // בדיקה האם התפקיד תואם
-            const isRoleMatch = u.role === ticket.assignedRole;
-            // בדיקה האם המשתמש פעיל
-            const isNotFrozen = !u.isFrozen;
-            // בדיקה שזה לא אני עצמי
-            const isNotMe = u.id !== actingUserId;
-
-            // הדפסת השוואה לכל משתמש (כדי שתראה בדיוק מה נכשל ומה הצליח)
-            console.log(
-                `   👤 בודק את: %c${u.fullName}%c (${u.role})`, 
-                'font-weight: bold', '',
-                `\n      - תפקיד תואם? ${isRoleMatch ? '✅' : '❌'}` +
-                `\n      - לא אני? ${isNotMe ? '✅' : '❌'}` +
-                `\n      - פעיל? ${isNotFrozen ? '✅' : '❌'}`
-            );
-
-            if(isRoleMatch && isNotFrozen && isNotMe) {
-                console.log(`      🎉 בינגו! מוסיף לרשימת התפוצה.`);
+            // התאמה לתפקיד + פעיל + לא אני
+            if(u.role === role && !u.isFrozen && u.id !== actingUserId) {
                 ids.add(u.id);
+                console.log(`✅ נמצא משתמש מתאים: ${u.fullName} (${u.role})`);
             }
         });
     }
 
     const finalIds = [...ids];
-    console.log("📤 רשימת IDs סופית לשליחה:", finalIds);
-    
-    if (finalIds.length === 0) {
-        console.warn("⚠️ אזהרה: הרשימה הסופית יצאה ריקה! אף אחד לא יקבל הודעה.");
-    }
-    
+    console.log("📤 רשימה סופית:", finalIds);
     console.groupEnd();
+    
     return finalIds;
   }
-
-
   document.addEventListener("DOMContentLoaded", async () => {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
     await loadData();
