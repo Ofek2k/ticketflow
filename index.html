@@ -50,109 +50,104 @@
       height: 100vh;
     }
     
-    /* דסקטופ */
+    /* --- דסקטופ --- */
     .sidebar {
       width: 280px; background: rgba(15, 23, 42, 0.6);
       border-inline-start: 1px solid var(--border);
       padding: 24px 20px; display: flex; flex-direction: column; gap: 24px; flex-shrink: 0;
     }
 
-    /* --- עיצוב חדש לנייד: פס ישר, נקי ואחיד --- */
-    @media (max-width: 900px) { 
+    /* --- עיצוב מובייל: ה"קפסולה הצפה" עם גלילה אופקית (Fixed) --- */
+    @media (max-width: 900px) {
       .app-root { flex-direction: column; height: 100vh; overflow: hidden; } 
       
       .main { 
         padding: 16px; 
-        padding-bottom: 80px; /* מקום לבר התחתון */
+        padding-bottom: 100px; 
         width: 100%;
         overflow-y: auto; 
       }
 
       .sidebar {
         position: fixed;
-        bottom: 0; left: 0; right: 0;
-        height: 65px; /* גובה סטנדרטי */
+        bottom: 20px;
+        left: 5%; right: 5%;
+        width: 90%;
+        height: 70px;
         
-        background: #0f172a; /* כהה אטום */
-        border-top: 1px solid rgba(255,255,255,0.1);
-        border-right: none;
-        
+        /* עיצוב הקפסולה */
+        background: rgba(15, 23, 42, 0.95);
+        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 35px;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+
+        /* --- הגדרות הגלילה החשובות --- */
         display: flex;
         flex-direction: row;
-        justify-content: space-between; /* פריסה לרוחב */
         align-items: center;
+        justify-content: flex-start; /* הצמדה להתחלה כדי לאפשר גלילה */
+        flex-wrap: nowrap; /* מונע ירידת שורה בכל מחיר! */
         
-        padding: 0;
-        padding-bottom: env(safe-area-inset-bottom);
+        overflow-x: auto; /* מפעיל גלילה לצדדים */
+        overflow-y: hidden;
+        
+        padding: 0 10px;
+        gap: 0; /* הרווח מנוהל בתוך הפריטים */
         z-index: 10000;
+        
+        /* הסתרת פס גלילה */
+        scrollbar-width: none; 
+        -webkit-overflow-scrolling: touch;
       }
+      .sidebar::-webkit-scrollbar { display: none; }
 
-      /* הסתרת דברים שלא צריך */
       .sidebar .brand, .sidebar .user-card, .sidebar .nav-label { display: none !important; }
       
-      /* איחוד הכפתורים לשורה אחת */
+      /* הקבוצות חייבות להיות בשורה ולא להתכווץ */
       .nav-group { 
         display: flex; 
-        flex-direction: row; 
-        width: 100%; 
-        justify-content: space-around;
-        align-items: center;
+        flex-direction: row;
+        flex-shrink: 0; /* קריטי: מונע מהקבוצה להתכווץ */
       }
 
-      /* עיצוב הכפתור הבודד */
+      /* עיצוב הכפתור */
       .nav-item {
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 4px;
         
-        flex: 1; /* כל כפתור תופס מקום שווה */
-        height: 100%;
+        flex-shrink: 0; /* קריטי: מונע מהכפתור להתכווץ */
+        min-width: 65px; /* רוחב מינימלי לכל כפתור */
+        height: 50px;
+        margin: 0 2px;
         
         background: transparent !important;
         border: none;
-        color: #64748b; /* אפור לא פעיל */
+        color: #94a3b8;
         font-size: 10px;
-        font-weight: 500;
-        padding-top: 8px;
-        
-        border-top: 3px solid transparent; /* הכנה לפס העליון */
+        border-radius: 12px;
         transition: 0.2s;
+        white-space: nowrap; /* מונע שבירת טקסט */
       }
       
-      .nav-item:hover { transform: none; background: none; }
-      .nav-item svg { width: 20px; height: 20px; margin: 0; }
+      .nav-item svg { width: 22px; height: 22px; margin-bottom: 3px; }
+      .nav-item:hover { background: rgba(255,255,255,0.05) !important; transform: none; }
 
-      /* --- המצב הפעיל (הורוד) --- */
+      /* מצב פעיל */
       .nav-item.active { 
-        color: #ec4899; /* טקסט ואייקון ורודים */
-        background: linear-gradient(to bottom, rgba(236, 72, 153, 0.1), transparent) !important; /* רקע עדין מאוד */
-        border-top: 3px solid #ec4899; /* פס ורוד למעלה */
+        color: #fff;
+        background: rgba(236, 72, 153, 0.2) !important;
+        box-shadow: 0 0 15px rgba(236, 72, 153, 0.1);
       }
-      
-      .nav-item.active svg { 
-        filter: drop-shadow(0 0 5px rgba(236, 72, 153, 0.6)); /* זוהר */
-      }
+      .nav-item.active svg { color: #ec4899; }
 
-      /* טיפול בכפתור יצירה (שיראה כמו כולם) */
-      .nav-item[onclick*="CREATE"] {
-        /* מבטלים את העיצוב הצף - הוא עכשיו בשורה כמו כולם */
-        position: static;
-        transform: none;
-        width: auto; height: 100%;
-        border-radius: 0;
-        box-shadow: none;
-        border: none;
-        border-top: 3px solid transparent;
+      /* כפתור יצירה מודגש */
+      .nav-item[onclick*="CREATE"] svg {
+        color: #ec4899;
+        filter: drop-shadow(0 0 5px #ec4899);
       }
-      
-      /* אם כפתור היצירה פעיל */
-      .nav-item[onclick*="CREATE"].active {
-        border-top: 3px solid #ec4899;
-      }
-      
-      .nav-item[onclick*="CREATE"] span { display: block; } /* מחזירים את הטקסט */
     }
 
     .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px; margin-bottom: 8px; }
@@ -488,15 +483,15 @@
             <div class="nav-label">ראשי</div>
             <div class="nav-item ${activePage==='HOME'?'active':''}" onclick="nav('HOME')"><i data-lucide="layout-grid"></i><span>דשבורד</span></div>
             <div class="nav-item ${activePage==='MY_TICKETS'?'active':''}" onclick="nav('MY_TICKETS')"><i data-lucide="list"></i><span>התקלות שלי</span></div>
-            <div class="nav-item ${activePage==='CREATE'?'active':''}" onclick="nav('CREATE')"><i data-lucide="plus-circle"></i><span>פתיחה</span></div>
+            <div class="nav-item ${activePage==='CREATE'?'active':''}" onclick="nav('CREATE')"><i data-lucide="plus-circle"></i><span>פתיחת תקלה</span></div>
           </div>
           
           <div class="nav-group">
             <div class="nav-label">ניהול</div>
             ${['OWNER','MANAGER'].includes(currentUser.role) ? `<div class="nav-item ${activePage==='ALL_TICKETS'?'active':''}" onclick="nav('ALL_TICKETS')"><i data-lucide="layers"></i><span>כל התקלות</span></div>` : ''}
             ${['OWNER','MANAGER','COMPANY_CMD'].includes(currentUser.role) ? `<div class="nav-item ${activePage==='ANALYTICS'?'active':''}" onclick="nav('ANALYTICS')"><i data-lucide="bar-chart-3"></i><span>אנליטיקה</span></div>` : ''}
-            <div class="nav-item ${activePage==='PROFILE'?'active':''}" onclick="nav('PROFILE')"><i data-lucide="user-circle"></i><span>פרופיל</span></div>
-            ${currentUser.role === 'OWNER' ? `<div class="nav-item ${activePage==='ROLE_APPROVAL'?'active':''}" onclick="nav('ROLE_APPROVAL')"><i data-lucide="shield-check"></i><span>אישור</span></div>` : ''}
+            <div class="nav-item ${activePage==='PROFILE'?'active':''}" onclick="nav('PROFILE')"><i data-lucide="user-circle"></i><span>פרופיל אישי</span></div>
+            ${currentUser.role === 'OWNER' ? `<div class="nav-item ${activePage==='ROLE_APPROVAL'?'active':''}" onclick="nav('ROLE_APPROVAL')"><i data-lucide="shield-check"></i><span>אישור תפקידים</span></div>` : ''}
           </div>
           
           <div class="user-card">
@@ -835,7 +830,7 @@
   window.setDim = (d) => { analyticsDim=d; render(); };
   window.approve = async (uid, role) => { await withLoader(document.body, async () => { await supabase.from("users").update({ role, role_status: "Approved" }).eq("id", uid); await loadData(); render(); showToast("המשתמש אושר"); }); };
   
-  // --- פונקציית עדכון טיקט (תוקנה והוצאה החוצה) ---
+  // --- פונקציית עדכון טיקט (הוצאה החוצה כנדרש) ---
   window.updateTicket = async (tid) => {
     const st = document.getElementById("upd-status").value;
     const rl = document.getElementById("upd-role").value;
@@ -902,29 +897,20 @@
       }); 
   }
   
-  // פונקציית ההתראות המלאה (עם הלוגיקה הנכונה)
   function getNotifyUserIdsForTicket(ticket, actingUserId) {
     const ids = new Set();
     const creatorId = ticket.createdByUserId || ticket.created_by_user_id;
     const assigneeId = ticket.assignedUserId || ticket.assigned_user_id;
     const role = ticket.assignedRole || ticket.assigned_role;
 
-    if(creatorId && creatorId !== actingUserId) {
-        ids.add(creatorId);
-    }
-    
-    if(assigneeId && assigneeId !== actingUserId) {
-        ids.add(assigneeId);
-    }
+    if(creatorId && creatorId !== actingUserId) ids.add(creatorId);
+    if(assigneeId && assigneeId !== actingUserId) ids.add(assigneeId);
     
     else if (role) {
         users.forEach(u => {
-            if(u.role === role && !u.isFrozen && u.id !== actingUserId) {
-                ids.add(u.id);
-            }
+            if(u.role === role && !u.isFrozen && u.id !== actingUserId) ids.add(u.id);
         });
     }
-
     return [...ids];
   }
 
