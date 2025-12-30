@@ -497,17 +497,21 @@
           }).select().single();
           if(error) throw error;
           
-          // --- FIXED LOGIC ---
-          await supabase.from("audits").insert({ 
-              ticket_id: t.id, 
-              field: "CREATE", 
-              new_value: t.title, 
-              changed_by_name: currentUser.fullName,
-              changed_by_user_id: currentUser.id, 
-              changed_by_role: currentUser.role 
-          });
+          // --- FIX 1: Send all fields to audits AND ignore errors ---
+          try {
+              await supabase.from("audits").insert({ 
+                  ticket_id: t.id, 
+                  field: "CREATE", 
+                  new_value: t.title, 
+                  changed_by_name: currentUser.fullName,
+                  changed_by_user_id: currentUser.id, 
+                  changed_by_role: currentUser.role 
+              });
+          } catch (logErr) { console.warn("Log failed:", logErr); }
           
+          // --- FIX 2: Send push (robust) ---
           pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: num, kind: "created" });
+          
           await loadData();
           showToast("התקלה נפתחה בהצלחה!");
           nav("DETAILS", t.id);
@@ -522,6 +526,7 @@
       
       const canEdit = ['OWNER','MANAGER'].includes(currentUser.role) || t.assignedRole === currentUser.role || (t.createdByUserId===currentUser.id && t.status==='OPEN');
       
+      // Transfer Logic
       const allRoles = ['HATAP','HR','PLHIK','MAMRAM','APP','NETWORK'];
       let targets = ['HR'];
       if(['OWNER','MANAGER','HR'].includes(currentUser.role)) targets = allRoles;
@@ -720,15 +725,17 @@
     const isClosed = (st === 'RESOLVED');
     await withLoader(document.querySelector(".card"), async () => {
       await supabase.from("tickets").update({ status:st, is_closed:isClosed, assigned_role:rl }).eq("id", tid);
-      // --- FIX: Added changed_by_user_id & changed_by_role ---
-      await supabase.from("audits").insert({ 
-          ticket_id: tid, 
-          field: "UPDATE", 
-          new_value: `סטטוס: ${st}, הועבר ל: ${roleLabel(rl)}`, 
-          changed_by_name: currentUser.fullName, 
-          changed_by_user_id: currentUser.id, 
-          changed_by_role: currentUser.role 
-      });
+      // FIX 1: Try/Catch for logs
+      try {
+          await supabase.from("audits").insert({ 
+              ticket_id: tid, 
+              field: "UPDATE", 
+              new_value: `סטטוס: ${st}, הועבר ל: ${roleLabel(rl)}`, 
+              changed_by_name: currentUser.fullName, 
+              changed_by_user_id: currentUser.id, 
+              changed_by_role: currentUser.role 
+          });
+      } catch (logErr) { console.warn(logErr); }
       await loadData(); render(); showToast("התקלה עודכנה בהצלחה!");
     });
   };
@@ -743,8 +750,9 @@
   // --- PUSH HELPERS ---
   function urlBase64ToUint8Array(base64String) { const padding = "=".repeat((4 - (base64String.length % 4)) % 4); const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/"); const rawData = atob(base64); return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0))); }
   async function ensurePushAutoForUser(userId) { if(!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
+  
   async function pushTicketShort({ userIds, ticketId, kind }) { 
-      // Safety check: if empty list, don't send
+      // FIX 2: Safety check for empty list
       const cleanIds = [...new Set(userIds.map(String).filter(Boolean))];
       if (cleanIds.length === 0) { console.log("No users to notify"); return; }
       
