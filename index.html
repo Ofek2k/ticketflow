@@ -773,8 +773,6 @@
     const assigneeId = ticket.assignedUserId || ticket.assigned_user_id;
     const role = ticket.assignedRole || ticket.assigned_role;
 
-    console.group("🔍 דיבוג התאמת תפקידים (סופי)");
-    console.log(`🎯 תפקיד היעד: "${role}"`);
 
     // 1. שליחה ליוצר התקלה
     if(creatorId && creatorId !== actingUserId) {
@@ -786,14 +784,13 @@
         users.forEach(u => {
             if(u.role === role && !u.isFrozen && u.id !== actingUserId) {
                 ids.add(u.id);
-                console.log(`✅ נמצא משתמש מתאים: ${u.fullName} (${u.role})`);
+
             }
         });
     }
 
     const finalIds = [...ids];
-    console.log("📤 רשימה סופית:", finalIds);
-    console.groupEnd();
+  
     return finalIds;
   }
 
@@ -803,13 +800,13 @@
       if (!("serviceWorker" in navigator)) { alert("❌ שגיאה: הדפדפן לא תומך ב-Service Worker"); return; }
       if (!("PushManager" in window)) { alert("❌ שגיאה: האייפון לא מזהה תמיכה ב-Push. האם פתחת דרך מסך הבית?"); return; }
 
-      alert("⏳ מבקש הרשאה מאפל...");
+      //alert("⏳ מבקש הרשאה ...");
       const permission = await Notification.requestPermission();
-      alert(`📢 סטטוס הרשאה שהתקבל: ${permission}`);
+      //alert(`📢 סטטוס הרשאה שהתקבל: ${permission}`);
 
       if (permission !== 'granted') { alert("⚠️ המשתמש לא אישר או שההגדרות חוסמות."); return; }
 
-      alert("⏳ מנסה לייצר מפתח הצפנה (Subscribe)...");
+      //alert("⏳ מנסה לייצר מפתח הצפנה (Subscribe)...");
       const reg = await navigator.serviceWorker.ready;
       let sub = await reg.pushManager.getSubscription();
       
@@ -821,14 +818,14 @@
           sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey });
       }
 
-      alert("✅ נוצר מנוי! שולח ל-Supabase...");
+      //alert("נוצר מנוי!");
       const saveRes = await fetch(`${PUSH_WORKER_BASE}/subscribe`, {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ userId: String(currentUser.id), subscription: sub })
       });
 
-      if (saveRes.ok) alert("🎉 הצלחה! האייפון רשום. עכשיו נסה לשלוח לעצמך.");
+      if (saveRes.ok) alert("🎉 הצלחה! המכשיר רשום");
       else alert("❌ השרת החזיר שגיאה בשמירה: " + saveRes.status);
 
     } catch (err) {
