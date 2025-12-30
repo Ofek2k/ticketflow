@@ -502,7 +502,17 @@
             unit: currentUser.unit, assigned_role: fd.get("role"), status: "OPEN", is_closed: false
           }).select().single();
           if(error) throw error;
-          await supabase.from("audits").insert({ ticket_id: t.id, field: "CREATE", new_value: t.title, changed_by_name: currentUser.fullName });
+          // ניסיון כתיבה ללוג - בלי לעצור את התוכנה אם נכשל
+          try {
+              await supabase.from("audits").insert({ 
+                  ticket_id: t.id, 
+                  field: "CREATE", // או UPDATE בהתאם לפונקציה
+                  new_value: t.title, // או הטקסט הרלוונטי
+                  changed_by_name: currentUser.fullName 
+              });
+          } catch (err) {
+              console.warn("Log failed but continuing:", err);
+          }
           // תוקן: שולח התראה רק לאחרים, לא ליוצר עצמו (currentUser.id)
           pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: num, kind: "created" });
           await loadData();
@@ -718,8 +728,18 @@
     const isClosed = (st === 'RESOLVED');
     await withLoader(document.querySelector(".card"), async () => {
       await supabase.from("tickets").update({ status:st, is_closed:isClosed, assigned_role:rl }).eq("id", tid);
-      await supabase.from("audits").insert({ ticket_id: tid, field: "UPDATE", new_value: `סטטוס: ${st}, הועבר ל: ${roleLabel(rl)}`, changed_by_name: currentUser.fullName });
-      await loadData(); render(); showToast("התקלה עודכנה בהצלחה!");
+      // ניסיון כתיבה ללוג - בלי לעצור את התוכנה אם נכשל
+      try {
+          await supabase.from("audits").insert({ 
+              ticket_id: t.id, 
+              field: "CREATE", // או UPDATE בהתאם לפונקציה
+              new_value: t.title, // או הטקסט הרלוונטי
+              changed_by_name: currentUser.fullName 
+          });
+      } catch (err) {
+          console.warn("Log failed but continuing:", err);
+      }
+            await loadData(); render(); showToast("התקלה עודכנה בהצלחה!");
     });
   };
   
