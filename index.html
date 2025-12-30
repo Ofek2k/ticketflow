@@ -283,23 +283,17 @@
 
   // === REALTIME SETUP ===
   function setupRealtime() {
-    console.log("Setting up Realtime...");
-    
-    const channel = supabase.channel('public:tickets')
+    supabase.channel('public:tickets')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async (payload) => {
-        console.log("Ticket changed!", payload);
         await loadData();
         render();
         showToast("הנתונים התעדכנו", "refresh-cw");
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'ticket_comments' }, async (payload) => {
-        console.log("Comment changed!", payload);
         await loadData();
         render();
       })
-      .subscribe((status) => {
-        console.log("Realtime status:", status);
-      });
+      .subscribe();
   }
 
   function render() {
@@ -502,18 +496,9 @@
             unit: currentUser.unit, assigned_role: fd.get("role"), status: "OPEN", is_closed: false
           }).select().single();
           if(error) throw error;
-          // ניסיון כתיבה ללוג - בלי לעצור את התוכנה אם נכשל
-          try {
-              await supabase.from("audits").insert({ 
-                  ticket_id: t.id, 
-                  field: "CREATE", // או UPDATE בהתאם לפונקציה
-                  new_value: t.title, // או הטקסט הרלוונטי
-                  changed_by_name: currentUser.fullName 
-              });
-          } catch (err) {
-              console.warn("Log failed but continuing:", err);
-          }
-          // תוקן: שולח התראה רק לאחרים, לא ליוצר עצמו (currentUser.id)
+          
+          // --- FIX: Added changed_by_user_id ---
+          await supabase.from("audits").insert({ ticket_id: t.id, field: "CREATE", new_value: t.title, changed_by_name: currentUser.fullName, changed_by_user_id: currentUser.id });
           pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: num, kind: "created" });
           await loadData();
           showToast("התקלה נפתחה בהצלחה!");
@@ -596,7 +581,6 @@
         e.preventDefault();
         await withLoader(cf.parentNode, async () => {
           await supabase.from("ticket_comments").insert({ ticket_id: t.id, content: cf.txt.value, author_user_id: currentUser.id, author_name: currentUser.fullName, author_role: currentUser.role });
-          // תוקן: לא שולח לעצמך
           pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: t.ticketNumber, kind: "comment" });
           await loadData();
           renderPage();
@@ -722,24 +706,16 @@
   window.doLogout = async () => { await supabase.auth.signOut(); location.reload(); };
   window.setDim = (d) => { analyticsDim=d; render(); };
   window.approve = async (uid, role) => { await withLoader(document.body, async () => { await supabase.from("users").update({ role, role_status: "Approved" }).eq("id", uid); await loadData(); render(); showToast("המשתמש אושר"); }); };
+  
   window.updateTicket = async (tid) => {
     const st = document.getElementById("upd-status").value;
     const rl = document.getElementById("upd-role").value;
     const isClosed = (st === 'RESOLVED');
     await withLoader(document.querySelector(".card"), async () => {
       await supabase.from("tickets").update({ status:st, is_closed:isClosed, assigned_role:rl }).eq("id", tid);
-      // ניסיון כתיבה ללוג - בלי לעצור את התוכנה אם נכשל
-      try {
-          await supabase.from("audits").insert({ 
-              ticket_id: t.id, 
-              field: "CREATE", // או UPDATE בהתאם לפונקציה
-              new_value: t.title, // או הטקסט הרלוונטי
-              changed_by_name: currentUser.fullName 
-          });
-      } catch (err) {
-          console.warn("Log failed but continuing:", err);
-      }
-            await loadData(); render(); showToast("התקלה עודכנה בהצלחה!");
+      // --- FIX: Added changed_by_user_id ---
+      await supabase.from("audits").insert({ ticket_id: tid, field: "UPDATE", new_value: `סטטוס: ${st}, הועבר ל: ${roleLabel(rl)}`, changed_by_name: currentUser.fullName, changed_by_user_id: currentUser.id });
+      await loadData(); render(); showToast("התקלה עודכנה בהצלחה!");
     });
   };
   
@@ -750,74 +726,19 @@
     return next;
   }
 
-  // === REALTIME SETUP ===
-  function setupRealtime() {
-    supabase.channel('public:tickets')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async (payload) => {
-        await loadData();
-        render();
-        showToast("הנתונים התעדכנו", "refresh-cw");
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'ticket_comments' }, async (payload) => {
-        await loadData();
-        render();
-      })
-      .subscribe();
-  }
-
   function urlBase64ToUint8Array(base64String) { const padding = "=".repeat((4 - (base64String.length % 4)) % 4); const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/"); const rawData = atob(base64); return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0))); }
   async function ensurePushAutoForUser(userId) { if(!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
-// --- פונקציית שליחת התראה (גרסה נקייה) ---
-  async function pushTicketShort({ userIds, ticketId, kind }) {
-    // סינון כפילויות ומחרוזות ריקות
-    const cleanIds = [...new Set(userIds.map(String).filter(Boolean))];
-    
-    // אם אין למי לשלוח, עוצרים כאן
-    if (cleanIds.length === 0) return;
-
-    try {
-      await fetch(`${PUSH_WORKER_BASE}/sendUsers`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          userIds: cleanIds,
-          title: "TicketFlow",
-          body: kind === 'created' ? `תקלה חדשה #${ticketId}` : `עדכון בטיקט #${ticketId}`,
-          url: `/?ticket=${ticketId}`
-        })
-      });
-    } catch (err) {
-      console.error("Failed to send push:", err);
-    }
-  }
+  async function pushTicketShort({ userIds, ticketId, kind }) { await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: [...new Set(userIds.map(String).filter(Boolean))], title: "TicketFlow", body: `עדכון בטיקט #${ticketId}`, url: `/?ticket=${ticketId}` }) }); }
   
-  // --- פונקציית חישוב למי לשלוח (גרסה מתוקנת) ---
   function getNotifyUserIdsForTicket(ticket, actingUserId) {
     const ids = new Set();
-
-    // 1. תמיד לשלוח ליוצר התקלה (אם זה לא הוא שמבצע את הפעולה)
-    if(ticket.createdByUserId && ticket.createdByUserId !== actingUserId) {
-        ids.add(ticket.createdByUserId);
-    }
-    
-    // 2. תמיד לשלוח לאחראי הישיר (אם קיים והוא לא המבצע)
-    if(ticket.assignedUserId && ticket.assignedUserId !== actingUserId) {
-        ids.add(ticket.assignedUserId);
-    }
-    
-    // 3. שליחה לפי תפקיד (רק אם אין אחראי ספציפי)
-    // אם התקלה מוקצית ל-HATAP, נשלח לכל מי שהוא HATAP (חוץ ממי שמבצע את הפעולה)
+    if(ticket.createdByUserId && ticket.createdByUserId !== actingUserId) ids.add(ticket.createdByUserId);
+    if(ticket.assignedUserId && ticket.assignedUserId !== actingUserId) ids.add(ticket.assignedUserId);
     else if (ticket.assignedRole) {
         users.forEach(u => {
-            if(u.role === ticket.assignedRole && !u.isFrozen && u.id !== actingUserId) {
-                ids.add(u.id);
-            }
+            if(u.role === ticket.assignedRole && !u.isFrozen && u.id !== actingUserId) ids.add(u.id);
         });
     }
-
-    // הערה: אם תרצה שמנהלים יקבלו תמיד, תוסיף את השורה הזו:
-    // users.forEach(u => { if(u.role === 'MANAGER' && u.id !== actingUserId) ids.add(u.id); });
-
     return [...ids];
   }
 
