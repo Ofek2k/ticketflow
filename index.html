@@ -35,6 +35,7 @@
       background-repeat: repeat, no-repeat;
       background-position: 0 0, center;
       animation: contourMove 60s linear infinite;
+      overscroll-behavior-y: contain;
     }
     @keyframes contourMove { 0% { background-position: 0 0, center; } 100% { background-position: 600px 600px, center; } }
 
@@ -58,7 +59,8 @@
 
     @keyframes fade-in-up { to { opacity: 1; transform: translateY(0); } }
 
-    .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 14px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text); transition: all 0.2s; }
+    /* CSS FIX: CENTER TEXT IN BUTTONS */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border-radius: 14px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text); transition: all 0.2s; }
     .btn:hover { background: rgba(255,255,255,0.15); border-color: #fff; transform: translateY(-2px); }
     .btn-primary { background: var(--accent); border: 1px solid var(--accent); color: #fff; box-shadow: 0 0 20px rgba(236, 72, 153, 0.3); font-weight: 700; }
     .btn-primary:hover { background: #db2777; box-shadow: 0 0 40px rgba(236, 72, 153, 0.6); transform: translateY(-2px) scale(1.02); }
@@ -71,7 +73,7 @@
     .select option { background-color: var(--bg-dark); color: #fff; }
     .select.active-filter { border-color: #ec4899 !important; color: #ec4899 !important; font-weight: 600; }
 
-    .main { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; position: relative; }
+    .main { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; position: relative; overscroll-behavior-y: contain; }
     .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; } 
     .page-title { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.8px; } 
     .page-subtitle { font-size: 0.95rem; color: var(--text-soft); margin-top: 4px; }
@@ -156,6 +158,39 @@
     .logout-btn { background: transparent; border: none; color: var(--text-soft); cursor: pointer; padding: 8px; border-radius: 10px; transition: 0.2s; }
     .logout-btn:hover { background: rgba(244,63,94,0.15); color: #f43f5e; box-shadow: 0 0 15px rgba(244, 63, 94, 0.3); }
 
+    /* Pull to Refresh Indicator */
+    .ptr-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform: translateY(-100%);
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        z-index: 9999;
+        pointer-events: none;
+    }
+    .ptr-content {
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid var(--accent);
+        border-radius: 50px;
+        padding: 8px 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 10px 40px rgba(236, 72, 153, 0.3);
+        color: #fff;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .ptr-icon {
+        animation: spin 1s linear infinite;
+        color: var(--accent);
+    }
+
     @media (max-width: 900px) {
       .app-root { flex-direction: column; height: 100vh; overflow: hidden; } 
       .main { padding: 16px; padding-bottom: 80px; width: 100%; overflow-y: auto; }
@@ -174,6 +209,13 @@
 <div id="modal-root"></div>
 <div id="toast-root"></div>
 
+<div id="ptr-loader" class="ptr-loader">
+    <div class="ptr-content">
+        <i data-lucide="loader-2" class="ptr-icon"></i>
+        <span>מרענן נתונים...</span>
+    </div>
+</div>
+
 <script src="https://unpkg.com/@supabase/supabase-js@2.48.0/dist/umd/supabase.js"></script>
 
 <script>
@@ -184,6 +226,7 @@
 
   let currentUser = null, users = [], tickets = [], comments = [], units = [], activePage = "HOME";
   let showClosed = false, selectedTicketId = null, analyticsDim = "STATUS", fetchLimit = 100;
+  
   let analyticsView = 'WEEK'; 
   let analyticsRefDate = new Date(); 
   let isRecoveryMode = false;
@@ -201,22 +244,71 @@
   function showModal(title, msg, isErr=false) { return new Promise(resolve => { const root = document.getElementById("modal-root"); root.innerHTML = `<div class="modal-overlay"><div class="modal" style="border-color:${isErr?'#f43f5e':'rgba(255,255,255,0.1)'}"><div style="font-size:3rem;margin-bottom:10px;">${isErr?'😓':'✨'}</div><div style="font-size:1.2rem;font-weight:800;margin-bottom:8px;">${title}</div><div style="color:#94a3b8;margin-bottom:24px;line-height:1.5;">${msg}</div><button class="btn btn-primary" style="width:100%;justify-content:center;" id="mod-ok">הבנתי, סגור</button></div></div>`; document.getElementById("mod-ok").onclick = () => { root.innerHTML=""; resolve(); }; }); }
   async function withLoader(el, fn) { const l = document.createElement("div"); l.className="loader-wrap"; l.innerHTML=`<div class="spinner"></div>`; if(getComputedStyle(el).position==="static") el.style.position="relative"; el.appendChild(l); try { await fn(); } catch(e) { console.error(e); showModal("שגיאה", e.message, true); } finally { if(l.parentNode===el) el.removeChild(l); } }
 
-  // --- INITIALIZATION ORDER IS CRITICAL ---
-  // אנחנו מפעילים את המאזין לפני הטעינה הראשונית כדי לתפוס את הקישור מהמייל
-  
+  // --- PULL TO REFRESH LOGIC ---
+  function initPullToRefresh() {
+      const main = document.querySelector('.main');
+      const loader = document.getElementById('ptr-loader');
+      if (!main || !loader) return;
+
+      let startY = 0;
+      let isPulling = false;
+      const threshold = 120; // מרחק גלילה כדי להפעיל רענון
+
+      main.addEventListener('touchstart', (e) => {
+          if (main.scrollTop === 0) {
+              startY = e.touches[0].clientY;
+              isPulling = true;
+          }
+      }, { passive: true });
+
+      main.addEventListener('touchmove', (e) => {
+          if (!isPulling) return;
+          const y = e.touches[0].clientY;
+          const diff = y - startY;
+
+          if (diff > 0 && main.scrollTop === 0) {
+              // משיכה למטה
+              // prevent default כדי שלא יהיה הרענון המכוער של הכרום
+              if (diff > threshold) {
+                  loader.style.transform = `translateY(20px)`; 
+              }
+          } else {
+              isPulling = false;
+          }
+      }, { passive: true });
+
+      main.addEventListener('touchend', (e) => {
+          if (!isPulling) return;
+          const y = e.changedTouches[0].clientY;
+          const diff = y - startY;
+
+          if (diff > threshold && main.scrollTop === 0) {
+              // Trigger Refresh
+              loader.style.transform = `translateY(20px)`;
+              setTimeout(() => {
+                  window.location.reload();
+              }, 500);
+          } else {
+              loader.style.transform = `translateY(-100%)`;
+          }
+          isPulling = false;
+      });
+  }
+
+  // --- INITIALIZATION ---
   document.addEventListener("DOMContentLoaded", async () => { 
       if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js"); 
       
-      // 1. הגדרת המאזין לשינויי אימות (כולל שחזור סיסמה)
       supabase.auth.onAuthStateChange((event, session) => {
-          console.log("Auth Event:", event);
           if (event === 'PASSWORD_RECOVERY') {
               isRecoveryMode = true;
-              render(); // רינדור מיידי של מסך האיפוס
+              render(); 
           } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-              // אם אנחנו לא במצב שחזור, נטען את המידע הרגיל
               if (!isRecoveryMode) {
-                  loadData().then(render);
+                  loadData().then(() => {
+                      render();
+                      initPullToRefresh(); // הפעלת ה-Pull to Refresh אחרי טעינה
+                  });
               }
           } else if (event === 'SIGNED_OUT') {
               currentUser = null;
@@ -224,16 +316,16 @@
           }
       });
 
-      // 2. בדיקה אם כבר יש סשן קיים בטעינה
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-          await loadData();
+      if(!window.location.hash.includes('type=recovery')) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+              await loadData();
+          }
+      } else {
+          isRecoveryMode = true;
       }
       
-      // 3. הגדרת Realtime
       setupRealtime();
-      
-      // 4. רינדור ראשוני
       render();
   });
 
@@ -247,7 +339,7 @@
         supabase.from("units").select("*") 
     ]);
     
-    users = (uRes.data || []).map(u => ({ id: u.id, authUserId: u.auth_user_id, fullName: u.full_name, email: u.email, phone: u.phone, role: u.role, isManager: u.is_manager, requestedManager: u.requested_manager, unit: u.unit, unitId: u.unit_id, requestedRole: u.requested_role, roleStatus: u.role_status, isFrozen: u.is_frozen }));
+    users = (uRes.data || []).map(u => ({ id: u.id, authUserId: u.auth_user_id, fullName: u.full_name, email: u.email, phone: u.phone, role: u.role, isManager: u.is_manager, requestedManager: u.requested_manager, unit: u.unit, unitId: u.unit_id, requestedRole: u.requested_role, roleStatus: u.role_status, isFrozen: u.is_frozen, settings: u.settings }));
     tickets = (tRes.data || []).map(t => ({ id: t.id, ticketNumber: t.ticket_number, title: t.title, description: t.description, topic: t.topic, status: t.status, unit: t.unit, assignedRole: t.assigned_role, assignedUserId: t.assigned_user_id, createdByUserId: t.created_by_user_id, createdByName: t.created_by_name, isClosed: !!t.is_closed || t.status === 'RESOLVED' || t.status === 'CLOSED', createdAt: t.created_at, imageUrl: t.image_url, isHamalDown: t.is_hamal_down }));
     comments = cRes.data || [];
     units = unRes.data || [];
@@ -260,23 +352,45 @@
         return null;
     }
     if(currentUser) ensurePushAutoForUser(currentUser.id).catch(console.error);
+    
+    startOverdueCheck();
+    
     return currentUser;
+  }
+  
+  function startOverdueCheck() {
+      setInterval(() => {
+          if (!currentUser || (!currentUser.isManager && currentUser.role !== 'OWNER')) return;
+          const settings = currentUser.settings || {};
+          if (!settings.notifyOverdue) return;
+          const limitMinutes = parseInt(settings.overdueTime || 60);
+          const notifiedSet = new Set(JSON.parse(sessionStorage.getItem('notifiedTickets') || '[]'));
+          tickets.forEach(t => {
+              if (t.isClosed) return;
+              const minutesOpen = (new Date() - new Date(t.createdAt)) / 60000;
+              if (minutesOpen > limitMinutes && !notifiedSet.has(t.id)) {
+                  new Notification(`⏳ חריגת זמנים: תקלה #${t.ticketNumber}`, {
+                      body: `התקלה "${t.title}" פתוחה כבר מעל ${Math.floor(minutesOpen)} דקות.`,
+                      icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png"
+                  });
+                  notifiedSet.add(t.id);
+              }
+          });
+          sessionStorage.setItem('notifiedTickets', JSON.stringify([...notifiedSet]));
+      }, 60000);
   }
   
   window.loadMoreData = async () => { fetchLimit += 50; await loadData(); renderPage(); };
   function setupRealtime() { supabase.channel('public:tickets').on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async () => { await loadData(); render(); showToast("הנתונים התעדכנו", "refresh-cw"); }).subscribe(); }
 
-  // --- RENDER LOGIC ---
   function render() { 
-      // עדיפות עליונה למסך שחזור סיסמה
       if(isRecoveryMode) return renderResetPassword();
-      
       if(!currentUser) return renderLogin(); 
       if(!currentUser.fullName || !currentUser.phone) return renderOnboarding(); 
       renderApp(); 
+      setTimeout(initPullToRefresh, 500); // הבטחה שהאלמנטים קיימים
   }
 
-  // --- RESET PASSWORD SCREEN (Fixed) ---
   function renderResetPassword() {
       document.getElementById("root").innerHTML = `
       <div class="login-wrap">
@@ -294,41 +408,19 @@
           </div>
       </div>`;
       lucide.createIcons();
-      
       document.getElementById("reset-form").onsubmit = async (e) => {
           e.preventDefault();
           const newPass = e.target.newPass.value;
           await withLoader(document.querySelector(".login-box"), async () => {
-              // בדיקה קריטית: האם יש סשן? אם לא, אנחנו לא יכולים לעדכן
-              const { data: { session } } = await supabase.auth.getSession();
-              if (!session) {
-                  // ניסיון נואש אחרון - אולי ה-URL עדיין מכיל את הטוקן
-                  console.warn("Session missing during reset, trying to grab from URL...");
-                  const { error: sessionError } = await supabase.auth.getSession(); 
-                  if(sessionError) {
-                      alert("שגיאת סשן: פג תוקף הקישור. אנא שלח בקשת איפוס חדשה.");
-                      window.location.href = "/";
-                      return;
-                  }
-              }
-
               const { error } = await supabase.auth.updateUser({ password: newPass });
-              if (error) {
-                  alert("שגיאה בעדכון הסיסמה: " + error.message);
-              } else {
-                  alert("הסיסמה שונתה בהצלחה! מעביר אותך למערכת...");
-                  isRecoveryMode = false;
-                  // ניקוי ה-URL כדי שלא נחזור למצב שחזור בריענון
-                  window.history.replaceState(null, null, window.location.pathname);
-                  await loadData();
-                  render();
-              }
+              if (error) { alert("שגיאה בעדכון הסיסמה: " + error.message); } 
+              else { alert("הסיסמה שונתה בהצלחה! מעביר אותך למערכת..."); isRecoveryMode = false; window.history.replaceState(null, null, window.location.pathname); window.location.reload(); }
           });
       };
   }
 
-  function renderLogin() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="shield" style="width:32px;height:32px;"></i></div><h1 style="font-weight:900;font-size:1.8rem;margin-bottom:4px;">TicketFlow</h1><p style="color:#94a3b8;margin-bottom:30px;">מערכת ניהול תקלות מבצעית</p><form id="auth-form"><div class="field-group" style="text-align:right;"><label class="label">כתובת אימייל</label><input class="input" type="email" name="email" required /></div><div class="field-group" style="text-align:right;"><label class="label">סיסמה</label><input class="input" type="password" name="password" required /></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:0.85rem;"><a href="#" id="forgot-btn" style="color:var(--text-soft);text-decoration:none;">שכחתי סיסמה?</a></div><button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:20px;">כניסה למערכת</button><div style="margin-top:16px;font-size:0.8rem;"><span style="color:#64748b;">אין לך משתמש?</span> <a href="#" id="go-sign" style="color:#ec4899;text-decoration:none;font-weight:600;">הרשמה</a></div></form></div></div>`; lucide.createIcons(); const form = document.getElementById("auth-form"); form.onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.signInWithPassword({ email: form.email.value, password: form.password.value }); if(error) throw error; await loadData(); render(); }); }; document.getElementById("go-sign").onclick = async (e) => { e.preventDefault(); const em = prompt("אימייל:"); const pw = prompt("סיסמה:"); if(em&&pw) { const {data, error} = await supabase.auth.signUp({email:em, password:pw}); if(!error) { await supabase.from("users").insert({auth_user_id:data.user.id, email:em, role:"USER", role_status:"Pending"}); showModal("נרשמת בהצלחה", "כעת ניתן להתחבר."); } else showModal("שגיאה", error.message, true); } }; document.getElementById("forgot-btn").onclick = async (e) => { e.preventDefault(); const em = form.email.value || prompt("הכנס כתובת אימייל לשחזור:"); if(!em) return; await withLoader(document.querySelector(".login-box"), async () => { const {error} = await supabase.auth.resetPasswordForEmail(em, { redirectTo: window.location.href }); if(error) showModal("שגיאה", error.message, true); else showModal("הודעה נשלחה", "בדוק את האימייל שלך לקבלת קישור לאיפוס סיסמה."); }); }; }
-  function renderOnboarding() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="user-plus"></i></div><h2 style="margin-bottom:10px;">השלמת פרופיל</h2><form id="onb-form" style="text-align:right;"><div class="field-group"><label class="label">שם מלא</label><input class="input" name="fullName" required value="${escapeHtml(currentUser?.fullName||"")}" /></div><div class="field-group"><label class="label">טלפון</label><input class="input" name="phone" required value="${escapeHtml(currentUser?.phone||"")}" /></div><div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא</option>${units.map(u => `<option value="${escapeHtml(u.name)}">${escapeHtml(u.name)}</option>`).join("")}</select></div><button class="btn btn-primary" style="width:100%;justify-content:center;">שמירה והמשך</button></form></div></div>`; lucide.createIcons(); document.getElementById("onb-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { await supabase.from("users").update({ full_name: e.target.fullName.value, phone: e.target.phone.value, unit: e.target.unit.value, role_status: "Pending" }).eq("id", currentUser.id); await loadData(); render(); }); }; }
+  function renderLogin() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="shield" style="width:32px;height:32px;"></i></div><h1 style="font-weight:900;font-size:1.8rem;margin-bottom:4px;">TicketFlow</h1><p style="color:#94a3b8;margin-bottom:30px;">מערכת ניהול תקלות מבצעית</p><form id="auth-form"><div class="field-group" style="text-align:right;"><label class="label">כתובת אימייל</label><input class="input" type="email" name="email" required /></div><div class="field-group" style="text-align:right;"><label class="label">סיסמה</label><input class="input" type="password" name="password" required /></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:0.85rem;"><a href="#" id="forgot-btn" style="color:var(--text-soft);text-decoration:none;">שכחתי סיסמה?</a></div><button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:20px;">כניסה למערכת</button><div style="margin-top:16px;font-size:0.8rem;"><span style="color:#64748b;">אין לך משתמש?</span> <a href="#" id="go-sign" style="color:#ec4899;text-decoration:none;font-weight:600;">הרשמה</a></div></form></div></div>`; lucide.createIcons(); const form = document.getElementById("auth-form"); form.onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.signInWithPassword({ email: form.email.value, password: form.password.value }); if(error) throw error; await loadData(); setupRealtime(); render(); }); }; document.getElementById("go-sign").onclick = async (e) => { e.preventDefault(); const em = prompt("אימייל:"); const pw = prompt("סיסמה:"); if(em&&pw) { const {data, error} = await supabase.auth.signUp({email:em, password:pw}); if(!error) { await supabase.from("users").insert({auth_user_id:data.user.id, email:em, role:"USER", role_status:"Pending"}); showModal("נרשמת בהצלחה", "כעת ניתן להתחבר."); } else showModal("שגיאה", error.message, true); } }; document.getElementById("forgot-btn").onclick = async (e) => { e.preventDefault(); const em = form.email.value || prompt("הכנס כתובת אימייל לשחזור:"); if(!em) return; await withLoader(document.querySelector(".login-box"), async () => { const {error} = await supabase.auth.resetPasswordForEmail(em, { redirectTo: window.location.href }); if(error) showModal("שגיאה", error.message, true); else showModal("הודעה נשלחה", "בדוק את האימייל שלך לקבלת קישור לאיפוס סיסמה."); }); }; }
+  function renderOnboarding() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="user-plus"></i></div><h2 style="margin-bottom:10px;">השלמת פרופיל</h2><form id="onb-form" style="text-align:right;"><div class="field-group"><label class="label">שם מלא</label><input class="input" name="fullName" required value="${escapeHtml(currentUser?.fullName||"")}" /></div><div class="field-group"><label class="label">טלפון</label><input class="input" name="phone" required value="${escapeHtml(currentUser?.phone||"")}" /></div><div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא</option>${units.map(u => `<option value="${escapeHtml(u.name)}">${escapeHtml(u.name)}</option>`).join("")}</select></div><button class="btn btn-primary" style="width:100%;justify-content:center;">שמירה והמשך</button></form></div></div>`; lucide.createIcons(); document.getElementById("onb-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { await supabase.from("users").update({ full_name: e.target.fullName.value, phone: e.target.phone.value, unit: e.target.unit.value, role_status: "Pending" }).eq("id", currentUser.id); await loadData(); setupRealtime(); render(); }); }; }
 
   function renderApp() {
     const isOwner = currentUser.role === 'OWNER';
@@ -350,6 +442,7 @@
             <div class="nav-label">ניהול</div>
             ${isManager ? `<div class="nav-item ${activePage==='ALL_TICKETS'?'active':''}" onclick="nav('ALL_TICKETS')"><i data-lucide="layers"></i><span>כל התקלות</span></div>` : ''}
             ${isManager ? `<div class="nav-item ${activePage==='ANALYTICS'?'active':''}" onclick="nav('ANALYTICS')"><i data-lucide="bar-chart-3"></i><span>אנליטיקה</span></div>` : ''}
+            ${isManager ? `<div class="nav-item ${activePage==='NOTIFICATIONS'?'active':''}" onclick="nav('NOTIFICATIONS')"><i data-lucide="bell-ring"></i><span>הגדרות התראות</span></div>` : ''}
             ${isOwner ? `<div class="nav-item ${activePage==='MANAGE_USERS'?'active':''}" onclick="nav('MANAGE_USERS')"><i data-lucide="users"></i><span>ניהול משתמשים</span> ${pendingManagerRequests > 0 ? `<span class="notification-dot"></span>` : ''}</div>` : ''} 
             ${isOwner ? `<div class="nav-item ${activePage==='ROLE_APPROVAL'?'active':''}" onclick="nav('ROLE_APPROVAL')"><i data-lucide="shield-check"></i><span>אישור תפקידים</span></div>` : ''}
             <div class="nav-item ${activePage==='PROFILE'?'active':''}" onclick="nav('PROFILE')"><i data-lucide="user-circle"></i><span>פרופיל אישי</span></div>
@@ -367,304 +460,102 @@
     main.classList.remove("page-animate"); void main.offsetWidth; main.classList.add("page-animate");    
     main.innerHTML = "";
     
-    // --- HOME ---
     if(activePage === "HOME") {
       const myOpen = tickets.filter(t => !t.isClosed && (t.createdByUserId===currentUser.id || t.assignedUserId===currentUser.id)).length;
       const totalOpen = tickets.filter(t => !t.isClosed).length;
       const totalClosed = tickets.filter(t => t.isClosed).length;
       const hamalOpen = tickets.filter(t => !t.isClosed && t.isHamalDown).length;
-      
-      main.innerHTML = `<header class="header"><div><div class="page-title">בוקר טוב, ${escapeHtml(currentUser.fullName?.split(' ')[0]||'חבר')} 👋</div><div class="page-subtitle">סטטוס מבצעי עדכני</div></div><button class="btn btn-primary" onclick="nav('CREATE')"><i data-lucide="plus"></i>תקלה חדשה</button></header>
-      <div class="grid-dashboard">
-        <div class="stat-card"><div class="stat-val" style="color:#ec4899;">${myOpen}</div><div class="stat-lbl">תקלות שלי</div></div>
-        <div class="stat-card"><div class="stat-val" style="color:#8b5cf6;">${totalOpen}</div><div class="stat-lbl">סה״כ פתוחות</div></div>
-        <div class="stat-card"><div class="stat-val" style="color:#10b981;">${totalClosed}</div><div class="stat-lbl">תקלות שטופלו</div></div>
-        <div class="stat-card" style="border-color:${hamalOpen>0?'var(--urgent)':'var(--border)'}"><div class="stat-val" style="color:#ef4444;">${hamalOpen}</div><div class="stat-lbl">מושבת (חמ"ל)</div></div>
-      </div>
-      <div class="card"><div class="card-title"><i data-lucide="clock"></i> עדכונים אחרונים</div>${tickets.slice(0,5).map((t,i) => {
-         const isLate = !t.isClosed && isOverHour(t.createdAt);
-         return `<div class="list-item ${isLate ? 'ticket-urgent' : ''}" style="animation-delay:${i*0.05}s" onclick="nav('DETAILS', '${t.id}')"><div style="display:flex;align-items:center;gap:12px;"><div class="badge badge-${t.status}" style="width:8px;height:8px;padding:0;border-radius:50%;"></div><div><div style="font-weight:600;font-size:0.9rem;">${t.isHamalDown ? '🚨 ' : ''}${escapeHtml(t.title)}</div><div style="font-size:0.75rem;color:var(--text-soft);">${timeAgo(t.createdAt)} • ${escapeHtml(t.createdByName)}</div></div></div><div class="badge badge-${t.status}">${t.status === 'RESOLVED' ? 'טופל' : (STATUS_LABEL[t.status] || t.status)}</div></div>`;
-      }).join('')}</div>`;
+      main.innerHTML = `<header class="header"><div><div class="page-title">בוקר טוב, ${escapeHtml(currentUser.fullName?.split(' ')[0]||'חבר')} 👋</div><div class="page-subtitle">סטטוס מבצעי עדכני</div></div><button class="btn btn-primary" onclick="nav('CREATE')"><i data-lucide="plus"></i>תקלה חדשה</button></header><div class="grid-dashboard"><div class="stat-card"><div class="stat-val" style="color:#ec4899;">${myOpen}</div><div class="stat-lbl">תקלות שלי</div></div><div class="stat-card"><div class="stat-val" style="color:#8b5cf6;">${totalOpen}</div><div class="stat-lbl">סה״כ פתוחות</div></div><div class="stat-card"><div class="stat-val" style="color:#10b981;">${totalClosed}</div><div class="stat-lbl">תקלות שטופלו</div></div><div class="stat-card" style="border-color:${hamalOpen>0?'var(--urgent)':'var(--border)'}"><div class="stat-val" style="color:#ef4444;">${hamalOpen}</div><div class="stat-lbl">מושבת (חמ"ל)</div></div></div><div class="card"><div class="card-title"><i data-lucide="clock"></i> עדכונים אחרונים</div>${tickets.slice(0,5).map((t,i) => { const isLate = !t.isClosed && isOverHour(t.createdAt); return `<div class="list-item ${isLate ? 'ticket-urgent' : ''}" style="animation-delay:${i*0.05}s" onclick="nav('DETAILS', '${t.id}')"><div style="display:flex;align-items:center;gap:12px;"><div class="badge badge-${t.status}" style="width:8px;height:8px;padding:0;border-radius:50%;"></div><div><div style="font-weight:600;font-size:0.9rem;">${t.isHamalDown ? '🚨 ' : ''}${escapeHtml(t.title)}</div><div style="font-size:0.75rem;color:var(--text-soft);">${timeAgo(t.createdAt)} • ${escapeHtml(t.createdByName)}</div></div></div><div class="badge badge-${t.status}">${t.status === 'RESOLVED' ? 'טופל' : (STATUS_LABEL[t.status] || t.status)}</div></div>`; }).join('')}</div>`;
     }
 
-    // --- LISTS (WITH SEARCH & FILTER) ---
     if(activePage === "MY_TICKETS" || activePage === "ALL_TICKETS") {
       const isAll = activePage === "ALL_TICKETS";
       if (typeof window.filterState === 'undefined') window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" };
       window.setSearch = (val) => { window.filterState.search = val.toLowerCase(); render(); }; window.setSort = (val) => { window.filterState.sort = val; render(); }; window.setFilterTopic = (val) => { window.filterState.topic = val; render(); }; window.setFilterRole = (val) => { window.filterState.role = val; render(); }; window.clearFilters = () => { window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" }; render(); showToast("הסינון אופס"); };
-      
       let list = isAll ? tickets : tickets.filter(t => t.createdByUserId===currentUser.id || t.assignedUserId===currentUser.id || t.assignedRole===currentUser.role);
       list = list.filter(t => t.isClosed === showClosed);
-
       if (window.filterState.search) list = list.filter(t => (t.title && t.title.toLowerCase().includes(window.filterState.search)) || (t.ticketNumber && t.ticketNumber.toString().includes(window.filterState.search)) || (t.createdByName && t.createdByName.toLowerCase().includes(window.filterState.search)));
       if (window.filterState.topic !== "ALL") list = list.filter(t => t.topic === window.filterState.topic);
       if (window.filterState.role !== "ALL") list = list.filter(t => t.assignedRole === window.filterState.role);
       list.sort((a,b) => { const dateA = new Date(a.createdAt).getTime(); const dateB = new Date(b.createdAt).getTime(); return window.filterState.sort === "DESC" ? dateB - dateA : dateA - dateB; });
       const hasActiveFilters = window.filterState.search !== "" || window.filterState.topic !== "ALL" || window.filterState.role !== "ALL";
-
-      main.innerHTML = `
-        <header class="header"><div class="page-title">${isAll?'כל התקלות':'התקלות שלי'} <span style="font-size:1rem;opacity:0.5;">(${list.length})</span></div><div><button class="btn ${showClosed?'btn-primary':'btn-ghost'}" onclick="toggleClosed()"><i data-lucide="archive"></i> ${showClosed ? 'חזרה לפתוחות' : 'ארכיון'}</button></div></header>
-        <div class="card" style="padding:16px; margin-bottom:20px; background:rgba(30, 41, 59, 0.7);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><div style="font-size:0.85rem; font-weight:600; color:var(--text-soft);">חיפוש וסינון</div>${hasActiveFilters ? `<button onclick="clearFilters()" style="background:none; border:none; color:#ec4899; font-size:0.8rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px;"><i data-lucide="x-circle" style="width:14px; height:14px;"></i> איפוס</button>` : ''}</div><div style="position:relative; margin-bottom:12px;"><i data-lucide="search" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--text-soft); width:18px;"></i><input class="input" placeholder="הקלד לחיפוש..." value="${window.filterState.search}" oninput="setSearch(this.value)" style="padding-right:38px; background:rgba(0,0,0,0.3); border-color:rgba(255,255,255,0.1);" /></div><div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;"><select class="select ${window.filterState.sort!=='DESC'?'active-filter':''}" onchange="setSort(this.value)" style="min-width:110px;"><option value="DESC" ${window.filterState.sort==='DESC'?'selected':''}>📅 חדש</option><option value="ASC" ${window.filterState.sort==='ASC'?'selected':''}>📅 ישן</option></select><select class="select ${window.filterState.topic!=='ALL'?'active-filter':''}" onchange="setFilterTopic(this.value)" style="min-width:100px;"><option value="ALL">🔧 נושא</option><option value="חומרה" ${window.filterState.topic==='חומרה'?'selected':''}>חומרה</option><option value="תוכנה" ${window.filterState.topic==='תוכנה'?'selected':''}>תוכנה</option><option value="רשת" ${window.filterState.topic==='רשת'?'selected':''}>רשת</option><option value="הרשאות" ${window.filterState.topic==='הרשאות'?'selected':''}>הרשאות</option><option value="אחר" ${window.filterState.topic==='אחר'?'selected':''}>אחר</option></select><select class="select ${window.filterState.role!=='ALL'?'active-filter':''}" onchange="setFilterRole(this.value)" style="min-width:100px;"><option value="ALL">👮 תפקיד</option><option value="HATAP" ${window.filterState.role==='HATAP'?'selected':''}>חט"פ</option><option value="HR" ${window.filterState.role==='HR'?'selected':''}>מש"א</option><option value="PLHIK" ${window.filterState.role==='PLHIK'?'selected':''}>פלחי"ק</option><option value="MAMRAM" ${window.filterState.role==='MAMRAM'?'selected':''}>ממר"ם</option></select></div></div>
-        
-        <div class="card" style="padding:0; background:transparent; border:none; box-shadow:none;">
-            ${list.map(t => {
-                const isOver1Hour = !t.isClosed && isOverHour(t.createdAt);
-                let itemClass = '';
-                if (t.isHamalDown) itemClass = 'ticket-hamal';
-                else if (isOver1Hour) itemClass = 'ticket-urgent';
-                
-                return `
-                <div class="list-item ${itemClass}" onclick="nav('DETAILS', '${t.id}')">
-                  <div style="display:flex; gap:16px; align-items:center;">
-                    <div style="font-family:monospace; opacity:0.5; font-size:0.8rem;">#${t.ticketNumber}</div>
-                    <div>
-                      <div style="font-weight:700; font-size:0.95rem;">${t.isHamalDown ? '🚨 ' : ''}${escapeHtml(t.title)}</div>
-                      <div style="font-size:0.75rem; color:var(--text-soft); display:flex; gap:8px;">
-                        <span>${timeAgo(t.createdAt)}</span> • <span>${roleLabel(t.assignedRole)}</span>
-                        ${isOver1Hour ? '<span style="color:var(--urgent); font-weight:bold;">(בעיכוב)</span>' : ''}
-                      </div>
-                    </div>
-                  </div>
-                  <div class="badge badge-${t.status}">${STATUS_LABEL[t.status] || t.status}</div>
-                </div>`;
-            }).join('')}
-            ${list.length === 0 ? '<div style="text-align:center;padding:20px;opacity:0.5;">לא נמצאו תקלות</div>' : ''}
-            ${tickets.length >= fetchLimit ? `<div style="text-align:center; padding:20px;"><button id="load-more-btn" class="btn btn-ghost" onclick="loadMoreData()">טען תקלות ישנות יותר <i data-lucide="arrow-down"></i></button></div>` : ''}
-        </div>`;
+      main.innerHTML = `<header class="header"><div class="page-title">${isAll?'כל התקלות':'התקלות שלי'} <span style="font-size:1rem;opacity:0.5;">(${list.length})</span></div><div><button class="btn ${showClosed?'btn-primary':'btn-ghost'}" onclick="toggleClosed()"><i data-lucide="archive"></i> ${showClosed ? 'חזרה לפתוחות' : 'ארכיון'}</button></div></header><div class="card" style="padding:16px; margin-bottom:20px; background:rgba(30, 41, 59, 0.7);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><div style="font-size:0.85rem; font-weight:600; color:var(--text-soft);">חיפוש וסינון</div>${hasActiveFilters ? `<button onclick="clearFilters()" style="background:none; border:none; color:#ec4899; font-size:0.8rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px;"><i data-lucide="x-circle" style="width:14px; height:14px;"></i> איפוס</button>` : ''}</div><div style="position:relative; margin-bottom:12px;"><i data-lucide="search" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--text-soft); width:18px;"></i><input class="input" placeholder="הקלד לחיפוש..." value="${window.filterState.search}" oninput="setSearch(this.value)" style="padding-right:38px; background:rgba(0,0,0,0.3); border-color:rgba(255,255,255,0.1);" /></div><div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;"><select class="select ${window.filterState.sort!=='DESC'?'active-filter':''}" onchange="setSort(this.value)" style="min-width:110px;"><option value="DESC" ${window.filterState.sort==='DESC'?'selected':''}>📅 חדש</option><option value="ASC" ${window.filterState.sort==='ASC'?'selected':''}>📅 ישן</option></select><select class="select ${window.filterState.topic!=='ALL'?'active-filter':''}" onchange="setFilterTopic(this.value)" style="min-width:100px;"><option value="ALL">🔧 נושא</option><option value="חומרה" ${window.filterState.topic==='חומרה'?'selected':''}>חומרה</option><option value="תוכנה" ${window.filterState.topic==='תוכנה'?'selected':''}>תוכנה</option><option value="רשת" ${window.filterState.topic==='רשת'?'selected':''}>רשת</option><option value="הרשאות" ${window.filterState.topic==='הרשאות'?'selected':''}>הרשאות</option><option value="אחר" ${window.filterState.topic==='אחר'?'selected':''}>אחר</option></select><select class="select ${window.filterState.role!=='ALL'?'active-filter':''}" onchange="setFilterRole(this.value)" style="min-width:100px;"><option value="ALL">👮 תפקיד</option><option value="HATAP" ${window.filterState.role==='HATAP'?'selected':''}>חט"פ</option><option value="HR" ${window.filterState.role==='HR'?'selected':''}>מש"א</option><option value="PLHIK" ${window.filterState.role==='PLHIK'?'selected':''}>פלחי"ק</option><option value="MAMRAM" ${window.filterState.role==='MAMRAM'?'selected':''}>ממר"ם</option></select></div></div><div class="card" style="padding:0; background:transparent; border:none; box-shadow:none;">${list.map(t => { const isOver1Hour = !t.isClosed && isOverHour(t.createdAt); let itemClass = ''; if (t.isHamalDown) itemClass = 'ticket-hamal'; else if (isOver1Hour) itemClass = 'ticket-urgent'; return `<div class="list-item ${itemClass}" onclick="nav('DETAILS', '${t.id}')"><div style="display:flex; gap:16px; align-items:center;"><div style="font-family:monospace; opacity:0.5; font-size:0.8rem;">#${t.ticketNumber}</div><div><div style="font-weight:700; font-size:0.95rem;">${t.isHamalDown ? '🚨 ' : ''}${escapeHtml(t.title)}</div><div style="font-size:0.75rem; color:var(--text-soft); display:flex; gap:8px;"><span>${timeAgo(t.createdAt)}</span> • <span>${roleLabel(t.assignedRole)}</span>${isOver1Hour ? '<span style="color:var(--urgent); font-weight:bold;">(בעיכוב)</span>' : ''}</div></div></div><div class="badge badge-${t.status}">${STATUS_LABEL[t.status] || t.status}</div></div>`; }).join('')}${list.length === 0 ? '<div style="text-align:center;padding:20px;opacity:0.5;">לא נמצאו תקלות</div>' : ''}${tickets.length >= fetchLimit ? `<div style="text-align:center; padding:20px;"><button id="load-more-btn" class="btn btn-ghost" onclick="loadMoreData()">טען תקלות ישנות יותר <i data-lucide="arrow-down"></i></button></div>` : ''}</div>`;
     }
 
-    // --- CREATE ---
     if(activePage === "CREATE") {
       const isSimpleUser = currentUser.role === 'USER';
-      const roleOptions = isSimpleUser 
-        ? `<option value="HATAP">חט"פ</option>` 
-        : `<option value="HATAP">חט"פ</option><option value="HR">מש"א</option><option value="PLHIK">פלחי"ק</option><option value="MAMRAM">ממר"ם</option><option value="APP">אפליקציה</option><option value="NETWORK">רשת</option>`;
-
-      main.innerHTML = `<header class="header"><div class="page-title">פתיחת קריאה</div></header><div class="card" style="width:100%;"><form id="create-form">
-        <div style="margin-bottom:20px; padding:15px; border:1px solid #ef4444; background:rgba(239,68,68,0.1); border-radius:12px; display:flex; align-items:center; gap:10px;">
-            <input type="checkbox" name="hamalDown" id="hamalDown" style="width:20px; height:20px; accent-color:#ef4444;">
-            <label for="hamalDown" style="color:#ef4444; font-weight:800; font-size:1.1rem;">🚨 חמ"ל מושבת (דחיפות עליונה)</label>
-        </div>
-        <div class="grid-2cols"><div class="field-group"><label class="label">נושא</label><select class="select" name="topic"><option>חומרה</option><option>תוכנה</option><option>רשת</option><option>הרשאות</option><option>אחר</option></select></div><div class="field-group"><label class="label">גורם מטפל</label><select class="select" name="role">${roleOptions}</select></div></div><div class="field-group"><label class="label">כותרת</label><input class="input" name="title" required /></div><div class="field-group"><label class="label">פירוט</label><textarea class="textarea" name="desc" required style="min-height:150px;"></textarea></div><div class="field-group"><label for="file-upload" class="file-upload-label"><i data-lucide="paperclip"></i><span>צרף תמונה...</span></label><input id="file-upload" type="file" accept="image/*" style="display:none;" onchange="this.previousElementSibling.querySelector('span').innerText = this.files[0] ? this.files[0].name : 'נבחר קובץ'"></div><button class="btn btn-primary" type="submit">שלח קריאה</button></form></div>`;
-      
-      document.getElementById("create-form").onsubmit = async (e) => { e.preventDefault(); const fd = new FormData(e.target); const fileFile = document.getElementById("file-upload").files[0]; const isHamal = document.getElementById("hamalDown").checked; 
-      await withLoader(document.querySelector(".card"), async () => { 
-          let imageUrl = null; 
-          if(fileFile) { const fileName = `${Date.now()}_${fileFile.name}`; const { error: upErr } = await supabase.storage.from('attachments').upload(fileName, fileFile); if(!upErr) { const { data } = supabase.storage.from('attachments').getPublicUrl(fileName); imageUrl = data.publicUrl; } } 
-          const num = await getNextNum(); 
-          const {data:t, error} = await supabase.from("tickets").insert({ ticket_number: num, title: fd.get("title"), description: fd.get("desc"), topic: fd.get("topic"), created_by_user_id: currentUser.id, created_by_name: currentUser.fullName, created_by_email: currentUser.email, unit: currentUser.unit, assigned_role: fd.get("role"), status: "OPEN", is_closed: false, image_url: imageUrl, is_hamal_down: isHamal }).select().single(); 
-          if(error) throw error; 
-          let notifyTitle = isHamal ? "🚨 חמ״ל מושבת! 🚨" : "✨ תקלה חדשה";
-          const notifyUsers = isHamal ? users.filter(u => u.role === 'OWNER' || u.isManager).map(u => u.id) : getNotifyUserIdsForTicket(t, currentUser.id);
-          pushTicketShort({ userIds: notifyUsers, ticketId: num, title: notifyTitle, message: t.title }); 
-          await loadData(); nav("DETAILS", t.id); 
-      }); };
+      const roleOptions = isSimpleUser ? `<option value="HATAP">חט"פ</option>` : `<option value="HATAP">חט"פ</option><option value="HR">מש"א</option><option value="PLHIK">פלחי"ק</option><option value="MAMRAM">ממר"ם</option><option value="APP">אפליקציה</option><option value="NETWORK">רשת</option>`;
+      main.innerHTML = `<header class="header"><div class="page-title">פתיחת קריאה</div></header><div class="card" style="width:100%;"><form id="create-form"><div style="margin-bottom:20px; padding:15px; border:1px solid #ef4444; background:rgba(239,68,68,0.1); border-radius:12px; display:flex; align-items:center; gap:10px;"><input type="checkbox" name="hamalDown" id="hamalDown" style="width:20px; height:20px; accent-color:#ef4444;"><label for="hamalDown" style="color:#ef4444; font-weight:800; font-size:1.1rem;">🚨 חמ"ל מושבת (דחיפות עליונה)</label></div><div class="grid-2cols"><div class="field-group"><label class="label">נושא</label><select class="select" name="topic"><option>חומרה</option><option>תוכנה</option><option>רשת</option><option>הרשאות</option><option>אחר</option></select></div><div class="field-group"><label class="label">גורם מטפל</label><select class="select" name="role">${roleOptions}</select></div></div><div class="field-group"><label class="label">כותרת</label><input class="input" name="title" required /></div><div class="field-group"><label class="label">פירוט</label><textarea class="textarea" name="desc" required style="min-height:150px;"></textarea></div><div class="field-group"><label for="file-upload" class="file-upload-label"><i data-lucide="paperclip"></i><span>צרף תמונה...</span></label><input id="file-upload" type="file" accept="image/*" style="display:none;" onchange="this.previousElementSibling.querySelector('span').innerText = this.files[0] ? this.files[0].name : 'נבחר קובץ'"></div><button class="btn btn-primary" type="submit">שלח קריאה</button></form></div>`;
+      document.getElementById("create-form").onsubmit = async (e) => { e.preventDefault(); const fd = new FormData(e.target); const fileFile = document.getElementById("file-upload").files[0]; const isHamal = document.getElementById("hamalDown").checked; await withLoader(document.querySelector(".card"), async () => { let imageUrl = null; if(fileFile) { const fileName = `${Date.now()}_${fileFile.name}`; const { error: upErr } = await supabase.storage.from('attachments').upload(fileName, fileFile); if(!upErr) { const { data } = supabase.storage.from('attachments').getPublicUrl(fileName); imageUrl = data.publicUrl; } } const num = await getNextNum(); const {data:t, error} = await supabase.from("tickets").insert({ ticket_number: num, title: fd.get("title"), description: fd.get("desc"), topic: fd.get("topic"), created_by_user_id: currentUser.id, created_by_name: currentUser.fullName, created_by_email: currentUser.email, unit: currentUser.unit, assigned_role: fd.get("role"), status: "OPEN", is_closed: false, image_url: imageUrl, is_hamal_down: isHamal }).select().single(); if(error) throw error; let notifyTitle = isHamal ? "🚨 חמ״ל מושבת! 🚨" : "✨ תקלה חדשה"; const notifyUsers = isHamal ? users.filter(u => u.role === 'OWNER' || u.isManager).map(u => u.id) : users.filter(u => { const shouldNotify = u.settings ? u.settings.notifyNew !== false : true; return u.role === t.assigned_role && shouldNotify && u.id !== currentUser.id; }).map(u => u.id); pushTicketShort({ userIds: notifyUsers, ticketId: num, title: notifyTitle, message: t.title }); await loadData(); nav("DETAILS", t.id); }); };
     }
 
-    // --- DETAILS ---
     if(activePage === "DETAILS") {
       const t = tickets.find(x => x.id == selectedTicketId);
       if(!t) return nav("HOME");
       const isOwner = currentUser.role === 'OWNER';
       const canTakeResponsibility = (t.assignedRole === currentUser.role || isOwner) && t.status === 'OPEN';
-      main.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;"><button class="btn" onclick="nav('HOME')"><i data-lucide="chevron-left"></i></button><div class="page-title">תקלה #${t.ticketNumber}</div></div>
-      ${t.isHamalDown ? '<div style="background:#ef4444; color:white; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:bold; text-align:center; animation:pulseRed 2s infinite;">🚨 התראה: חמ"ל מושבת</div>' : ''}
-      <div class="card">
-        ${canTakeResponsibility ? `<button onclick="takeTicket('${t.id}')" class="btn btn-primary" style="width:100%; justify-content:center; margin-bottom:20px; background:#10b981; border-color:#10b981;">✋ קח לטיפולך (שיוך עצמי)</button>` : ''}
-        <div style="font-size:1.2rem;font-weight:700;margin-bottom:10px;">${escapeHtml(t.title)}</div>
-        <div style="color:var(--text-soft);margin-bottom:20px;white-space:pre-wrap;">${escapeHtml(t.description)}</div>
-        ${t.imageUrl ? `<img src="${t.imageUrl}" class="ticket-image-preview" onclick="window.open('${t.imageUrl}')" />` : ''}
-        <div class="grid-2cols" style="background:rgba(255,255,255,0.05);padding:15px;border-radius:12px;">
-            <div><span class="label">נפתח ע״י</span>${escapeHtml(t.createdByName)}</div>
-            <div><span class="label">יחידה</span>${escapeHtml(t.unit||'-')}</div>
-            <div><span class="label">אחראי</span>${t.assignedUserId ? '👤 מטופל ע"י נציג' : roleLabel(t.assignedRole)}</div>
-            <div><span class="label">סטטוס</span>${STATUS_LABEL[t.status]}</div>
-        </div>
-        ${(isOwner || currentUser.isManager || t.assignedRole===currentUser.role) ? `<div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);"><div class="label">עדכון סטטוס</div><div style="display:flex; gap:10px;"><select class="select" id="upd-status"><option value="OPEN" ${t.status=='OPEN'?'selected':''}>פתוח</option><option value="IN_PROGRESS" ${t.status=='IN_PROGRESS'?'selected':''}>בטיפול</option><option value="RESOLVED" ${t.status=='RESOLVED'?'selected':''}>טופל (סגירה)</option></select><button class="btn btn-primary" onclick="updateTicket('${t.id}')">עדכן</button></div></div>` : ''}
-      </div>
-      <div class="card" style="margin-top:20px;">
-        <div class="card-title">יומן טיפול</div>
-        <div style="max-height:300px;overflow-y:auto;margin-bottom:15px;">${comments.filter(c=>c.ticketId==t.id).map(c=>`<div class="chat-bubble"><div class="chat-meta"><b>${escapeHtml(c.authorName)}</b> <span>${formatDate(c.createdAt)}</span></div>${escapeHtml(c.content)}</div>`).join('')}</div>
-        <form onsubmit="postComment(event, '${t.id}')" style="display:flex;gap:8px;"><input class="input" name="txt" placeholder="כתוב תגובה..." required /><button class="btn btn-primary"><i data-lucide="send"></i></button></form>
-      </div>`;
+      main.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;"><button class="btn" onclick="nav('HOME')"><i data-lucide="chevron-left"></i></button><div class="page-title">תקלה #${t.ticketNumber}</div></div>${t.isHamalDown ? '<div style="background:#ef4444; color:white; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:bold; text-align:center; animation:pulseRed 2s infinite;">🚨 התראה: חמ"ל מושבת</div>' : ''}<div class="card">${canTakeResponsibility ? `<button onclick="takeTicket('${t.id}')" class="btn btn-primary" style="width:100%; justify-content:center; margin-bottom:20px; background:#10b981; border-color:#10b981;">✋ קח לטיפולך (שיוך עצמי)</button>` : ''}<div style="font-size:1.2rem;font-weight:700;margin-bottom:10px;">${escapeHtml(t.title)}</div><div style="color:var(--text-soft);margin-bottom:20px;white-space:pre-wrap;">${escapeHtml(t.description)}</div>${t.imageUrl ? `<img src="${t.imageUrl}" class="ticket-image-preview" onclick="window.open('${t.imageUrl}')" />` : ''}<div class="grid-2cols" style="background:rgba(255,255,255,0.05);padding:15px;border-radius:12px;"><div><span class="label">נפתח ע״י</span>${escapeHtml(t.createdByName)}</div><div><span class="label">יחידה</span>${escapeHtml(t.unit||'-')}</div><div><span class="label">אחראי</span>${t.assignedUserId ? '👤 מטופל ע"י נציג' : roleLabel(t.assignedRole)}</div><div><span class="label">סטטוס</span>${STATUS_LABEL[t.status]}</div></div>${(isOwner || currentUser.isManager || t.assignedRole===currentUser.role) ? `<div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);"><div class="label">עדכון סטטוס</div><div style="display:flex; gap:10px;"><select class="select" id="upd-status"><option value="OPEN" ${t.status=='OPEN'?'selected':''}>פתוח</option><option value="IN_PROGRESS" ${t.status=='IN_PROGRESS'?'selected':''}>בטיפול</option><option value="RESOLVED" ${t.status=='RESOLVED'?'selected':''}>טופל (סגירה)</option></select><button class="btn btn-primary" onclick="updateTicket('${t.id}')">עדכן</button></div></div>` : ''}</div><div class="card" style="margin-top:20px;"><div class="card-title">יומן טיפול</div><div style="max-height:300px;overflow-y:auto;margin-bottom:15px;">${comments.filter(c=>c.ticketId==t.id).map(c=>`<div class="chat-bubble"><div class="chat-meta"><b>${escapeHtml(c.authorName)}</b> <span>${formatDate(c.createdAt)}</span></div>${escapeHtml(c.content)}</div>`).join('')}</div><form onsubmit="postComment(event, '${t.id}')" style="display:flex;gap:8px;"><input class="input" name="txt" placeholder="כתוב תגובה..." required /><button class="btn btn-primary"><i data-lucide="send"></i></button></form></div>`;
     }
 
-    // --- MANAGE USERS ---
     if(activePage === "MANAGE_USERS") {
         if(currentUser.role !== 'OWNER') return nav('HOME');
-        main.innerHTML = `<header class="header"><div class="page-title">ניהול משתמשים</div></header><div class="card" style="overflow-x:auto;"><table class="table"><thead><tr><th>שם</th><th>תפקיד</th><th>מנהל?</th><th>יחידה</th><th>סטטוס</th><th>הקפאה</th></tr></thead><tbody>${users.map(u => `<tr><td>${escapeHtml(u.fullName)}</td><td>${roleLabel(u.role)}</td><td>
-            <div style="display:flex;align-items:center;gap:6px;">
-                <input type="checkbox" ${u.isManager?'checked':''} onchange="toggleManager('${u.id}', this.checked)">
-                ${u.requestedManager ? '<span class="badge" style="background:#ec4899;color:white;font-size:0.6rem;animation:pulseRed 2s infinite;">מבקש!</span>' : ''}
-            </div>
-        </td><td>${escapeHtml(u.unit||'-')}</td><td>${u.roleStatus}</td><td><label class="switch"><input type="checkbox" ${u.isFrozen?'checked':''} onchange="toggleFreeze('${u.id}', this.checked)"><span class="slider"></span></label></td></tr>`).join('')}</tbody></table></div>`;
+        main.innerHTML = `<header class="header"><div class="page-title">ניהול משתמשים</div></header><div class="card" style="overflow-x:auto;"><table class="table"><thead><tr><th>שם</th><th>תפקיד</th><th>מנהל?</th><th>יחידה</th><th>סטטוס</th><th>הקפאה</th></tr></thead><tbody>${users.map(u => `<tr><td>${escapeHtml(u.fullName)}</td><td>${roleLabel(u.role)}</td><td><div style="display:flex;align-items:center;gap:6px;"><input type="checkbox" ${u.isManager?'checked':''} onchange="toggleManager('${u.id}', this.checked)">${u.requestedManager ? '<span class="badge" style="background:#ec4899;color:white;font-size:0.6rem;animation:pulseRed 2s infinite;">מבקש!</span>' : ''}</div></td><td>${escapeHtml(u.unit||'-')}</td><td>${u.roleStatus}</td><td><label class="switch"><input type="checkbox" ${u.isFrozen?'checked':''} onchange="toggleFreeze('${u.id}', this.checked)"><span class="slider"></span></label></td></tr>`).join('')}</tbody></table></div>`;
     }
 
-    // --- ANALYTICS (REVISED) ---
     if(activePage === "ANALYTICS") {
-        // Date helpers for filtering
         window.setView = (v) => { analyticsView = v; render(); };
-        window.moveDate = (dir) => { 
-            const d = new Date(analyticsRefDate);
-            if(analyticsView === 'WEEK') d.setDate(d.getDate() + (dir * 7));
-            else d.setMonth(d.getMonth() + dir);
-            analyticsRefDate = d;
-            render();
-        };
-
-        const getStartEnd = () => {
-            const now = new Date(analyticsRefDate);
-            let start, end;
-            if (analyticsView === 'WEEK') {
-                const day = now.getDay(); 
-                const diff = now.getDate() - day + (day == 0 ? -6 : 1) -1; // adjust to get Sunday
-                start = new Date(now.setDate(diff));
-                start.setHours(0,0,0,0);
-                end = new Date(start);
-                end.setDate(end.getDate() + 6);
-                end.setHours(23,59,59,999);
-            } else {
-                start = new Date(now.getFullYear(), now.getMonth(), 1);
-                end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-            }
-            return {start, end};
-        };
-
+        window.moveDate = (dir) => { const d = new Date(analyticsRefDate); if(analyticsView === 'WEEK') d.setDate(d.getDate() + (dir * 7)); else d.setMonth(d.getMonth() + dir); analyticsRefDate = d; render(); };
+        const getStartEnd = () => { const now = new Date(analyticsRefDate); let start, end; if (analyticsView === 'WEEK') { const day = now.getDay(); const diff = now.getDate() - day + (day == 0 ? -6 : 1) -1; start = new Date(now.setDate(diff)); start.setHours(0,0,0,0); end = new Date(start); end.setDate(end.getDate() + 6); end.setHours(23,59,59,999); } else { start = new Date(now.getFullYear(), now.getMonth(), 1); end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); } return {start, end}; };
         const range = getStartEnd();
-        const dateLabel = analyticsView === 'WEEK' 
-            ? `${range.start.getDate()}/${range.start.getMonth()+1} - ${range.end.getDate()}/${range.end.getMonth()+1}`
-            : range.start.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
-
-        // Filter Data
+        const dateLabel = analyticsView === 'WEEK' ? `${range.start.getDate()}/${range.start.getMonth()+1} - ${range.end.getDate()}/${range.end.getMonth()+1}` : range.start.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
         const isComp = currentUser.role === 'COMPANY_CMD';
         let list = isComp ? tickets.filter(t => (t.unit || "") === (currentUser.unit || "")) : tickets;
-        
-        // Apply Date Filter
-        list = list.filter(t => {
-            const d = new Date(t.createdAt);
-            return d >= range.start && d <= range.end;
-        });
-
+        list = list.filter(t => { const d = new Date(t.createdAt); return d >= range.start && d <= range.end; });
         const open = list.filter(t => !t.isClosed).length;
         const closed = list.filter(t => t.isClosed).length;
         const total = list.length;
-        const hamalCount = list.filter(t => t.isHamalDown).length; // ספירת תקלות משביתות
-        
+        const hamalCount = list.filter(t => t.isHamalDown).length;
         const counts = {};
-        list.forEach(t => {
-            let key = "אחר";
-            if (analyticsDim === "STATUS") key = STATUS_LABEL[t.status] || t.status;
-            else if (analyticsDim === "ROLE") key = roleLabel(t.assignedRole) || "לא הוקצה";
-            else if (analyticsDim === "TOPIC") key = t.topic || "ללא";
-            else if (analyticsDim === "UNIT") key = t.unit || "כללי";
-            counts[key] = (counts[key] || 0) + 1;
-        });
-        
+        list.forEach(t => { let key = "אחר"; if (analyticsDim === "STATUS") key = STATUS_LABEL[t.status] || t.status; else if (analyticsDim === "ROLE") key = roleLabel(t.assignedRole) || "לא הוקצה"; else if (analyticsDim === "TOPIC") key = t.topic || "ללא"; else if (analyticsDim === "UNIT") key = t.unit || "כללי"; counts[key] = (counts[key] || 0) + 1; });
         const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]); 
         const colors = ["#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#14b8a6"];
         let paths = "", startAngle = 0; 
         const pieTotal = total || 1;
-
-        if (sorted.length === 1 && total > 0) { 
-            paths = `<circle cx="50" cy="50" r="50" fill="${colors[0]}" class="pie-slice"><title>${sorted[0][0]}</title></circle>`; 
-        } else if (total > 0) { 
-            sorted.forEach(([label, val], i) => { 
-                const pct = val / pieTotal; 
-                const sliceAngle = pct * 360; 
-                const endAngle = startAngle + sliceAngle; 
-                const x1 = 50 + 50 * Math.cos(Math.PI * startAngle / 180); 
-                const y1 = 50 + 50 * Math.sin(Math.PI * startAngle / 180); 
-                const x2 = 50 + 50 * Math.cos(Math.PI * endAngle / 180); 
-                const y2 = 50 + 50 * Math.sin(Math.PI * endAngle / 180); 
-                const largeArc = sliceAngle > 180 ? 1 : 0; 
-                const d = `M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`; 
-                paths += `<path d="${d}" fill="${colors[i % colors.length]}" class="pie-slice" stroke="rgba(15,23,42,0.5)" stroke-width="1"><title>${label}: ${val}</title></path>`; 
-                startAngle = endAngle; 
-            }); 
-        }
+        if (sorted.length === 1 && total > 0) { paths = `<circle cx="50" cy="50" r="50" fill="${colors[0]}" class="pie-slice"><title>${sorted[0][0]}</title></circle>`; } else if (total > 0) { sorted.forEach(([label, val], i) => { const pct = val / pieTotal; const sliceAngle = pct * 360; const endAngle = startAngle + sliceAngle; const x1 = 50 + 50 * Math.cos(Math.PI * startAngle / 180); const y1 = 50 + 50 * Math.sin(Math.PI * startAngle / 180); const x2 = 50 + 50 * Math.cos(Math.PI * endAngle / 180); const y2 = 50 + 50 * Math.sin(Math.PI * endAngle / 180); const largeArc = sliceAngle > 180 ? 1 : 0; const d = `M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`; paths += `<path d="${d}" fill="${colors[i % colors.length]}" class="pie-slice" stroke="rgba(15,23,42,0.5)" stroke-width="1"><title>${label}: ${val}</title></path>`; startAngle = endAngle; }); }
         
-        main.innerHTML = `
-        <div class="page-header"><div class="page-title">דשבורד אנליטיקה</div></div>
-        
-        <div class="date-control-bar">
-            <div style="display:flex;gap:5px;">
-                <button class="view-toggle-btn ${analyticsView==='WEEK'?'active':''}" onclick="setView('WEEK')">שבוע</button>
-                <button class="view-toggle-btn ${analyticsView==='MONTH'?'active':''}" onclick="setView('MONTH')">חודש</button>
-            </div>
-            <div style="display:flex;align-items:center;gap:15px;font-weight:700;">
-                <button class="date-nav-btn" onclick="moveDate(-1)"><i data-lucide="chevron-right"></i></button>
-                <span style="min-width:150px;text-align:center;">${dateLabel}</span>
-                <button class="date-nav-btn" onclick="moveDate(1)"><i data-lucide="chevron-left"></i></button>
-            </div>
-        </div>
-
-        <div class="grid-dashboard-compact">
-            <div class="stat-card-compact"><div class="stat-val-compact" style="color:#ec4899;">${open}</div><div class="stat-lbl-compact">פתוחות</div></div>
-            <div class="stat-card-compact"><div class="stat-val-compact" style="color:#10b981;">${closed}</div><div class="stat-lbl-compact">סגורות</div></div>
-            <div class="stat-card-compact"><div class="stat-val-compact" style="color:#f59e0b;">${total}</div><div class="stat-lbl-compact">סה"כ לתקופה</div></div>
-            <div class="stat-card-compact"><div class="stat-val-compact" style="color:#ef4444;">${hamalCount}</div><div class="stat-lbl-compact">תקלות משביתות</div></div>
-        </div>
-
-        <div class="card" style="margin-top:16px;">
-            <div class="card-title">פילוח נתונים</div>
-            <div class="analytics-filter-toggle">${[{k:"STATUS",l:"סטטוס"},{k:"ROLE",l:"תפקיד"},{k:"TOPIC",l:"נושא"},{k:"UNIT",l:"חטיבה"}].map(x => `<button class="analytics-filter-chip ${analyticsDim===x.k?'active':''}" onclick="setDim('${x.k}')">${x.l}</button>`).join("")}</div>
-            <div class="chart-grid-2">
-                <div style="display:flex;align-items:center;justify-content:center;min-height:200px;">
-                    ${total > 0 ? `<svg viewBox="-5 -5 110 110" style="width:180px;overflow:visible;transform:rotate(-90deg);">${paths}</svg>` : '<div style="opacity:0.5;">אין נתונים לתקופה זו</div>'}
-                </div>
-                <div style="display:flex;flex-direction:column;justify-content:center;">
-                    ${sorted.map(([l,v], i) => `<div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:10px;height:10px;border-radius:3px;background:${colors[i%colors.length]}"></div><span>${escapeHtml(l)}</span></div><strong>${v}</strong></div><div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${(v/total)*100}%;background:${colors[i%colors.length]};border-radius:3px;"></div></div></div>`).join("")}
-                </div>
-            </div>
-        </div>`;
+        main.innerHTML = `<div class="page-header"><div class="page-title">דשבורד אנליטיקה</div></div><div class="date-control-bar"><div style="display:flex;gap:5px;"><button class="view-toggle-btn ${analyticsView==='WEEK'?'active':''}" onclick="setView('WEEK')">שבוע</button><button class="view-toggle-btn ${analyticsView==='MONTH'?'active':''}" onclick="setView('MONTH')">חודש</button></div><div style="display:flex;align-items:center;gap:15px;font-weight:700;"><button class="date-nav-btn" onclick="moveDate(-1)"><i data-lucide="chevron-right"></i></button><span style="min-width:150px;text-align:center;">${dateLabel}</span><button class="date-nav-btn" onclick="moveDate(1)"><i data-lucide="chevron-left"></i></button></div></div><div class="grid-dashboard-compact"><div class="stat-card-compact"><div class="stat-val-compact" style="color:#ec4899;">${open}</div><div class="stat-lbl-compact">פתוחות</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#10b981;">${closed}</div><div class="stat-lbl-compact">סגורות</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#f59e0b;">${total}</div><div class="stat-lbl-compact">סה"כ לתקופה</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#ef4444;">${hamalCount}</div><div class="stat-lbl-compact">תקלות משביתות</div></div></div><div class="card" style="margin-top:16px;"><div class="card-title">פילוח נתונים</div><div class="analytics-filter-toggle">${[{k:"STATUS",l:"סטטוס"},{k:"ROLE",l:"תפקיד"},{k:"TOPIC",l:"נושא"},{k:"UNIT",l:"חטיבה"}].map(x => `<button class="analytics-filter-chip ${analyticsDim===x.k?'active':''}" onclick="setDim('${x.k}')">${x.l}</button>`).join("")}</div><div class="chart-grid-2"><div style="display:flex;align-items:center;justify-content:center;min-height:200px;">${total > 0 ? `<svg viewBox="-5 -5 110 110" style="width:180px;overflow:visible;transform:rotate(-90deg);">${paths}</svg>` : '<div style="opacity:0.5;">אין נתונים לתקופה זו</div>'}</div><div style="display:flex;flex-direction:column;justify-content:center;">${sorted.map(([l,v], i) => `<div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:10px;height:10px;border-radius:3px;background:${colors[i%colors.length]}"></div><span>${escapeHtml(l)}</span></div><strong>${v}</strong></div><div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${(v/total)*100}%;background:${colors[i%colors.length]};border-radius:3px;"></div></div></div>`).join("")}</div></div></div>`;
         window.setDim = (d) => { analyticsDim = d; render(); };
     }
 
-    // --- PROFILE ---
+    if(activePage === "NOTIFICATIONS") {
+        if(!currentUser.isManager && currentUser.role !== 'OWNER') return nav('HOME');
+        
+        const settings = currentUser.settings || { notifyNew: true, notifyOverdue: false, overdueTime: 60, overdueVal: 60, overdueUnit: 'min' };
+        
+        const displayVal = settings.overdueVal || settings.overdueTime || 60;
+        const displayUnit = settings.overdueUnit || 'min';
+
+        main.innerHTML = `<header class="header"><div class="page-title">הגדרות התראות</div></header><div class="card"><p style="color:var(--text-soft); margin-bottom:24px;">נהל את ההתראות שברצונך לקבל עבור התפקיד שלך.</p><form id="notify-form"><div style="margin-bottom:24px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><div style="font-weight:600;">התראה על תקלה חדשה</div><label class="switch"><input type="checkbox" name="notifyNew" ${settings.notifyNew !== false ? 'checked' : ''}><span class="slider"></span></label></div><div style="font-size:0.8rem; color:var(--text-soft);">קבלת התראה לטלפון בכל פעם שנפתחת תקלה המשויכת לתפקיד שלך.</div></div><hr style="border:none; border-bottom:1px solid var(--border); margin:20px 0;"><div style="margin-bottom:24px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><div style="font-weight:600;">התראה על חריגת זמנים</div><label class="switch"><input type="checkbox" name="notifyOverdue" id="overdue-toggle" ${settings.notifyOverdue ? 'checked' : ''} onchange="document.getElementById('overdue-time-wrap').style.display = this.checked ? 'block' : 'none'"><span class="slider"></span></label></div><div style="font-size:0.8rem; color:var(--text-soft);">קבלת התראה כאשר תקלה נשארת פתוחה מעבר לזמן מסוים.</div><div id="overdue-time-wrap" style="margin-top:16px; display:${settings.notifyOverdue ? 'block' : 'none'}; animation: fade-in-up 0.3s ease;"><label class="label">הגדר זמן לחריגה</label><div style="display:flex; gap:10px;"><input class="input" type="number" name="overdueVal" value="${displayVal}" min="1" style="flex:1;"><select class="select" name="overdueUnit" style="flex:1;"><option value="min" ${displayUnit==='min'?'selected':''}>דקות</option><option value="hour" ${displayUnit==='hour'?'selected':''}>שעות</option><option value="day" ${displayUnit==='day'?'selected':''}>ימים</option></select></div></div></div><button class="btn btn-primary" style="width:100%;">שמור הגדרות</button></form></div>`;
+        
+        document.getElementById("notify-form").onsubmit = async (e) => {
+            e.preventDefault();
+            const val = parseInt(e.target.overdueVal.value);
+            const unit = e.target.overdueUnit.value;
+            let totalMinutes = val;
+            if(unit === 'hour') totalMinutes = val * 60;
+            if(unit === 'day') totalMinutes = val * 1440;
+
+            const newSettings = { notifyNew: e.target.notifyNew.checked, notifyOverdue: e.target.notifyOverdue.checked, overdueTime: totalMinutes, overdueVal: val, overdueUnit: unit };
+            await withLoader(document.querySelector(".card"), async () => { await supabase.from("users").update({ settings: newSettings }).eq("id", currentUser.id); await loadData(); showToast("ההגדרות נשמרו בהצלחה"); });
+        };
+    }
+
     if(activePage === "PROFILE") {
       const isOwner = currentUser.role === 'OWNER';
-      main.innerHTML = `<header class="header"><div class="page-title">פרופיל</div></header>
-      
-      ${currentUser.isManager || isOwner ? `
-      <div class="card" style="margin-bottom:20px; background:rgba(16, 185, 129, 0.1); border:1px solid #10b981;">
-          <div style="display:flex; align-items:center; gap:12px; color:#10b981;">
-              <i data-lucide="shield-check" style="width:32px; height:32px;"></i>
-              <div>
-                  <div style="font-weight:800; font-size:1.1rem;">${isOwner ? 'בעלים (Admin)' : 'מנהל מערכת (Manager)'}</div>
-                  <div style="font-size:0.85rem; opacity:0.8;">יש לך הרשאות מורחבות לצפייה וניהול.</div>
-              </div>
-          </div>
-      </div>` : ''}
-
-      <div class="card"><form id="profile-form">
-        <div class="field-group"><label class="label">שם מלא</label><input class="input" name="fn" value="${escapeHtml(currentUser.fullName)}" /></div>
-        <div class="field-group"><label class="label">טלפון</label><input class="input" name="ph" value="${escapeHtml(currentUser.phone)}" /></div>
-        
-        <div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא שיוך</option>${units.map(u=>`<option value="${u.id}" ${currentUser.unitId==u.id?'selected':''}>${escapeHtml(u.name)}</option>`).join('')}</select></div>
-
-        <div class="field-group"><label class="label">סיסמה חדשה (להחלפה בלבד)</label><input class="input" type="password" name="newPass" placeholder="השאר ריק כדי לשמור על הקיימת" /></div>
-
-        ${!isOwner && !currentUser.isManager ? `
-            <div style="margin:20px 0; padding:15px; border:1px dashed var(--accent); border-radius:12px; text-align:center;">
-                <div style="margin-bottom:8px;">האם אתה מנהל בתפקידך?</div>
-                ${currentUser.requestedManager ? '<span style="color:#fbbf24;">⏳ בקשה נשלחה (ממתין לאישור)</span>' : '<button type="button" class="btn" onclick="requestManager()" style="color:var(--accent);">👮 בקש הרשאת מנהל</button>'}
-            </div>` : ''}
-        
-        <div class="field-group"><label class="label">תפקיד (לשינוי יש לבקש אישור)</label><select class="select" name="requestedRole">${['HATAP','PLHIK','HR','MAMRAM','APP','NETWORK'].map(r => `<option value="${r}" ${currentUser.requestedRole === r ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}</select></div>
-        <div style="background: rgba(236, 72, 153, 0.1); padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center;"><button type="button" class="btn" style="width:100%; justify-content:center; color:#ec4899;" onclick="enableNotificationsManual()"><i data-lucide="bell"></i> הפעל התראות (iPhone/Android)</button></div>
-        <button class="btn btn-primary" style="width:100%;">שמור שינויים</button>
-      </form>
-      <button class="btn btn-danger" onclick="doLogout()" style="width:100%; margin-top:20px; justify-content:center;"><i data-lucide="log-out"></i> התנתקות מהחשבון</button>
-      </div>`;
-      document.getElementById("profile-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".card"), async () => { 
-          const updates = { full_name: e.target.fn.value, phone: e.target.ph.value, unit_id: e.target.unit.value||null, requested_role: e.target.requestedRole.value, role_status: "Pending" };
-          const newPass = e.target.newPass.value;
-          if(newPass) { const {error} = await supabase.auth.updateUser({password: newPass}); if(error) throw error; showToast("סיסמה עודכנה"); }
-          await supabase.from("users").update(updates).eq("id", currentUser.id); await loadData(); showToast("פרופיל עודכן בהצלחה"); 
-      }); };
+      main.innerHTML = `<header class="header"><div class="page-title">פרופיל</div></header>${currentUser.isManager || isOwner ? `<div class="card" style="margin-bottom:20px; background:rgba(16, 185, 129, 0.1); border:1px solid #10b981;"><div style="display:flex; align-items:center; gap:12px; color:#10b981;"><i data-lucide="shield-check" style="width:32px; height:32px;"></i><div><div style="font-weight:800; font-size:1.1rem;">${isOwner ? 'בעלים (Admin)' : 'מנהל מערכת (Manager)'}</div><div style="font-size:0.85rem; opacity:0.8;">יש לך הרשאות מורחבות לצפייה וניהול.</div></div></div></div>` : ''}<div class="card"><form id="profile-form"><div class="field-group"><label class="label">שם מלא</label><input class="input" name="fn" value="${escapeHtml(currentUser.fullName)}" /></div><div class="field-group"><label class="label">טלפון</label><input class="input" name="ph" value="${escapeHtml(currentUser.phone)}" /></div><div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא שיוך</option>${units.map(u=>`<option value="${u.id}" ${currentUser.unitId==u.id?'selected':''}>${escapeHtml(u.name)}</option>`).join('')}</select></div>${!isOwner && !currentUser.isManager ? `<div style="margin:20px 0; padding:15px; border:1px dashed var(--accent); border-radius:12px; text-align:center;"><div style="margin-bottom:8px;">האם אתה מנהל בתפקידך?</div>${currentUser.requestedManager ? '<span style="color:#fbbf24;">⏳ בקשה נשלחה (ממתין לאישור)</span>' : '<button type="button" class="btn" onclick="requestManager()" style="color:var(--accent);">👮 בקש הרשאת מנהל</button>'}</div>` : ''}<div class="field-group"><label class="label">תפקיד (לשינוי יש לבקש אישור)</label><select class="select" name="requestedRole">${['HATAP','PLHIK','HR','MAMRAM','APP','NETWORK'].map(r => `<option value="${r}" ${currentUser.requestedRole === r ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}</select></div><div style="background: rgba(236, 72, 153, 0.1); padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center;"><button type="button" class="btn" style="width:100%; justify-content:center; color:#ec4899;" onclick="enableNotificationsManual()"><i data-lucide="bell"></i> הפעל התראות (iPhone/Android)</button></div><button class="btn btn-primary" style="width:100%;">שמור שינויים</button></form><button class="btn btn-danger" onclick="doLogout()" style="width:100%; margin-top:20px; justify-content:center;"><i data-lucide="log-out"></i> התנתקות מהחשבון</button></div>`;
+      document.getElementById("profile-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".card"), async () => { const updates = { full_name: e.target.fn.value, phone: e.target.ph.value, unit_id: e.target.unit.value||null, requested_role: e.target.requestedRole.value, role_status: "Pending" }; await supabase.from("users").update(updates).eq("id", currentUser.id); await loadData(); showToast("פרופיל עודכן בהצלחה"); }); };
     }
     
-    // --- ROLE APPROVAL ---
     if(activePage === "ROLE_APPROVAL") {
         const pending = users.filter(u => u.roleStatus === "Pending");
         main.innerHTML = `<header class="header"><div class="page-title">אישור תפקידים</div></header><div class="card">${pending.length===0 ? 'אין בקשות ממתינות' : pending.map(u => `<div class="list-item"><div><b>${escapeHtml(u.fullName)}</b> מבקש לעבור ל-<b>${roleLabel(u.requestedRole)}</b></div><button class="btn btn-primary" onclick="approveRole('${u.id}', '${u.requestedRole}')">אשר</button></div>`).join('')}</div>`;
@@ -675,17 +566,10 @@
   window.nav = (p, id=null) => { activePage=p; if(id) selectedTicketId=id; render(); };
   window.toggleClosed = () => { showClosed=!showClosed; render(); };
   window.takeTicket = async (tid) => { await withLoader(document.body, async () => { await supabase.from("tickets").update({ assigned_user_id: currentUser.id, status: "IN_PROGRESS" }).eq("id", tid); await supabase.from("audits").insert({ ticket_id: tid, field: "ASSIGN", new_value: currentUser.fullName, changed_by_name: currentUser.fullName, changed_by_user_id: currentUser.id }); await loadData(); render(); showToast("התקלה שויכה אליך והועברה לטיפול"); }); };
-  window.requestManager = async () => { await supabase.from('users').update({ requested_manager: true }).eq('id', currentUser.id); 
-      const owners = users.filter(u => u.role === 'OWNER').map(u => u.id);
-      if(owners.length > 0) pushTicketShort({ userIds: owners, ticketId: 0, title: "👮 בקשת מנהל חדשה", message: `${currentUser.fullName} ביקש לקבל הרשאות ניהול.` });
-      await loadData(); render(); showToast("הבקשה נשלחה לבעלים"); 
-  };
+  window.requestManager = async () => { await supabase.from('users').update({ requested_manager: true }).eq('id', currentUser.id); const owners = users.filter(u => u.role === 'OWNER').map(u => u.id); if(owners.length > 0) pushTicketShort({ userIds: owners, ticketId: 0, title: "👮 בקשת מנהל חדשה", message: `${currentUser.fullName} ביקש לקבל הרשאות ניהול.` }); await loadData(); render(); showToast("הבקשה נשלחה לבעלים"); };
   window.toggleFreeze = async (uid, state) => { await supabase.from("users").update({ is_frozen: state }).eq("id", uid); await loadData(); showToast(state ? "משתמש הוקפא" : "משתמש הופשר"); };
   window.toggleManager = async (uid, state) => { await supabase.from("users").update({ is_manager: state, requested_manager: false }).eq("id", uid); await loadData(); showToast("הרשאות עודכנו"); };
-  window.approveRole = async (uid, role) => { await supabase.from("users").update({ role: role, role_status: "Approved", requested_role: null }).eq("id", uid); 
-      pushTicketShort({ userIds: [uid], ticketId: 0, title: "🎉 התפקיד אושר!", message: `הבקשה שלך לתפקיד ${roleLabel(role)} אושרה בהצלחה.` });
-      await loadData(); render(); showToast("המשתמש אושר ונשלחה לו התראה");
-  };
+  window.approveRole = async (uid, role) => { await supabase.from("users").update({ role: role, role_status: "Approved", requested_role: null }).eq("id", uid); pushTicketShort({ userIds: [uid], ticketId: 0, title: "🎉 התפקיד אושר!", message: `הבקשה שלך לתפקיד ${roleLabel(role)} אושרה בהצלחה.` }); await loadData(); render(); showToast("המשתמש אושר ונשלחה לו התראה"); };
   window.updateTicket = async (tid) => { const st = document.getElementById("upd-status").value; await supabase.from("tickets").update({ status:st, is_closed:(st==='RESOLVED') }).eq("id", tid); await loadData(); render(); };
   window.postComment = async (e, tid) => { e.preventDefault(); await supabase.from("ticket_comments").insert({ ticket_id: tid, content: e.target.txt.value, author_user_id: currentUser.id, author_name: currentUser.fullName, author_role: currentUser.role }); e.target.reset(); await loadData(); render(); };
   window.doLogout = async () => { localStorage.clear(); sessionStorage.clear(); try { if ("serviceWorker" in navigator) navigator.serviceWorker.ready.then(reg => reg.pushManager.getSubscription().then(sub => sub && sub.unsubscribe())); } catch(e){} try { await supabase.auth.signOut(); } catch(e){} window.location.reload(); };
