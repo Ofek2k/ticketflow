@@ -96,13 +96,11 @@
     .toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 14px 28px; border-radius: 99px; box-shadow: 0 0 20px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 12px; z-index: 10000; font-weight: 500; animation: slide-up-fade 0.4s cubic-bezier(0.16, 1, 0.3, 1); } 
     @keyframes slide-up-fade { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
     
-    /* --- Dashboard Grid Fix --- */
     .grid-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; } 
     .stat-card { background: rgba(255,255,255,0.05); padding: 24px; border-radius: 24px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); } 
     .stat-val { font-size: 2.2rem; font-weight: 800; line-height: 1; text-shadow: 0 0 10px currentColor; } 
     .stat-lbl { font-size: 0.8rem; color: var(--text-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
     
-    /* --- Analytics New Styles --- */
     .grid-dashboard-compact { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
     .stat-card-compact { background: rgba(255,255,255,0.05); padding: 16px; border-radius: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
     .stat-val-compact { font-size: 1.8rem; font-weight: 800; line-height: 1; text-shadow: 0 0 15px currentColor; }
@@ -184,9 +182,9 @@
 
   let currentUser = null, users = [], tickets = [], comments = [], units = [], activePage = "HOME";
   let showClosed = false, selectedTicketId = null, analyticsDim = "STATUS", fetchLimit = 100;
-  
   let analyticsView = 'WEEK'; 
   let analyticsRefDate = new Date(); 
+  let isRecoveryMode = false;
 
   const escapeHtml = (str) => String(str||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   const formatDate = (ts) => ts ? new Date(ts).toLocaleString("he-IL", {dateStyle:"short", timeStyle:"short"}) : "";
@@ -241,15 +239,45 @@
   }
   
   window.loadMoreData = async () => { fetchLimit += 50; await loadData(); renderPage(); };
-  function setupRealtime() { supabase.channel('public:tickets').on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async () => { await loadData(); render(); showToast("הנתונים התעדכנו", "refresh-cw"); }).subscribe(); }
-
-  function render() { if(!currentUser) return renderLogin(); if(!currentUser.fullName || !currentUser.phone) return renderOnboarding(); renderApp(); }
-  function renderLogin() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="shield" style="width:32px;height:32px;"></i></div><h1 style="font-weight:900;font-size:1.8rem;margin-bottom:4px;">TicketFlow</h1><p style="color:#94a3b8;margin-bottom:30px;">מערכת ניהול תקלות מבצעית</p><form id="auth-form"><div class="field-group" style="text-align:right;"><label class="label">כתובת אימייל</label><input class="input" type="email" name="email" required /></div><div class="field-group" style="text-align:right;"><label class="label">סיסמה</label><input class="input" type="password" name="password" required /></div>
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:0.85rem;"><a href="#" id="forgot-btn" style="color:var(--text-soft);text-decoration:none;">שכחתי סיסמה?</a></div>
-  <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:20px;">כניסה למערכת</button><div style="margin-top:16px;font-size:0.8rem;"><span style="color:#64748b;">אין לך משתמש?</span> <a href="#" id="go-sign" style="color:#ec4899;text-decoration:none;font-weight:600;">הרשמה</a></div></form></div></div>`; lucide.createIcons(); const form = document.getElementById("auth-form"); form.onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.signInWithPassword({ email: form.email.value, password: form.password.value }); if(error) throw error; await loadData(); setupRealtime(); render(); }); }; document.getElementById("go-sign").onclick = async (e) => { e.preventDefault(); const em = prompt("אימייל:"); const pw = prompt("סיסמה:"); if(em&&pw) { const {data, error} = await supabase.auth.signUp({email:em, password:pw}); if(!error) { await supabase.from("users").insert({auth_user_id:data.user.id, email:em, role:"USER", role_status:"Pending"}); showModal("נרשמת בהצלחה", "כעת ניתן להתחבר."); } else showModal("שגיאה", error.message, true); } }; 
-  // Forgot Password Handler
-  document.getElementById("forgot-btn").onclick = async (e) => { e.preventDefault(); const em = form.email.value || prompt("הכנס כתובת אימייל לשחזור:"); if(!em) return; await withLoader(document.querySelector(".login-box"), async () => { const {error} = await supabase.auth.resetPasswordForEmail(em, { redirectTo: window.location.href }); if(error) showModal("שגיאה", error.message, true); else showModal("הודעה נשלחה", "בדוק את האימייל שלך לקבלת קישור לאיפוס סיסמה."); }); };
+  
+  function setupRealtime() { 
+      supabase.channel('public:tickets').on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async () => { 
+          await loadData(); render(); showToast("הנתונים התעדכנו", "refresh-cw"); 
+      }).subscribe(); 
+      
+      // Listener for password recovery
+      supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'PASSWORD_RECOVERY') {
+              isRecoveryMode = true;
+              render();
+          }
+      });
   }
+
+  function render() { 
+      if(isRecoveryMode) return renderResetPassword();
+      if(!currentUser) return renderLogin(); 
+      if(!currentUser.fullName || !currentUser.phone) return renderOnboarding(); 
+      renderApp(); 
+  }
+
+  function renderResetPassword() {
+      document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="key" style="width:32px;height:32px;"></i></div><h1 style="font-weight:900;font-size:1.8rem;margin-bottom:4px;">איפוס סיסמה</h1><p style="color:#94a3b8;margin-bottom:30px;">הזן את הסיסמה החדשה שלך</p><form id="reset-form"><div class="field-group" style="text-align:right;"><label class="label">סיסמה חדשה</label><input class="input" type="password" name="newPass" required placeholder="לפחות 6 תווים" /></div><button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;">עדכן סיסמה</button></form></div></div>`;
+      lucide.createIcons();
+      document.getElementById("reset-form").onsubmit = async (e) => {
+          e.preventDefault();
+          const newPass = e.target.newPass.value;
+          await withLoader(document.querySelector(".login-box"), async () => {
+              const { error } = await supabase.auth.updateUser({ password: newPass });
+              if (error) throw error;
+              alert("הסיסמה עודכנה בהצלחה! כעת תועבר לאפליקציה.");
+              isRecoveryMode = false;
+              window.location.reload();
+          });
+      };
+  }
+
+  function renderLogin() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="shield" style="width:32px;height:32px;"></i></div><h1 style="font-weight:900;font-size:1.8rem;margin-bottom:4px;">TicketFlow</h1><p style="color:#94a3b8;margin-bottom:30px;">מערכת ניהול תקלות מבצעית</p><form id="auth-form"><div class="field-group" style="text-align:right;"><label class="label">כתובת אימייל</label><input class="input" type="email" name="email" required /></div><div class="field-group" style="text-align:right;"><label class="label">סיסמה</label><input class="input" type="password" name="password" required /></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:0.85rem;"><a href="#" id="forgot-btn" style="color:var(--text-soft);text-decoration:none;">שכחתי סיסמה?</a></div><button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:20px;">כניסה למערכת</button><div style="margin-top:16px;font-size:0.8rem;"><span style="color:#64748b;">אין לך משתמש?</span> <a href="#" id="go-sign" style="color:#ec4899;text-decoration:none;font-weight:600;">הרשמה</a></div></form></div></div>`; lucide.createIcons(); const form = document.getElementById("auth-form"); form.onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.signInWithPassword({ email: form.email.value, password: form.password.value }); if(error) throw error; await loadData(); setupRealtime(); render(); }); }; document.getElementById("go-sign").onclick = async (e) => { e.preventDefault(); const em = prompt("אימייל:"); const pw = prompt("סיסמה:"); if(em&&pw) { const {data, error} = await supabase.auth.signUp({email:em, password:pw}); if(!error) { await supabase.from("users").insert({auth_user_id:data.user.id, email:em, role:"USER", role_status:"Pending"}); showModal("נרשמת בהצלחה", "כעת ניתן להתחבר."); } else showModal("שגיאה", error.message, true); } }; document.getElementById("forgot-btn").onclick = async (e) => { e.preventDefault(); const em = form.email.value || prompt("הכנס כתובת אימייל לשחזור:"); if(!em) return; await withLoader(document.querySelector(".login-box"), async () => { const {error} = await supabase.auth.resetPasswordForEmail(em, { redirectTo: window.location.href }); if(error) showModal("שגיאה", error.message, true); else showModal("הודעה נשלחה", "בדוק את האימייל שלך לקבלת קישור לאיפוס סיסמה."); }); }; }
   function renderOnboarding() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="user-plus"></i></div><h2 style="margin-bottom:10px;">השלמת פרופיל</h2><form id="onb-form" style="text-align:right;"><div class="field-group"><label class="label">שם מלא</label><input class="input" name="fullName" required value="${escapeHtml(currentUser?.fullName||"")}" /></div><div class="field-group"><label class="label">טלפון</label><input class="input" name="phone" required value="${escapeHtml(currentUser?.phone||"")}" /></div><div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא</option>${units.map(u => `<option value="${escapeHtml(u.name)}">${escapeHtml(u.name)}</option>`).join("")}</select></div><button class="btn btn-primary" style="width:100%;justify-content:center;">שמירה והמשך</button></form></div></div>`; lucide.createIcons(); document.getElementById("onb-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { await supabase.from("users").update({ full_name: e.target.fullName.value, phone: e.target.phone.value, unit: e.target.unit.value, role_status: "Pending" }).eq("id", currentUser.id); await loadData(); setupRealtime(); render(); }); }; }
 
   function renderApp() {
