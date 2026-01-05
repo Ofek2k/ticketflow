@@ -2,175 +2,82 @@
 <html lang="he" dir="rtl">
 <head>
   <meta charset="UTF-8" />
-  <title>TicketFlow - מערכת תקלות</title>
+  <title>TicketFlow - Cyber Ops</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <link rel="manifest" href="/manifest.webmanifest">
-  <meta name="theme-color" content="#0f172a">
-  
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
-
-<style>
-    /* --- משתנים גלובליים (Midnight Neon Theme) --- */
+  <style>
+    /* --- משתנים ועיצוב Midnight Neon --- */
     :root {
-      /* צבעי בסיס כחולים/ורודים עמוקים */
-      --bg-dark: #020617;      /* כחול לילה עמוק */
-      --bg-pink: #831843;      /* ורוד פטל עמוק */
-      
+      --bg-dark: #020617;
+      --bg-pink: #831843;
       --text: #f8fafc;
-      --text-soft: #cbd5e1;    /* טיפה יותר בהיר לקריאות */
-      --accent: #ec4899;       /* ורוד ניאון */
-      
-      /* זכוכית מותאמת לרקע הכחול */
-      --glass-bg: rgba(30, 41, 59, 0.5); 
-      --glass-border: rgba(255, 255, 255, 0.2); /* גבולות לבנים חזקים */
+      --text-soft: #cbd5e1;
+      --accent: #ec4899;
+      --glass-bg: rgba(30, 41, 59, 0.6); 
+      --glass-border: rgba(255, 255, 255, 0.2);
       --border: rgba(255, 255, 255, 0.1);
-      
       --urgent: #ef4444; 
       --new: #10b981;    
     }
     * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
     
-    /* --- רקע טופוגרפי כחול-ורוד --- */
     body {
       margin: 0; padding: 0;
       font-family: 'Heebo', sans-serif;
-      background-color: var(--bg-dark); /* צבע גיבוי */
+      background-color: var(--bg-dark);
       color: var(--text);
       min-height: 100vh;
       display: flex; align-items: stretch; justify-content: center;
-      
-      /* שכבה 1 (עליונה): קווים לבנים חזקים (חיזקתי את ה-opacity ל-0.35) */
-      /* שכבה 2 (תחתונה): גרדיאנט כחול עמוק לורוד חזק */
       background-image: 
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 800 800'%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-width='1.5' stroke-opacity='0.35'%3E%3Cpath d='M769 229L1037 260.9M927 880L731 737 520 660 309 538 40 599 295 764 126 552 20 570 71 613 15 236 56 214 186 319 243 412 191 501 10 300 200 400 300 500 400 600 500 700 600 800 700 800 800 700 900 600 1000 500'/%3E%3C/g%3E%3C/svg%3E"),
         linear-gradient(135deg, var(--bg-dark) 0%, #1e1b4b 50%, var(--bg-pink) 100%);
-      
-      /* גודל: התבנית חוזרת, הגרדיאנט מכסה הכל */
       background-size: 600px 600px, cover;
       background-repeat: repeat, no-repeat;
       background-position: 0 0, center;
-      
-      /* אנימציה שמזיזה רק את הקווים */
       animation: contourMove 60s linear infinite;
     }
-
-    /* הזזת הקווים בלבד, הגרדיאנט נשאר קבוע */
-    @keyframes contourMove { 
-      0% { background-position: 0 0, center; } 
-      100% { background-position: 600px 600px, center; } 
-    }
+    @keyframes contourMove { 0% { background-position: 0 0, center; } 100% { background-position: 600px 600px, center; } }
 
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
 
-    .app-root {
-      width: 100%; max-width: 100%; margin: 0;
-      overflow: hidden;
-      /* שכבת טשטוש קלה מעל הרקע */
-      background: rgba(15, 23, 42, 0.3); 
-      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-      display: flex; flex-direction: row;
-      height: 100vh;
-      position: relative;
-    }
-
-    /* --- סרגל צד (זכוכית כחלחלה) --- */
-    .sidebar {
-      width: 280px; 
-      background: rgba(15, 23, 42, 0.85); /* כחול כהה אטום */
-      backdrop-filter: blur(20px);
-      border-inline-start: 1px solid var(--glass-border);
-      padding: 24px 20px; 
-      display: flex; flex-direction: column; gap: 24px; 
-      flex-shrink: 0;
-      z-index: 2000;
-    }
-
-    /* --- כרטיסים (זכוכית בולטת) --- */
-    .card {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-top: 1px solid rgba(255, 255, 255, 0.3); /* קו עליון חזק */
-      border-radius: 24px;
-      padding: 32px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      transition: transform 0.3s, box-shadow 0.3s;
-      width: 100%;
-    }
-    .card:hover {
-      box-shadow: 0 15px 50px rgba(236, 72, 153, 0.2); /* זוהר ורוד */
-      border-color: rgba(255, 255, 255, 0.4);
-      transform: translateY(-2px);
-    }
-    .card-title { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-
-    /* --- פריטי רשימה --- */
-    .list-item {
-      display: flex; align-items: center; justify-content: space-between; padding: 20px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid var(--glass-border); border-radius: 18px;
-      margin-bottom: 12px; cursor: pointer; transition: all 0.2s;
-      animation: fade-in-up 0.4s ease-out forwards; opacity: 0; transform: translateY(10px);
-      position: relative; overflow: hidden;
-    }
-    .list-item:hover {
-      background: rgba(255,255,255,0.1);
-      border-color: #fff;
-      transform: scale(1.005);
-      box-shadow: 0 0 20px rgba(236, 72, 153, 0.1);
-    }
+    .app-root { width: 100%; max-width: 100%; margin: 0; overflow: hidden; background: rgba(15, 23, 42, 0.3); backdrop-filter: blur(8px); display: flex; flex-direction: row; height: 100vh; position: relative; }
+    .sidebar { width: 280px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px); border-inline-start: 1px solid var(--glass-border); padding: 24px 20px; display: flex; flex-direction: column; gap: 24px; flex-shrink: 0; z-index: 2000; }
     
-    /* --- סטיילים לדחיפות (SLA) --- */
-    .ticket-urgent {
-      border: 1px solid var(--urgent) !important;
-      background: rgba(239, 68, 68, 0.08) !important;
-      box-shadow: 0 0 20px rgba(239, 68, 68, 0.25) !important;
-    }
+    .card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-top: 1px solid rgba(255, 255, 255, 0.3); border-radius: 24px; padding: 32px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); backdrop-filter: blur(20px); transition: transform 0.3s, box-shadow 0.3s; width: 100%; }
+    .card-title { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+    
+    .list-item { display: flex; align-items: center; justify-content: space-between; padding: 20px; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 18px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; animation: fade-in-up 0.4s ease-out forwards; opacity: 0; transform: translateY(10px); position: relative; overflow: hidden; }
+    .list-item:hover { background: rgba(255,255,255,0.1); border-color: #fff; transform: scale(1.005); box-shadow: 0 0 20px rgba(236, 72, 153, 0.1); }
+    
+    .ticket-urgent { border: 1px solid var(--urgent) !important; background: rgba(239, 68, 68, 0.08) !important; box-shadow: 0 0 20px rgba(239, 68, 68, 0.25) !important; }
+    .ticket-hamal { border: 2px solid #ef4444 !important; background: rgba(239, 68, 68, 0.15) !important; animation: pulseRed 1.5s infinite; }
+    @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
     .ticket-new { border-right: 3px solid var(--new) !important; }
-    .time-badge { font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
-    .time-urgent { color: var(--urgent); }
-    .time-new { color: var(--new); }
 
     @keyframes fade-in-up { to { opacity: 1; transform: translateY(0); } }
 
-    /* --- כפתורים (מחוזקים) --- */
     .btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 14px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text); transition: all 0.2s; }
     .btn:hover { background: rgba(255,255,255,0.15); border-color: #fff; transform: translateY(-2px); }
-    
     .btn-primary { background: var(--accent); border: 1px solid var(--accent); color: #fff; box-shadow: 0 0 20px rgba(236, 72, 153, 0.3); font-weight: 700; }
     .btn-primary:hover { background: #db2777; box-shadow: 0 0 40px rgba(236, 72, 153, 0.6); transform: translateY(-2px) scale(1.02); }
+    .btn-danger { color: #ef4444; border-color: #ef4444; background: rgba(239,68,68,0.1); } .btn-danger:hover { background: #ef4444; color: #fff; }
 
-    /* --- שדות קלט --- */
-    .input, .select, .textarea { 
-      width: 100%; background: rgba(15, 23, 42, 0.6); /* רקע כחול כהה לשדות */
-      border: 1px solid var(--glass-border); 
-      border-radius: 14px; padding: 14px 18px; 
-      color: #fff; font-family: inherit; font-size: 0.95rem; transition: 0.2s; 
-    }
+    .input, .select, .textarea { width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); border-radius: 14px; padding: 14px 18px; color: #fff; font-family: inherit; font-size: 0.95rem; transition: 0.2s; }
     .input:focus, .select:focus, .textarea:focus { border-color: var(--accent); box-shadow: 0 0 15px rgba(236, 72, 153, 0.3); background: rgba(15, 23, 42, 0.8); }
-    
-    .select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: left 16px center; }
     .select option { background-color: var(--bg-dark); color: #fff; }
-    .select.active-filter { border-color: #ec4899 !important; color: #ec4899 !important; font-weight: 600; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ec4899' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
+    .select.active-filter { border-color: #ec4899 !important; color: #ec4899 !important; font-weight: 600; }
 
-    /* --- ניווט וכללי --- */
     .main { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; position: relative; }
     .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; } 
     .page-title { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.8px; } 
     .page-subtitle { font-size: 0.95rem; color: var(--text-soft); margin-top: 4px; }
-
-    .badge { padding: 6px 14px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid currentColor; box-shadow: 0 0 8px currentColor; background: transparent !important; }
+    .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; border: 1px solid currentColor; display: inline-flex; align-items: center; gap: 6px; }
     .badge-OPEN { color: #60a5fa; } .badge-IN_PROGRESS { color: #fbbf24; } .badge-RESOLVED { color: #4ade80; } .badge-CLOSED { color: #94a3b8; border-color: rgba(255,255,255,0.2); box-shadow: none; }
-
     .chat-bubble { background: rgba(255,255,255,0.05); border-radius: 18px; padding: 16px; margin-bottom: 14px; border: 1px solid var(--glass-border); } 
     .chat-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.8rem; color: var(--text-soft); } 
-    .chat-role { background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 6px; font-size: 0.65rem; }
-
+    
     .file-upload-label { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 12px; border: 1px dashed var(--glass-border); border-radius: 14px; transition: 0.2s; color: var(--text-soft); background: rgba(0,0,0,0.3); } 
     .file-upload-label:hover { border-color: var(--accent); color: var(--text); background: rgba(236,72,153,0.1); }
     .ticket-image-preview { width: 100%; max-height: 300px; object-fit: cover; border-radius: 12px; margin-top: 12px; border: 1px solid var(--glass-border); cursor: pointer; }
@@ -178,33 +85,30 @@
     .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; } 
     .login-box { width: 100%; max-width: 440px; padding: 48px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(30px); border: 1px solid var(--glass-border); border-radius: 32px; box-shadow: 0 40px 80px -20px rgba(0,0,0,0.8); text-align: center; } 
     .login-icon { width: 72px; height: 72px; background: linear-gradient(135deg, #ec4899, #8b5cf6); border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; box-shadow: 0 0 30px rgba(236,72,153,0.6); color: white; }
-    
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 9999; display: flex; align-items: center; justify-content: center; animation: fade 0.2s; } 
     .modal { background: var(--bg-dark); border: 1px solid rgba(255,255,255,0.2); width: 90%; max-width: 400px; padding: 32px; border-radius: 28px; text-align: center; box-shadow: 0 0 50px rgba(0,0,0,0.8); animation: pop 0.3s cubic-bezier(0.16, 1, 0.3, 1); } 
     @keyframes pop { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } } @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-
     .loader-wrap { position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 50; border-radius: inherit; } 
     .spinner { width: 44px; height: 44px; border: 3px solid rgba(236,72,153,0.1); border-top-color: #ec4899; border-radius: 50%; animation: spin 0.8s linear infinite; box-shadow: 0 0 15px rgba(236, 72, 153, 0.4); } 
     @keyframes spin { to { transform: rotate(360deg); } }
-
     .toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 14px 28px; border-radius: 99px; box-shadow: 0 0 20px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 12px; z-index: 10000; font-weight: 500; animation: slide-up-fade 0.4s cubic-bezier(0.16, 1, 0.3, 1); } 
     @keyframes slide-up-fade { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
-
+    
     .grid-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-bottom: 30px; } 
     .stat-card { background: rgba(255,255,255,0.05); padding: 24px; border-radius: 24px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); } 
     .stat-val { font-size: 2.2rem; font-weight: 800; line-height: 1; text-shadow: 0 0 10px currentColor; } 
     .stat-lbl { font-size: 0.8rem; color: var(--text-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-
+    
     .analytics-filter-toggle { display: flex; gap: 10px; margin-bottom: 24px; } 
     .analytics-filter-chip { padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-soft); cursor: pointer; font-size: 0.9rem; transition: 0.2s; } 
     .analytics-filter-chip.active { background: rgba(236,72,153,0.2); color: #fff; border-color: rgba(236,72,153,0.4); box-shadow: 0 0 10px rgba(236,72,153,0.2); } 
     .pie-slice { transition: transform 0.2s ease-out; cursor: pointer; transform-origin: center; transform-box: fill-box; } 
     .pie-slice:hover { transform: scale(1.05); filter: drop-shadow(0 0 8px rgba(236,72,153,0.6)); } 
     .chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; } @media(max-width:900px){ .chart-grid-2 { grid-template-columns: 1fr; } }
+
     .grid-2cols { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; } @media(max-width:700px){ .grid-2cols { grid-template-columns: 1fr; gap: 20px; } }
     .field-group { margin-bottom: 20px; width: 100%; } .label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-soft); margin-bottom: 8px; }
 
-    /* --- אלמנטים של ה-Sidebar (דסקטופ) --- */
     .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px; margin-bottom: 8px; } 
     .brand img { width: 42px; height: 42px; filter: drop-shadow(0 0 20px rgba(236,72,153,0.6)); } 
     .brand-title { font-weight: 800; font-size: 1.2rem; letter-spacing: -0.5px; background: linear-gradient(to right, #fff, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -215,80 +119,40 @@
     .nav-item.active { background: linear-gradient(90deg, rgba(236,72,153,0.2), transparent); color: #fff; border-color: rgba(236,72,153,0.4); box-shadow: 0 0 20px rgba(236, 72, 153, 0.15); } 
     .nav-item svg { width: 20px; height: 20px; transition: transform 0.2s; } 
     .nav-item.active svg { color: var(--accent); transform: scale(1.1); filter: drop-shadow(0 0 8px var(--accent)); }
+    .notification-dot { width: 8px; height: 8px; background: var(--urgent); border-radius: 50%; margin-left: auto; box-shadow: 0 0 5px var(--urgent); }
 
-    /* --- התאמות מובייל קריטיות (פס תחתון) --- */
-    .mobile-header { display: none; } .close-sidebar-btn { display: none; } .sidebar-overlay { display: none; }
+    /* ניהול משתמשים */
+    .table-responsive { overflow-x: auto; }
+    .table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
+    .table th { text-align: right; padding: 16px; color: var(--text-soft); border-bottom: 1px solid var(--border); }
+    .table td { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.2); transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--new); }
+    input:checked + .slider:before { transform: translateX(18px); }
 
-    @media (max-width: 900px) {
-      .app-root { flex-direction: column; height: 100vh; overflow: hidden; } 
-      .main { padding: 16px; padding-bottom: 80px; width: 100%; overflow-y: auto; }
-      
-      .sidebar {
-        top: auto; bottom: 0; left: 0; right: 0;
-        width: 100vw; height: 60px;
-        transform: none;
-        background: rgba(15, 23, 42, 0.95); /* כחול כהה */
-        border-top: 1px solid rgba(255,255,255,0.1);
-        border-right: none; border-left: none;
-        box-shadow: 0 -5px 30px rgba(0,0,0,0.5);
-        backdrop-filter: blur(20px);
-        display: flex; flex-direction: row; align-items: center; justify-content: flex-start;
-        overflow-x: auto; overflow-y: hidden; white-space: nowrap;
-        padding: 0; padding-bottom: env(safe-area-inset-bottom);
-        z-index: 9999;
-        -webkit-overflow-scrolling: touch;
-      }
-      .sidebar::-webkit-scrollbar { display: none; }
-      .sidebar .brand, .sidebar .user-card, .sidebar .nav-label { display: none !important; }
-      .nav-group { display: contents; }
-      
-      .nav-item { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; height: 100%; padding: 0 16px; background: transparent !important; border: none; border-top: 3px solid transparent; color: #94a3b8; font-size: 0.9rem; font-weight: 500; margin: 0; transition: all 0.2s; }
-      .nav-item svg { display: none !important; }
-      .nav-item:hover { background: rgba(255,255,255,0.05) !important; }
-      
-      .nav-item.active { 
-        color: #fff; 
-        background: linear-gradient(to bottom, rgba(236,72,153,0.2), transparent) !important; 
-        border-top: 3px solid #ec4899; 
-        font-weight: 700; 
-        box-shadow: none;
-        text-shadow: 0 0 15px rgba(236,72,153,0.6);
-      }
-      
-      .nav-item[onclick*="CREATE"] { color: #d946ef; font-weight: 700; }
-      .nav-item[onclick*="CREATE"].active { color: #fff; border-top-color: #d946ef; text-shadow: 0 0 20px #d946ef; }
-      .nav-item[onclick*="CREATE"] span { display: block !important; }
-    }
-
-    /* אנימציית דף */
-    .page-animate { animation: pageFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
-    @keyframes pageFadeIn { from { opacity: 0; transform: translateY(15px); filter: blur(4px); } to { opacity: 1; transform: translateY(0); filter: blur(0); } }
-
-    /* --- כרטיס משתמש --- */
-    .user-card { 
-      margin-top: auto; 
-      background: rgba(255,255,255,0.05); 
-      padding: 12px; 
-      border-radius: 16px; 
-      display: flex; align-items: center; gap: 12px; 
-      border: 1px solid var(--glass-border); 
-    }
-    .avatar { 
-      width: 40px; height: 40px; 
-      border-radius: 12px; 
-      background: linear-gradient(135deg, #ec4899, #8b5cf6); /* ורוד-סגול */
-      color: #fff; font-weight: 700; 
-      display: flex; align-items: center; justify-content: center; 
-      box-shadow: 0 0 20px rgba(236,72,153,0.4); 
-      font-size: 1rem; flex-shrink: 0; 
-    }
+    .user-card { margin-top: auto; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 16px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--glass-border); }
+    .avatar { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(236,72,153,0.4); font-size: 1rem; flex-shrink: 0; }
     .user-info { flex: 1; min-width: 0; text-align: right; }
     .user-name { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .user-role { font-size: 0.75rem; color: var(--text-soft); }
     .logout-btn { background: transparent; border: none; color: var(--text-soft); cursor: pointer; padding: 8px; border-radius: 10px; transition: 0.2s; }
     .logout-btn:hover { background: rgba(244,63,94,0.15); color: #f43f5e; box-shadow: 0 0 15px rgba(244, 63, 94, 0.3); }
-  </style>
 
+    @media (max-width: 900px) {
+      .app-root { flex-direction: column; height: 100vh; overflow: hidden; } 
+      .main { padding: 16px; padding-bottom: 80px; width: 100%; overflow-y: auto; }
+      .sidebar { top: auto; bottom: 0; left: 0; right: 0; width: 100vw; height: 60px; transform: none; background: rgba(15, 23, 42, 0.95); border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: row; overflow-x: auto; padding: 0; z-index: 9999; }
+      .sidebar .brand, .sidebar .user-card, .sidebar .nav-label { display: none !important; }
+      .nav-group { display: contents; }
+      .nav-item { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; height: 100%; padding: 0 16px; background: transparent !important; border: none; margin: 0; }
+      .nav-item svg { display: none !important; }
+      .nav-item.active { color: #fff; background: linear-gradient(to bottom, rgba(236,72,153,0.2), transparent) !important; border-top: 3px solid #ec4899; }
+      .nav-item[onclick*="CREATE"] span { display: block !important; }
+    }
+  </style>
 </head>
 <body>
 <div id="root"></div>
@@ -304,35 +168,34 @@
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let currentUser = null, users = [], tickets = [], comments = [], units = [], activePage = "HOME";
-  let showClosed = false, selectedTicketId = null, analyticsDim = "STATUS";
-  let fetchLimit = 20;
+  let showClosed = false, selectedTicketId = null, analyticsDim = "STATUS", fetchLimit = 20;
 
   const escapeHtml = (str) => String(str||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   const formatDate = (ts) => ts ? new Date(ts).toLocaleString("he-IL", {dateStyle:"short", timeStyle:"short"}) : "";
-  const roleLabel = (r) => ({OWNER:"בעלים", MANAGER:"מנהל", COMPANY_CMD:'מ"פ', HATAP:'חט"פ', HR:'מש"א', USER:"משתמש", PLHIK:'פלחי"ק', MAMRAM:'ממר"ם', APP:'אפליקציה', NETWORK:'רשת'}[r] || r);
+  const roleLabel = (r) => ({OWNER:"בעלים", COMPANY_CMD:'מ"פ', HATAP:'חט"פ', HR:'מש"א', USER:"משתמש", PLHIK:'פלחי"ק', MAMRAM:'ממר"ם', APP:'אפליקציה', NETWORK:'רשת'}[r] || r);
   const STATUS_LABEL = { OPEN:"פתוח", IN_PROGRESS:"בטיפול", RESOLVED:"טופל", CLOSED:"סגור" };
 
-  // --- פונקציית זמן יחסי (חדש!) ---
   function timeAgo(dateParam) {
     if(!dateParam) return null;
     const date = new Date(dateParam);
     const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-    const minutes = Math.floor(seconds / 60);
+    const minutes = Math.floor((now - date) / 1000 / 60);
     const hours = Math.floor(minutes / 60);
     const days = Math.floor(hours / 24);
-
-    if (seconds < 60) return 'לפני רגע';
     if (minutes < 60) return `לפני ${minutes} דק'`;
     if (hours < 24) return `לפני ${hours} שעות`;
-    if (days < 7) return `לפני ${days} ימים`;
-    return formatDate(date); // אם עבר שבוע, מציג תאריך רגיל
+    return `לפני ${days} ימים`;
+  }
+  
+  function isOverHour(dateParam) {
+    if(!dateParam) return false;
+    return (new Date() - new Date(dateParam)) > 60 * 60 * 1000;
   }
 
   function showToast(msg, icon="check") { const el = document.createElement("div"); el.className="toast"; el.innerHTML = `<i data-lucide="${icon}"></i><span>${msg}</span>`; document.getElementById("toast-root").appendChild(el); lucide.createIcons(); setTimeout(() => el.remove(), 3000); }
   function showModal(title, msg, isErr=false) { return new Promise(resolve => { const root = document.getElementById("modal-root"); root.innerHTML = `<div class="modal-overlay"><div class="modal" style="border-color:${isErr?'#f43f5e':'rgba(255,255,255,0.1)'}"><div style="font-size:3rem;margin-bottom:10px;">${isErr?'😓':'✨'}</div><div style="font-size:1.2rem;font-weight:800;margin-bottom:8px;">${title}</div><div style="color:#94a3b8;margin-bottom:24px;line-height:1.5;">${msg}</div><button class="btn btn-primary" style="width:100%;justify-content:center;" id="mod-ok">הבנתי, סגור</button></div></div>`; document.getElementById("mod-ok").onclick = () => { root.innerHTML=""; resolve(); }; }); }
   async function withLoader(el, fn) { const l = document.createElement("div"); l.className="loader-wrap"; l.innerHTML=`<div class="spinner"></div>`; if(getComputedStyle(el).position==="static") el.style.position="relative"; el.appendChild(l); try { await fn(); } catch(e) { console.error(e); showModal("שגיאה", e.message, true); } finally { if(l.parentNode===el) el.removeChild(l); } }
-  
+
   async function loadData() {
     const {data:{user}} = await supabase.auth.getUser();
     if(!user) return null;
@@ -342,41 +205,55 @@
         supabase.from("ticket_comments").select("*"), 
         supabase.from("units").select("*") 
     ]);
-    users = (uRes.data || []).map(u => ({ id: u.id, authUserId: u.auth_user_id, fullName: u.full_name, email: u.email, phone: u.phone, role: u.role, unit: u.unit, unitId: u.unit_id, requestedRole: u.requested_role, roleStatus: u.role_status, isFrozen: u.is_frozen }));
-    tickets = (tRes.data || []).map(t => ({ id: t.id, ticketNumber: t.ticket_number, title: t.title, description: t.description, topic: t.topic, status: t.status, unit: t.unit, assignedRole: t.assigned_role, assignedUserId: t.assigned_user_id, createdByUserId: t.created_by_user_id, createdByName: t.created_by_name, createdByEmail: t.created_by_email, isClosed: !!t.is_closed || t.status === 'RESOLVED' || t.status === 'CLOSED', createdAt: t.created_at, updatedAt: t.updated_at, imageUrl: t.image_url }));
-    comments = (cRes.data || []).map(c => ({ id: c.id, ticketId: c.ticket_id, content: c.content, authorName: c.author_name, authorRole: c.author_role, authorUserId: c.author_user_id, createdAt: c.created_at }));
+    
+    users = (uRes.data || []).map(u => ({ id: u.id, authUserId: u.auth_user_id, fullName: u.full_name, email: u.email, phone: u.phone, role: u.role, isManager: u.is_manager, requestedManager: u.requested_manager, unit: u.unit, unitId: u.unit_id, requestedRole: u.requested_role, roleStatus: u.role_status, isFrozen: u.is_frozen }));
+    tickets = (tRes.data || []).map(t => ({ id: t.id, ticketNumber: t.ticket_number, title: t.title, description: t.description, topic: t.topic, status: t.status, unit: t.unit, assignedRole: t.assigned_role, assignedUserId: t.assigned_user_id, createdByUserId: t.created_by_user_id, createdByName: t.created_by_name, isClosed: !!t.is_closed || t.status === 'RESOLVED' || t.status === 'CLOSED', createdAt: t.created_at, imageUrl: t.image_url, isHamalDown: t.is_hamal_down }));
+    comments = cRes.data || [];
     units = unRes.data || [];
     currentUser = users.find(u => u.authUserId === user.id);
+    
+    if(currentUser && currentUser.isFrozen) {
+        await supabase.auth.signOut();
+        alert("החשבון הוקפא. פנה למנהל המערכת.");
+        location.reload();
+        return null;
+    }
     if(currentUser) ensurePushAutoForUser(currentUser.id).catch(console.error);
     return currentUser;
   }
   
-  window.loadMoreData = async () => {
-    fetchLimit += 20; 
-    const btn = document.getElementById("load-more-btn");
-    if(btn) btn.innerHTML = `<div class="spinner" style="width:20px;height:20px;border-width:2px;"></div> טוען...`;
-    await loadData();
-    renderPage(); 
-  };
-
-  function setupRealtime() { supabase.channel('public:tickets').on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async () => { await loadData(); render(); showToast("הנתונים התעדכנו", "refresh-cw"); }).on('postgres_changes', { event: '*', schema: 'public', table: 'ticket_comments' }, async () => { await loadData(); render(); }).subscribe(); }
+  window.loadMoreData = async () => { fetchLimit += 20; await loadData(); renderPage(); };
+  function setupRealtime() { supabase.channel('public:tickets').on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async () => { await loadData(); render(); showToast("הנתונים התעדכנו", "refresh-cw"); }).subscribe(); }
 
   function render() { if(!currentUser) return renderLogin(); if(!currentUser.fullName || !currentUser.phone) return renderOnboarding(); renderApp(); }
   function renderLogin() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="shield" style="width:32px;height:32px;"></i></div><h1 style="font-weight:900;font-size:1.8rem;margin-bottom:4px;">TicketFlow</h1><p style="color:#94a3b8;margin-bottom:30px;">מערכת ניהול תקלות מבצעית</p><form id="auth-form"><div class="field-group" style="text-align:right;"><label class="label">כתובת אימייל</label><input class="input" type="email" name="email" required /></div><div class="field-group" style="text-align:right;"><label class="label">סיסמה</label><input class="input" type="password" name="password" required /></div><button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;">כניסה למערכת</button><div style="margin-top:16px;font-size:0.8rem;"><span style="color:#64748b;">אין לך משתמש?</span> <a href="#" id="go-sign" style="color:#ec4899;text-decoration:none;font-weight:600;">הרשמה</a></div></form></div></div>`; lucide.createIcons(); const form = document.getElementById("auth-form"); form.onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.signInWithPassword({ email: form.email.value, password: form.password.value }); if(error) throw error; await loadData(); setupRealtime(); render(); }); }; document.getElementById("go-sign").onclick = async (e) => { e.preventDefault(); const em = prompt("אימייל:"); const pw = prompt("סיסמה:"); if(em&&pw) { const {data, error} = await supabase.auth.signUp({email:em, password:pw}); if(!error) { await supabase.from("users").insert({auth_user_id:data.user.id, email:em, role:"USER", role_status:"Pending"}); showModal("נרשמת בהצלחה", "כעת ניתן להתחבר."); } else showModal("שגיאה", error.message, true); } }; }
   function renderOnboarding() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="user-plus"></i></div><h2 style="margin-bottom:10px;">השלמת פרופיל</h2><form id="onb-form" style="text-align:right;"><div class="field-group"><label class="label">שם מלא</label><input class="input" name="fullName" required value="${escapeHtml(currentUser?.fullName||"")}" /></div><div class="field-group"><label class="label">טלפון</label><input class="input" name="phone" required value="${escapeHtml(currentUser?.phone||"")}" /></div><div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא</option>${units.map(u => `<option value="${escapeHtml(u.name)}">${escapeHtml(u.name)}</option>`).join("")}</select></div><button class="btn btn-primary" style="width:100%;justify-content:center;">שמירה והמשך</button></form></div></div>`; lucide.createIcons(); document.getElementById("onb-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { await supabase.from("users").update({ full_name: e.target.fullName.value, phone: e.target.phone.value, unit: e.target.unit.value, role_status: "Pending" }).eq("id", currentUser.id); await loadData(); setupRealtime(); render(); }); }; }
 
-  // אין צורך ב-toggleMenu בנייד החדש
-  window.toggleMenu = () => { const root = document.querySelector('.app-root'); root.classList.toggle('menu-open'); };
-
   function renderApp() {
+    const isOwner = currentUser.role === 'OWNER';
+    const isManager = currentUser.isManager || isOwner;
+    const pendingManagerRequests = users.filter(u => u.requestedManager).length;
+
     const root = document.getElementById("root");
     root.innerHTML = `
       <div class="app-root">
         <aside class="sidebar">
-          <div class="brand"><img src="logo.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/906/906343.png'"><div><div class="brand-title">TicketFlow</div><div style="font-size:0.7rem;color:#94a3b8;">V2.0 Pro</div></div></div>
-          <div class="nav-group"><div class="nav-label">ראשי</div><div class="nav-item ${activePage==='HOME'?'active':''}" onclick="nav('HOME')"><i data-lucide="layout-grid"></i><span>דשבורד</span></div><div class="nav-item ${activePage==='MY_TICKETS'?'active':''}" onclick="nav('MY_TICKETS')"><i data-lucide="list"></i><span>התקלות שלי</span></div><div class="nav-item ${activePage==='CREATE'?'active':''}" onclick="nav('CREATE')"><i data-lucide="plus-circle"></i><span>פתיחת תקלה</span></div></div>
-          <div class="nav-group"><div class="nav-label">ניהול</div>${['OWNER','MANAGER'].includes(currentUser.role) ? `<div class="nav-item ${activePage==='ALL_TICKETS'?'active':''}" onclick="nav('ALL_TICKETS')"><i data-lucide="layers"></i><span>כל התקלות</span></div>` : ''}${['OWNER','MANAGER','COMPANY_CMD'].includes(currentUser.role) ? `<div class="nav-item ${activePage==='ANALYTICS'?'active':''}" onclick="nav('ANALYTICS')"><i data-lucide="bar-chart-3"></i><span>אנליטיקה</span></div>` : ''}<div class="nav-item ${activePage==='PROFILE'?'active':''}" onclick="nav('PROFILE')"><i data-lucide="user-circle"></i><span>פרופיל אישי</span></div>${currentUser.role === 'OWNER' ? `<div class="nav-item ${activePage==='ROLE_APPROVAL'?'active':''}" onclick="nav('ROLE_APPROVAL')"><i data-lucide="shield-check"></i><span>אישור תפקידים</span></div>` : ''}</div>
-          <div class="user-card"><div class="avatar">${(currentUser.fullName?.[0]||'U')}</div><div class="user-info"><div class="user-name">${escapeHtml(currentUser.fullName||'משתמש')}</div><div class="user-role">${roleLabel(currentUser.role)}</div></div><button class="logout-btn" onclick="doLogout()"><i data-lucide="log-out"></i></button></div>
+          <div class="brand"><img src="logo.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/906/906343.png'"><div><div class="brand-title">TicketFlow</div><div style="font-size:0.7rem;color:#94a3b8;">Cyber Ops</div></div></div>
+          <div class="nav-group">
+            <div class="nav-label">ראשי</div>
+            <div class="nav-item ${activePage==='HOME'?'active':''}" onclick="nav('HOME')"><i data-lucide="layout-grid"></i><span>דשבורד</span></div>
+            <div class="nav-item ${activePage==='MY_TICKETS'?'active':''}" onclick="nav('MY_TICKETS')"><i data-lucide="list"></i><span>התקלות שלי</span></div>
+            <div class="nav-item ${activePage==='CREATE'?'active':''}" onclick="nav('CREATE')"><i data-lucide="plus-circle"></i><span>פתיחת תקלה</span></div>
+          </div>
+          <div class="nav-group">
+            <div class="nav-label">ניהול</div>
+            ${isManager ? `<div class="nav-item ${activePage==='ALL_TICKETS'?'active':''}" onclick="nav('ALL_TICKETS')"><i data-lucide="layers"></i><span>כל התקלות</span></div>` : ''}
+            ${isManager ? `<div class="nav-item ${activePage==='ANALYTICS'?'active':''}" onclick="nav('ANALYTICS')"><i data-lucide="bar-chart-3"></i><span>אנליטיקה</span></div>` : ''}
+            ${isOwner ? `<div class="nav-item ${activePage==='MANAGE_USERS'?'active':''}" onclick="nav('MANAGE_USERS')"><i data-lucide="users"></i><span>ניהול משתמשים</span> ${pendingManagerRequests > 0 ? `<span class="notification-dot"></span>` : ''}</div>` : ''} 
+            ${isOwner ? `<div class="nav-item ${activePage==='ROLE_APPROVAL'?'active':''}" onclick="nav('ROLE_APPROVAL')"><i data-lucide="shield-check"></i><span>אישור תפקידים</span></div>` : ''}
+            <div class="nav-item ${activePage==='PROFILE'?'active':''}" onclick="nav('PROFILE')"><i data-lucide="user-circle"></i><span>פרופיל אישי</span></div>
+          </div>
+          <div class="user-card"><div class="avatar">${(currentUser.fullName?.[0]||'U')}</div><div class="user-info"><div class="user-name">${escapeHtml(currentUser.fullName)}</div><div class="user-role">${roleLabel(currentUser.role)}${currentUser.isManager ? ' (מנהל)' : ''}</div></div><button class="logout-btn" onclick="doLogout()"><i data-lucide="log-out"></i></button></div>
         </aside>
         <main class="main" id="main-content"></main>
       </div>`;
@@ -394,10 +271,20 @@
       const myOpen = tickets.filter(t => !t.isClosed && (t.createdByUserId===currentUser.id || t.assignedUserId===currentUser.id)).length;
       const totalOpen = tickets.filter(t => !t.isClosed).length;
       const totalClosed = tickets.filter(t => t.isClosed).length;
-      main.innerHTML = `<header class="header"><div><div class="page-title">בוקר טוב, ${escapeHtml(currentUser.fullName?.split(' ')[0]||'חבר')} 👋</div><div class="page-subtitle">הנה מה שקורה במערכת היום</div></div><button class="btn btn-primary" onclick="nav('CREATE')"><i data-lucide="plus"></i>תקלה חדשה</button></header><div class="grid-dashboard"><div class="stat-card"><div class="stat-val" style="color:#ec4899;">${myOpen}</div><div class="stat-lbl">תקלות שאני פתחתי</div></div><div class="stat-card"><div class="stat-val" style="color:#8b5cf6;">${totalOpen}</div><div class="stat-lbl">סה״כ פתוחות</div></div><div class="stat-card"><div class="stat-val" style="color:#10b981;">${totalClosed}</div><div class="stat-lbl">תקלות שטופלו</div></div></div><div class="card"><div class="card-title"><i data-lucide="clock"></i> עדכונים אחרונים</div>${tickets.slice(0,5).map((t,i) => `<div class="list-item" style="animation-delay:${i*0.05}s" onclick="nav('DETAILS', '${t.id}')"><div style="display:flex;align-items:center;gap:12px;"><div class="badge badge-${t.status}" style="width:8px;height:8px;padding:0;border-radius:50%;"></div><div><div style="font-weight:600;font-size:0.9rem;">${escapeHtml(t.title)}</div><div style="font-size:0.75rem;color:var(--text-soft);">${timeAgo(t.createdAt)} • ${escapeHtml(t.createdByName)}</div></div></div><div class="badge badge-${t.status}">${t.status === 'RESOLVED' ? 'טופל' : (STATUS_LABEL[t.status] || t.status)}</div></div>`).join('')}</div>`;
+      
+      main.innerHTML = `<header class="header"><div><div class="page-title">בוקר טוב, ${escapeHtml(currentUser.fullName?.split(' ')[0]||'חבר')} 👋</div><div class="page-subtitle">סטטוס מבצעי עדכני</div></div><button class="btn btn-primary" onclick="nav('CREATE')"><i data-lucide="plus"></i>תקלה חדשה</button></header>
+      <div class="grid-dashboard">
+        <div class="stat-card"><div class="stat-val" style="color:#ec4899;">${myOpen}</div><div class="stat-lbl">תקלות שלי</div></div>
+        <div class="stat-card"><div class="stat-val" style="color:#8b5cf6;">${totalOpen}</div><div class="stat-lbl">סה״כ פתוחות</div></div>
+        <div class="stat-card"><div class="stat-val" style="color:#10b981;">${totalClosed}</div><div class="stat-lbl">תקלות שטופלו</div></div>
+      </div>
+      <div class="card"><div class="card-title"><i data-lucide="clock"></i> עדכונים אחרונים</div>${tickets.slice(0,5).map((t,i) => {
+         const isLate = !t.isClosed && isOverHour(t.createdAt);
+         return `<div class="list-item ${isLate ? 'ticket-urgent' : ''}" style="animation-delay:${i*0.05}s" onclick="nav('DETAILS', '${t.id}')"><div style="display:flex;align-items:center;gap:12px;"><div class="badge badge-${t.status}" style="width:8px;height:8px;padding:0;border-radius:50%;"></div><div><div style="font-weight:600;font-size:0.9rem;">${t.isHamalDown ? '🚨 ' : ''}${escapeHtml(t.title)}</div><div style="font-size:0.75rem;color:var(--text-soft);">${timeAgo(t.createdAt)} • ${escapeHtml(t.createdByName)}</div></div></div><div class="badge badge-${t.status}">${t.status === 'RESOLVED' ? 'טופל' : (STATUS_LABEL[t.status] || t.status)}</div></div>`;
+      }).join('')}</div>`;
     }
 
-    // --- LISTS (עם SLA) ---
+    // --- LISTS (WITH SEARCH & FILTER) ---
     if(activePage === "MY_TICKETS" || activePage === "ALL_TICKETS") {
       const isAll = activePage === "ALL_TICKETS";
       if (typeof window.filterState === 'undefined') window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" };
@@ -417,177 +304,167 @@
         <div class="card" style="padding:16px; margin-bottom:20px; background:rgba(30, 41, 59, 0.7);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><div style="font-size:0.85rem; font-weight:600; color:var(--text-soft);">חיפוש וסינון</div>${hasActiveFilters ? `<button onclick="clearFilters()" style="background:none; border:none; color:#ec4899; font-size:0.8rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px;"><i data-lucide="x-circle" style="width:14px; height:14px;"></i> איפוס</button>` : ''}</div><div style="position:relative; margin-bottom:12px;"><i data-lucide="search" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--text-soft); width:18px;"></i><input class="input" placeholder="הקלד לחיפוש..." value="${window.filterState.search}" oninput="setSearch(this.value)" style="padding-right:38px; background:rgba(0,0,0,0.3); border-color:rgba(255,255,255,0.1);" /></div><div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;"><select class="select ${window.filterState.sort!=='DESC'?'active-filter':''}" onchange="setSort(this.value)" style="min-width:110px;"><option value="DESC" ${window.filterState.sort==='DESC'?'selected':''}>📅 חדש</option><option value="ASC" ${window.filterState.sort==='ASC'?'selected':''}>📅 ישן</option></select><select class="select ${window.filterState.topic!=='ALL'?'active-filter':''}" onchange="setFilterTopic(this.value)" style="min-width:100px;"><option value="ALL">🔧 נושא</option><option value="חומרה" ${window.filterState.topic==='חומרה'?'selected':''}>חומרה</option><option value="תוכנה" ${window.filterState.topic==='תוכנה'?'selected':''}>תוכנה</option><option value="רשת" ${window.filterState.topic==='רשת'?'selected':''}>רשת</option><option value="הרשאות" ${window.filterState.topic==='הרשאות'?'selected':''}>הרשאות</option><option value="אחר" ${window.filterState.topic==='אחר'?'selected':''}>אחר</option></select><select class="select ${window.filterState.role!=='ALL'?'active-filter':''}" onchange="setFilterRole(this.value)" style="min-width:100px;"><option value="ALL">👮 תפקיד</option><option value="HATAP" ${window.filterState.role==='HATAP'?'selected':''}>חט"פ</option><option value="HR" ${window.filterState.role==='HR'?'selected':''}>מש"א</option><option value="PLHIK" ${window.filterState.role==='PLHIK'?'selected':''}>פלחי"ק</option><option value="MAMRAM" ${window.filterState.role==='MAMRAM'?'selected':''}>ממר"ם</option></select></div></div>
         
         <div class="card" style="padding:0; background:transparent; border:none; box-shadow:none;">
-          ${list.length===0 ? 
-            `<div style="text-align:center; padding:40px; opacity:0.5; display:flex; flex-direction:column; align-items:center;"><i data-lucide="search-x" style="width:48px; height:48px; margin-bottom:10px;"></i><div>לא נמצאו תקלות</div>${hasActiveFilters ? `<button class="btn btn-ghost" style="margin-top:10px; color:#ec4899;" onclick="clearFilters()">אפס סינון</button>` : ''}</div>` : 
-            list.map((t,i) => {
-                // לוגיקה לדחיפות
-                const isUrgent = !t.isClosed && (new Date() - new Date(t.createdAt) > 24 * 60 * 60 * 1000);
-                const isNew = (new Date() - new Date(t.createdAt) < 4 * 60 * 60 * 1000);
-                const itemClass = isUrgent ? 'ticket-urgent' : (isNew ? 'ticket-new' : '');
-                const timeClass = isUrgent ? 'time-urgent' : (isNew ? 'time-new' : '');
+            ${list.map(t => {
+                const isOver1Hour = !t.isClosed && isOverHour(t.createdAt);
+                let itemClass = '';
+                if (t.isHamalDown) itemClass = 'ticket-hamal';
+                else if (isOver1Hour) itemClass = 'ticket-urgent';
                 
                 return `
-                <div class="list-item ${itemClass}" style="animation-delay:${i*0.05}s" onclick="nav('DETAILS', '${t.id}')">
+                <div class="list-item ${itemClass}" onclick="nav('DETAILS', '${t.id}')">
                   <div style="display:flex; gap:16px; align-items:center;">
                     <div style="font-family:monospace; opacity:0.5; font-size:0.8rem;">#${t.ticketNumber}</div>
                     <div>
-                      <div style="font-weight:700; font-size:0.95rem;">${escapeHtml(t.title)}</div>
-                      <div style="font-size:0.75rem; color:var(--text-soft); display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                        <span class="time-badge ${timeClass}">
-                            ${isUrgent ? '<i data-lucide="alert-circle" style="width:12px;height:12px;"></i>' : ''}
-                            ${timeAgo(t.createdAt)}
-                        </span>
-                        <span>•</span><span style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px;">${escapeHtml(t.topic||'כללי')}</span>
-                        <span>•</span><span>${roleLabel(t.assignedRole)}</span>
+                      <div style="font-weight:700; font-size:0.95rem;">${t.isHamalDown ? '🚨 ' : ''}${escapeHtml(t.title)}</div>
+                      <div style="font-size:0.75rem; color:var(--text-soft); display:flex; gap:8px;">
+                        <span>${timeAgo(t.createdAt)}</span> • <span>${roleLabel(t.assignedRole)}</span>
+                        ${isOver1Hour ? '<span style="color:var(--urgent); font-weight:bold;">(בעיכוב)</span>' : ''}
                       </div>
                     </div>
                   </div>
-                  <div class="badge badge-${t.status}">${t.status === 'RESOLVED' ? 'טופל' : (STATUS_LABEL[t.status] || t.status)}</div>
+                  <div class="badge badge-${t.status}">${STATUS_LABEL[t.status] || t.status}</div>
                 </div>`;
             }).join('')}
-          ${tickets.length >= fetchLimit ? `<div style="text-align:center; padding:20px;"><button id="load-more-btn" class="btn btn-ghost" onclick="loadMoreData()">טען תקלות ישנות יותר <i data-lucide="arrow-down"></i></button></div>` : ''}
+            ${list.length === 0 ? '<div style="text-align:center;padding:20px;opacity:0.5;">לא נמצאו תקלות</div>' : ''}
+            ${tickets.length >= fetchLimit ? `<div style="text-align:center; padding:20px;"><button id="load-more-btn" class="btn btn-ghost" onclick="loadMoreData()">טען תקלות ישנות יותר <i data-lucide="arrow-down"></i></button></div>` : ''}
         </div>`;
     }
 
-    // --- CREATE TICKET ---
+    // --- CREATE ---
     if(activePage === "CREATE") {
-      main.innerHTML = `<header class="header"><div class="page-title">פתיחת קריאה</div></header><div class="card" style="width:100%;"><form id="create-form"><div class="grid-2cols"><div class="field-group"><label class="label">נושא התקלה</label><select class="select" name="topic"><option>חומרה</option><option>תוכנה</option><option>רשת</option><option>הרשאות</option><option>אחר</option></select></div><div class="field-group"><label class="label">גורם מטפל</label><select class="select" name="role"><option value="HATAP">חט"פ</option><option value="HR">מש"א</option></select></div></div><div class="field-group"><label class="label">כותרת (קצר ולעניין)</label><input class="input" name="title" required placeholder="למשל: המדפסת בלשכה לא מושכת דף" /></div><div class="field-group"><label class="label">פירוט מלא</label><textarea class="textarea" name="desc" required placeholder="תאר את הבעיה..." style="min-height:150px;"></textarea></div><div class="field-group"><label class="label">צרף תמונה (אופציונלי)</label><label for="file-upload" class="file-upload-label"><i data-lucide="paperclip"></i><span>בחר קובץ...</span></label><input id="file-upload" type="file" accept="image/*" style="display:none;" onchange="this.previousElementSibling.querySelector('span').innerText = this.files[0] ? this.files[0].name : 'בחר קובץ...'"></div><div style="text-align:left;margin-top:20px;"><button class="btn btn-primary" type="submit"><i data-lucide="send"></i> שלח קריאה</button></div></form></div>`;
-      document.getElementById("create-form").onsubmit = async (e) => { e.preventDefault(); const fd = new FormData(e.target); const fileFile = document.getElementById("file-upload").files[0]; await withLoader(document.querySelector(".card"), async () => { let imageUrl = null; if(fileFile) { const fileName = `${Date.now()}_${fileFile.name}`; const { error: uploadError } = await supabase.storage.from('attachments').upload(fileName, fileFile); if(uploadError) throw uploadError; const { data: { publicUrl } } = supabase.storage.from('attachments').getPublicUrl(fileName); imageUrl = publicUrl; } const num = await getNextNum(); const {data:t, error} = await supabase.from("tickets").insert({ ticket_number: num, title: fd.get("title"), description: fd.get("desc"), topic: fd.get("topic"), created_by_user_id: currentUser.id, created_by_name: currentUser.fullName, created_by_email: currentUser.email, unit: currentUser.unit, assigned_role: fd.get("role"), status: "OPEN", is_closed: false, image_url: imageUrl }).select().single(); if(error) throw error; try { await supabase.from("audits").insert({ ticket_id: t.id, field: "CREATE", new_value: t.title, changed_by_name: currentUser.fullName, changed_by_user_id: currentUser.id, changed_by_role: currentUser.role }); } catch (logErr) { console.warn("Log failed:", logErr); } pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: num, title: t.title, message: `✨ נפתחה תקלה חדשה ע"י ${currentUser.fullName}` }); await loadData(); showToast("התקלה נפתחה בהצלחה!"); nav("DETAILS", t.id); }); };
+      const isSimpleUser = currentUser.role === 'USER';
+      const roleOptions = isSimpleUser 
+        ? `<option value="HATAP">חט"פ</option>` 
+        : `<option value="HATAP">חט"פ</option><option value="HR">מש"א</option><option value="PLHIK">פלחי"ק</option><option value="MAMRAM">ממר"ם</option><option value="APP">אפליקציה</option><option value="NETWORK">רשת</option>`;
+
+      main.innerHTML = `<header class="header"><div class="page-title">פתיחת קריאה</div></header><div class="card" style="width:100%;"><form id="create-form">
+        <div style="margin-bottom:20px; padding:15px; border:1px solid #ef4444; background:rgba(239,68,68,0.1); border-radius:12px; display:flex; align-items:center; gap:10px;">
+            <input type="checkbox" name="hamalDown" id="hamalDown" style="width:20px; height:20px; accent-color:#ef4444;">
+            <label for="hamalDown" style="color:#ef4444; font-weight:800; font-size:1.1rem;">🚨 חמ"ל מושבת (דחיפות עליונה)</label>
+        </div>
+        <div class="grid-2cols"><div class="field-group"><label class="label">נושא</label><select class="select" name="topic"><option>חומרה</option><option>תוכנה</option><option>רשת</option><option>הרשאות</option><option>אחר</option></select></div><div class="field-group"><label class="label">גורם מטפל</label><select class="select" name="role">${roleOptions}</select></div></div><div class="field-group"><label class="label">כותרת</label><input class="input" name="title" required /></div><div class="field-group"><label class="label">פירוט</label><textarea class="textarea" name="desc" required style="min-height:150px;"></textarea></div><div class="field-group"><label for="file-upload" class="file-upload-label"><i data-lucide="paperclip"></i><span>צרף תמונה...</span></label><input id="file-upload" type="file" accept="image/*" style="display:none;" onchange="this.previousElementSibling.querySelector('span').innerText = this.files[0] ? this.files[0].name : 'נבחר קובץ'"></div><button class="btn btn-primary" type="submit">שלח קריאה</button></form></div>`;
+      
+      document.getElementById("create-form").onsubmit = async (e) => { e.preventDefault(); const fd = new FormData(e.target); const fileFile = document.getElementById("file-upload").files[0]; const isHamal = document.getElementById("hamalDown").checked; 
+      await withLoader(document.querySelector(".card"), async () => { 
+          let imageUrl = null; 
+          if(fileFile) { const fileName = `${Date.now()}_${fileFile.name}`; const { error: upErr } = await supabase.storage.from('attachments').upload(fileName, fileFile); if(!upErr) { const { data } = supabase.storage.from('attachments').getPublicUrl(fileName); imageUrl = data.publicUrl; } } 
+          const num = await getNextNum(); 
+          const {data:t, error} = await supabase.from("tickets").insert({ ticket_number: num, title: fd.get("title"), description: fd.get("desc"), topic: fd.get("topic"), created_by_user_id: currentUser.id, created_by_name: currentUser.fullName, created_by_email: currentUser.email, unit: currentUser.unit, assigned_role: fd.get("role"), status: "OPEN", is_closed: false, image_url: imageUrl, is_hamal_down: isHamal }).select().single(); 
+          if(error) throw error; 
+          let notifyTitle = isHamal ? "🚨 חמ״ל מושבת! 🚨" : "✨ תקלה חדשה";
+          const notifyUsers = isHamal ? users.filter(u => u.role === 'OWNER' || u.isManager).map(u => u.id) : getNotifyUserIdsForTicket(t, currentUser.id);
+          pushTicketShort({ userIds: notifyUsers, ticketId: num, title: notifyTitle, message: t.title }); 
+          await loadData(); nav("DETAILS", t.id); 
+      }); };
     }
 
-    // --- TICKET DETAILS ---
+    // --- DETAILS ---
     if(activePage === "DETAILS") {
       const t = tickets.find(x => x.id == selectedTicketId);
       if(!t) return nav("HOME");
-      const canEdit = ['OWNER','MANAGER'].includes(currentUser.role) || t.assignedRole === currentUser.role || (t.createdByUserId===currentUser.id && t.status==='OPEN');
-      const allRoles = ['HATAP','HR','PLHIK','MAMRAM','APP','NETWORK']; let targets = ['HR']; if(['OWNER','MANAGER','HR'].includes(currentUser.role)) targets = allRoles; if(t.assignedRole && !targets.includes(t.assignedRole)) targets.push(t.assignedRole);
-      main.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;"><button class="btn btn-ghost" onclick="nav('HOME')"><i data-lucide="chevron-left"></i></button><div class="page-title">תקלה #${t.ticketNumber}</div><div class="badge badge-${t.status}" style="margin-right:auto;font-size:0.9rem;">${t.status === 'RESOLVED' ? 'טופל' : (STATUS_LABEL[t.status] || t.status)}</div></div><div class="grid-2cols"><div class="card" style="height:fit-content;"><div class="card-title"><i data-lucide="info"></i> פרטי הקריאה</div><div style="font-size:1.1rem;font-weight:700;margin-bottom:8px;">${escapeHtml(t.title)}</div><div style="color:var(--text-soft);line-height:1.6;margin-bottom:20px;white-space:pre-wrap;">${escapeHtml(t.description)}</div>${t.imageUrl ? `<div style="margin-bottom:20px;"><div class="label">צילום מסך/קובץ</div><a href="${t.imageUrl}" target="_blank"><img src="${t.imageUrl}" class="ticket-image-preview" /></a></div>` : ''}<div class="grid-2cols" style="background:rgba(0,0,0,0.2);padding:15px;border-radius:12px;margin-bottom:20px;"><div><div class="label">נפתח ע״י</div><div style="display:flex;align-items:center;gap:6px;"><div class="avatar" style="width:24px;height:24px;font-size:0.7rem;">${(t.createdByName||'?')[0]}</div><span>${escapeHtml(t.createdByName)}</span></div></div><div><div class="label">יחידה</div><div>${escapeHtml(t.unit||'-')}</div></div><div style="margin-top:10px;"><div class="label">תאריך</div><div>${formatDate(t.createdAt)}</div></div><div style="margin-top:10px;"><div class="label">אחראי</div><div>${roleLabel(t.assignedRole)}</div></div></div>${canEdit ? `<div style="padding-top:20px;border-top:1px solid var(--border);"><div class="label" style="margin-bottom:10px;">טיפול וניתוב</div><div class="grid-2cols" style="gap:10px; margin-bottom:16px;"><div><span class="label" style="font-size:0.75rem;opacity:0.7;">סטטוס</span><select class="select" id="upd-status" style="width:100%"><option value="OPEN" ${t.status=='OPEN'?'selected':''}>פתוח</option><option value="IN_PROGRESS" ${t.status=='IN_PROGRESS'?'selected':''}>בטיפול</option><option value="RESOLVED" ${t.status=='RESOLVED'?'selected':''}>טופל (סגירה)</option></select></div><div><span class="label" style="font-size:0.75rem;opacity:0.7;">העברה ל...</span><select class="select" id="upd-role" style="width:100%">${targets.map(r => `<option value="${r}" ${t.assignedRole === r ? 'selected' : ''}>${roleLabel(r)}</option>`).join("")}</select></div></div><button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="updateTicket('${t.id}')">שמור שינויים</button></div>` : ''}</div><div class="card" style="display:flex;flex-direction:column;height:600px;"><div class="card-title"><i data-lucide="message-circle"></i> יומן טיפול</div><div style="flex:1;overflow-y:auto;padding-right:8px;margin-bottom:16px;">${comments.filter(c=>c.ticketId==t.id).map(c => `<div class="chat-bubble"><div class="chat-meta"><span style="font-weight:700;color:#fff;">${escapeHtml(c.authorName)}</span><span class="chat-role">${roleLabel(c.authorRole)}</span><span style="margin-right:auto;">${formatDate(c.createdAt)}</span></div><div style="line-height:1.5;">${escapeHtml(c.content)}</div></div>`).join('')}${comments.filter(c=>c.ticketId==t.id).length===0 ? '<div style="text-align:center;opacity:0.5;margin-top:50px;">אין הערות עדיין. התחל שיחה...</div>' : ''}</div><form id="comment-form" style="display:flex;gap:8px;"><input class="input" name="txt" placeholder="כתוב עדכון..." autocomplete="off" required /><button class="btn btn-primary"><i data-lucide="send"></i></button></form></div></div>`;
-      const cf = document.getElementById("comment-form"); if(cf) cf.onsubmit = async (e) => { e.preventDefault(); await withLoader(cf.parentNode, async () => { await supabase.from("ticket_comments").insert({ ticket_id: t.id, content: cf.txt.value, author_user_id: currentUser.id, author_name: currentUser.fullName, author_role: currentUser.role }); pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: t.ticketNumber, title: t.title, message: `💬 תגובה חדשה מאת ${currentUser.fullName}: ${cf.txt.value}` }); await loadData(); renderPage(); }); };
+      const isOwner = currentUser.role === 'OWNER';
+      const canTakeResponsibility = (t.assignedRole === currentUser.role || isOwner) && t.status === 'OPEN';
+      main.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;"><button class="btn" onclick="nav('HOME')"><i data-lucide="chevron-left"></i></button><div class="page-title">תקלה #${t.ticketNumber}</div></div>
+      ${t.isHamalDown ? '<div style="background:#ef4444; color:white; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:bold; text-align:center; animation:pulseRed 2s infinite;">🚨 התראה: חמ"ל מושבת</div>' : ''}
+      <div class="card">
+        ${canTakeResponsibility ? `<button onclick="takeTicket('${t.id}')" class="btn btn-primary" style="width:100%; justify-content:center; margin-bottom:20px; background:#10b981; border-color:#10b981;">✋ קח לטיפולך (שיוך עצמי)</button>` : ''}
+        <div style="font-size:1.2rem;font-weight:700;margin-bottom:10px;">${escapeHtml(t.title)}</div>
+        <div style="color:var(--text-soft);margin-bottom:20px;white-space:pre-wrap;">${escapeHtml(t.description)}</div>
+        ${t.imageUrl ? `<img src="${t.imageUrl}" class="ticket-image-preview" onclick="window.open('${t.imageUrl}')" />` : ''}
+        <div class="grid-2cols" style="background:rgba(255,255,255,0.05);padding:15px;border-radius:12px;">
+            <div><span class="label">נפתח ע״י</span>${escapeHtml(t.createdByName)}</div>
+            <div><span class="label">יחידה</span>${escapeHtml(t.unit||'-')}</div>
+            <div><span class="label">אחראי</span>${t.assignedUserId ? '👤 מטופל ע"י נציג' : roleLabel(t.assignedRole)}</div>
+            <div><span class="label">סטטוס</span>${STATUS_LABEL[t.status]}</div>
+        </div>
+        ${(isOwner || currentUser.isManager || t.assignedRole===currentUser.role) ? `<div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);"><div class="label">עדכון סטטוס</div><div style="display:flex; gap:10px;"><select class="select" id="upd-status"><option value="OPEN" ${t.status=='OPEN'?'selected':''}>פתוח</option><option value="IN_PROGRESS" ${t.status=='IN_PROGRESS'?'selected':''}>בטיפול</option><option value="RESOLVED" ${t.status=='RESOLVED'?'selected':''}>טופל (סגירה)</option></select><button class="btn btn-primary" onclick="updateTicket('${t.id}')">עדכן</button></div></div>` : ''}
+      </div>
+      <div class="card" style="margin-top:20px;">
+        <div class="card-title">יומן טיפול</div>
+        <div style="max-height:300px;overflow-y:auto;margin-bottom:15px;">${comments.filter(c=>c.ticketId==t.id).map(c=>`<div class="chat-bubble"><div class="chat-meta"><b>${escapeHtml(c.authorName)}</b> <span>${formatDate(c.createdAt)}</span></div>${escapeHtml(c.content)}</div>`).join('')}</div>
+        <form onsubmit="postComment(event, '${t.id}')" style="display:flex;gap:8px;"><input class="input" name="txt" placeholder="כתוב תגובה..." required /><button class="btn btn-primary"><i data-lucide="send"></i></button></form>
+      </div>`;
     }
 
-// --- PROFILE (עם כפתור התנתקות חדש) ---
+    // --- MANAGE USERS ---
+    if(activePage === "MANAGE_USERS") {
+        if(currentUser.role !== 'OWNER') return nav('HOME');
+        main.innerHTML = `<header class="header"><div class="page-title">ניהול משתמשים</div></header><div class="card" style="overflow-x:auto;"><table class="table"><thead><tr><th>שם</th><th>תפקיד</th><th>מנהל?</th><th>יחידה</th><th>סטטוס</th><th>הקפאה</th></tr></thead><tbody>${users.map(u => `<tr><td>${escapeHtml(u.fullName)}</td><td>${roleLabel(u.role)}</td><td>
+            <div style="display:flex;align-items:center;gap:6px;">
+                <input type="checkbox" ${u.isManager?'checked':''} onchange="toggleManager('${u.id}', this.checked)">
+                ${u.requestedManager ? '<span class="badge" style="background:#ec4899;color:white;font-size:0.6rem;animation:pulseRed 2s infinite;">מבקש!</span>' : ''}
+            </div>
+        </td><td>${escapeHtml(u.unit||'-')}</td><td>${u.roleStatus}</td><td><label class="switch"><input type="checkbox" ${u.isFrozen?'checked':''} onchange="toggleFreeze('${u.id}', this.checked)"><span class="slider"></span></label></td></tr>`).join('')}</tbody></table></div>`;
+    }
+
+    // --- ANALYTICS ---
+    if(activePage === "ANALYTICS") {
+        const isComp = currentUser.role === 'COMPANY_CMD';
+        const list = isComp ? tickets.filter(t => (t.unit || "") === (currentUser.unit || "")) : tickets;
+        if (list.length === 0) { main.innerHTML = `<div class="card">אין נתונים</div>`; return; }
+        
+        const open = list.filter(t => !t.isClosed).length; const closed = list.filter(t => t.isClosed).length; const week = list.filter(t => t.createdAt && new Date(t.createdAt) >= new Date(Date.now() - 7*864e5)).length;
+        const counts = {}; list.forEach(t => { let key = "אחר"; if (analyticsDim === "STATUS") key = STATUS_LABEL[t.status] || t.status; else if (analyticsDim === "ROLE") key = roleLabel(t.assignedRole) || "לא הוקצה"; else if (analyticsDim === "TOPIC") key = t.topic || "ללא"; else if (analyticsDim === "UNIT") key = t.unit || "כללי"; counts[key] = (counts[key] || 0) + 1; });
+        const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]); const total = list.length || 1; const colors = ["#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#14b8a6"];
+        let paths = "", startAngle = 0; if (sorted.length === 1 && total > 0) { paths = `<circle cx="50" cy="50" r="50" fill="${colors[0]}" class="pie-slice"><title>${sorted[0][0]}</title></circle>`; } else if (total > 0) { sorted.forEach(([label, val], i) => { const pct = val / total; const sliceAngle = pct * 360; const endAngle = startAngle + sliceAngle; const x1 = 50 + 50 * Math.cos(Math.PI * startAngle / 180); const y1 = 50 + 50 * Math.sin(Math.PI * startAngle / 180); const x2 = 50 + 50 * Math.cos(Math.PI * endAngle / 180); const y2 = 50 + 50 * Math.sin(Math.PI * endAngle / 180); const largeArc = sliceAngle > 180 ? 1 : 0; const d = `M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`; paths += `<path d="${d}" fill="${colors[i % colors.length]}" class="pie-slice" stroke="rgba(15,23,42,0.5)" stroke-width="1"><title>${label}: ${val}</title></path>`; startAngle = endAngle; }); }
+        
+        main.innerHTML = `<div class="page-header"><div class="page-title">דשבורד אנליטיקה</div></div><div class="grid-dashboard"><div class="stat-card"><div class="stat-val">${open}</div><div class="stat-lbl">פתוחות</div></div><div class="stat-card"><div class="stat-val">${closed}</div><div class="stat-lbl">סגורות</div></div><div class="stat-card"><div class="stat-val">${week}</div><div class="stat-lbl">השבוע</div></div><div class="stat-card"><div class="stat-val">${list.length}</div><div class="stat-lbl">סה"כ</div></div></div><div class="card" style="margin-top:16px;"><div class="card-title">פילוח נתונים</div><div class="analytics-filter-toggle">${[{k:"STATUS",l:"סטטוס"},{k:"ROLE",l:"תפקיד"},{k:"TOPIC",l:"נושא"},{k:"UNIT",l:"חטיבה"}].map(x => `<button class="analytics-filter-chip ${analyticsDim===x.k?'active':''}" onclick="setDim('${x.k}')">${x.l}</button>`).join("")}</div><div class="chart-grid-2"><div style="display:flex;align-items:center;justify-content:center;"><svg viewBox="-5 -5 110 110" style="width:220px;overflow:visible;transform:rotate(-90deg);">${paths}</svg></div><div style="display:flex;flex-direction:column;justify-content:center;">${sorted.map(([l,v], i) => `<div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:10px;height:10px;border-radius:3px;background:${colors[i%colors.length]}"></div><span>${escapeHtml(l)}</span></div><strong>${v}</strong></div><div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${(v/total)*100}%;background:${colors[i%colors.length]};border-radius:3px;"></div></div></div>`).join("")}</div></div></div>`;
+        window.setDim = (d) => { analyticsDim = d; render(); };
+    }
+
+    // --- PROFILE ---
     if(activePage === "PROFILE") {
       const isOwner = currentUser.role === 'OWNER';
-      main.innerHTML = `
-        <header class="header"><div class="page-title">הגדרות פרופיל</div></header>
-        <div class="card" style="width:100%;">
-          <form id="profile-form">
-            <div class="grid-2cols">
-              <div class="field-group"><label class="label">שם מלא</label><input class="input" name="fn" value="${escapeHtml(currentUser.fullName)}" /></div>
-              <div class="field-group"><label class="label">מספר טלפון</label><input class="input" name="ph" value="${escapeHtml(currentUser.phone)}" /></div>
-            </div>
-            <div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא שיוך</option>${units.map(u=>`<option value="${u.id}" ${currentUser.unitId==u.id?'selected':''}>${escapeHtml(u.name)}</option>`).join('')}</select></div>
-            
-            <hr style="border:none;border-bottom:1px solid var(--border);margin:20px 0;"/>
-            
-            <div style="background: rgba(236, 72, 153, 0.1); padding: 15px; border-radius: 12px; border: 1px dashed #ec4899; margin-bottom: 20px; text-align: center;">
-              <div style="font-weight:bold; margin-bottom:8px; color:#ec4899;">בדיקת התראות לאייפון</div>
-              <button type="button" class="btn" style="width:100%; justify-content:center; background:#ec4899; color:white;" onclick="enableNotificationsManual()"><i data-lucide="bell"></i> לחץ כאן להפעלת התראות</button>
-              <div style="font-size:0.75rem; margin-top:8px; opacity:0.7;">חובה ללחוץ כאן כדי לאשר הרשאה באייפון</div>
-            </div>
+      main.innerHTML = `<header class="header"><div class="page-title">פרופיל</div></header><div class="card"><form id="profile-form">
+        <div class="field-group"><label class="label">שם מלא</label><input class="input" name="fn" value="${escapeHtml(currentUser.fullName)}" /></div>
+        <div class="field-group"><label class="label">טלפון</label><input class="input" name="ph" value="${escapeHtml(currentUser.phone)}" /></div>
+        
+        <div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא שיוך</option>${units.map(u=>`<option value="${u.id}" ${currentUser.unitId==u.id?'selected':''}>${escapeHtml(u.name)}</option>`).join('')}</select></div>
 
-            <div class="field-group"><label class="label">אימייל</label><input class="input" value="${escapeHtml(currentUser.email)}" disabled /></div>
-            <div class="grid-2cols">
-              <div class="field-group"><label class="label">תפקיד נוכחי</label><input class="input" value="${roleLabel(currentUser.role)}" disabled /></div>
-              <div class="field-group"><label class="label">סטטוס בקשה</label><input class="input" value="${currentUser.roleStatus}" disabled /></div>
-            </div>
-            <div class="field-group"><label class="label">בקשה לתפקיד אחר</label><select class="select" name="requestedRole" ${isOwner ? "disabled" : ""}>${['MANAGER','COMPANY_CMD','HATAP','PLHIK','HR','MAMRAM','APP','NETWORK','USER'].map(r => `<option value="${r}" ${currentUser.requestedRole === r ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}</select></div>
-            
-            <button class="btn btn-primary" style="width:100%; margin-bottom: 20px;">שמור שינויים</button>
-          </form>
-
-          <div style="border-top: 1px solid var(--border); padding-top: 20px; margin-top: 10px;">
-            <button class="btn" onclick="doLogout()" style="width:100%; justify-content:center; border-color:var(--urgent); color:var(--urgent); background:rgba(239, 68, 68, 0.1);">
-                <i data-lucide="log-out"></i> התנתקות מהחשבון
-            </button>
-          </div>
-        </div>`;
-      
-      document.getElementById("profile-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".card"), async () => { await supabase.from("users").update({ full_name: e.target.fn.value, phone: e.target.ph.value, unit_id: e.target.unit.value || null, requested_role: isOwner ? currentUser.requestedRole : e.target.requestedRole.value, role_status: (!isOwner && e.target.requestedRole.value!==currentUser.role) ? "Pending" : currentUser.roleStatus }).eq("id", currentUser.id); await loadData(); showToast("הפרופיל עודכן בהצלחה"); }); };
+        ${!isOwner && !currentUser.isManager ? `
+            <div style="margin:20px 0; padding:15px; border:1px dashed var(--accent); border-radius:12px; text-align:center;">
+                <div style="margin-bottom:8px;">האם אתה מנהל בתפקידך?</div>
+                ${currentUser.requestedManager ? '<span style="color:#fbbf24;">⏳ בקשה נשלחה (ממתין לאישור)</span>' : '<button type="button" class="btn" onclick="requestManager()" style="color:var(--accent);">👮 בקש הרשאת מנהל</button>'}
+            </div>` : ''}
+        
+        ${currentUser.isManager ? '<div style="color:#10b981; margin-bottom:15px; font-weight:bold; text-align:center;">✓ יש לך הרשאות מנהל</div>' : ''}
+        
+        <div class="field-group"><label class="label">תפקיד (לשינוי יש לבקש אישור)</label><select class="select" name="requestedRole">${['HATAP','PLHIK','HR','MAMRAM','APP','NETWORK'].map(r => `<option value="${r}" ${currentUser.requestedRole === r ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}</select></div>
+        <div style="background: rgba(236, 72, 153, 0.1); padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center;"><button type="button" class="btn" style="width:100%; justify-content:center; color:#ec4899;" onclick="enableNotificationsManual()"><i data-lucide="bell"></i> הפעל התראות (iPhone/Android)</button></div>
+        <button class="btn btn-primary" style="width:100%;">שמור שינויים</button>
+      </form>
+      <button class="btn btn-danger" onclick="doLogout()" style="width:100%; margin-top:20px; justify-content:center;"><i data-lucide="log-out"></i> התנתקות מהחשבון</button>
+      </div>`;
+      document.getElementById("profile-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".card"), async () => { await supabase.from("users").update({ full_name: e.target.fn.value, phone: e.target.ph.value, unit_id: e.target.unit.value||null, requested_role: e.target.requestedRole.value, role_status: "Pending" }).eq("id", currentUser.id); await loadData(); showToast("עודכן בהצלחה"); }); };
     }
-    if(activePage === "ROLE_APPROVAL") { main.innerHTML = `<div class="page-header"><div class="page-title">אישור תפקידים</div></div><div class="card">${!users.filter(u => u.roleStatus === "Pending").length ? `<div style="padding:20px;text-align:center;opacity:0.6;">אין בקשות ממתינות</div>` : `<table class="table"><thead><tr><th>שם</th><th>תפקיד מבוקש</th><th>פעולות</th></tr></thead><tbody>${users.filter(u => u.roleStatus === "Pending").map(u => `<tr><td>${escapeHtml(u.fullName)}</td><td><span class="badge badge-IN_PROGRESS">${roleLabel(u.requestedRole)}</span></td><td><button class="btn btn-primary" onclick="approve('${u.id}','${u.requestedRole}')">אשר</button></td></tr>`).join("")}</tbody></table>`}</div>`; }
-    if(activePage === "ANALYTICS") { renderAnalytics(main); } else { lucide.createIcons(); }
-  }
-
-  function renderAnalytics(container) {
-    const isComp = currentUser.role === 'COMPANY_CMD';
-    const list = isComp ? tickets.filter(t => (t.unit || "") === (currentUser.unit || "")) : tickets;
-    if (list.length === 0) { container.innerHTML = `<div class="page-header"><div class="page-title">דשבורד אנליטיקה</div></div><div class="card" style="text-align:center;padding:40px;opacity:0.6;"><div>אין נתונים להצגה</div></div>`; return; }
-    const open = list.filter(t => !t.isClosed).length; const closed = list.filter(t => t.isClosed).length; const week = list.filter(t => t.createdAt && new Date(t.createdAt) >= new Date(Date.now() - 7*864e5)).length;
-    const counts = {}; list.forEach(t => { let key = "אחר"; if (analyticsDim === "STATUS") key = STATUS_LABEL[t.status] || t.status; else if (analyticsDim === "ROLE") key = roleLabel(t.assignedRole) || "לא הוקצה"; else if (analyticsDim === "TOPIC") key = t.topic || "ללא"; else if (analyticsDim === "UNIT") key = t.unit || "כללי"; counts[key] = (counts[key] || 0) + 1; });
-    const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]); const total = list.length || 1; const colors = ["#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#14b8a6"];
-    let paths = "", startAngle = 0; if (sorted.length === 1 && total > 0) { paths = `<circle cx="50" cy="50" r="50" fill="${colors[0]}" class="pie-slice"><title>${sorted[0][0]}</title></circle>`; } else if (total > 0) { sorted.forEach(([label, val], i) => { const pct = val / total; const sliceAngle = pct * 360; const endAngle = startAngle + sliceAngle; const x1 = 50 + 50 * Math.cos(Math.PI * startAngle / 180); const y1 = 50 + 50 * Math.sin(Math.PI * startAngle / 180); const x2 = 50 + 50 * Math.cos(Math.PI * endAngle / 180); const y2 = 50 + 50 * Math.sin(Math.PI * endAngle / 180); const largeArc = sliceAngle > 180 ? 1 : 0; const d = `M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`; paths += `<path d="${d}" fill="${colors[i % colors.length]}" class="pie-slice" stroke="rgba(15,23,42,0.5)" stroke-width="1"><title>${label}: ${val}</title></path>`; startAngle = endAngle; }); }
-    container.innerHTML = `<div class="page-header"><div class="page-title">דשבורד אנליטיקה</div></div><div class="analytics-kpi-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;"><div class="analytics-kpi-card"><div class="analytics-kpi-label">פתוחות</div><div class="analytics-kpi-value">${open}</div></div><div class="analytics-kpi-card"><div class="analytics-kpi-label">סגורות</div><div class="analytics-kpi-value">${closed}</div></div><div class="analytics-kpi-card"><div class="analytics-kpi-label">השבוע</div><div class="analytics-kpi-value">${week}</div></div><div class="analytics-kpi-card"><div class="analytics-kpi-label">סה"כ</div><div class="analytics-kpi-value">${list.length}</div></div></div><div class="card" style="margin-top:16px;"><div class="card-header"><div class="card-title">פילוח נתונים</div><div class="analytics-filter-toggle">${[{k:"STATUS",l:"סטטוס"},{k:"ROLE",l:"תפקיד"},{k:"TOPIC",l:"נושא"},{k:"UNIT",l:"חטיבה"}].map(x => `<button class="analytics-filter-chip ${analyticsDim===x.k?'active':''}" onclick="setDim('${x.k}')">${x.l}</button>`).join("")}</div></div><div class="chart-grid-2"><div style="display:flex;align-items:center;justify-content:center;"><svg viewBox="-5 -5 110 110" style="width:220px;overflow:visible;transform:rotate(-90deg);">${paths}</svg></div><div style="display:flex;flex-direction:column;justify-content:center;">${sorted.map(([l,v], i) => `<div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:10px;height:10px;border-radius:3px;background:${colors[i%colors.length]}"></div><span>${escapeHtml(l)}</span></div><strong>${v}</strong></div><div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${(v/total)*100}%;background:${colors[i%colors.length]};border-radius:3px;"></div></div></div>`).join("")}</div></div></div>`;
-    lucide.createIcons();
-    window.setDim = (d) => { analyticsDim = d; render(); };
+    
+    // --- ROLE APPROVAL ---
+    if(activePage === "ROLE_APPROVAL") {
+        const pending = users.filter(u => u.roleStatus === "Pending");
+        main.innerHTML = `<header class="header"><div class="page-title">אישור תפקידים</div></header><div class="card">${pending.length===0 ? 'אין בקשות ממתינות' : pending.map(u => `<div class="list-item"><div><b>${escapeHtml(u.fullName)}</b> מבקש לעבור ל-<b>${roleLabel(u.requestedRole)}</b></div><button class="btn btn-primary" onclick="approveRole('${u.id}', '${u.requestedRole}')">אשר</button></div>`).join('')}</div>`;
+    }
   }
 
   // --- ACTIONS ---
   window.nav = (p, id=null) => { activePage=p; if(id) selectedTicketId=id; render(); };
   window.toggleClosed = () => { showClosed=!showClosed; render(); };
-  window.doLogout = async () => { 
-      // 1. ניסיון לבטל את המנוי להודעות בדפדפן
-      try {
-          if ("serviceWorker" in navigator) {
-              const reg = await navigator.serviceWorker.ready;
-              const sub = await reg.pushManager.getSubscription();
-              if (sub) {
-                  await sub.unsubscribe(); // זה מנתק את קבלת ההודעות למכשיר זה
-                  console.log("Push notification unsubscribed");
-              }
-          }
-      } catch (err) {
-          console.warn("Could not unsubscribe from push:", err);
-      }
+  window.takeTicket = async (tid) => { await withLoader(document.body, async () => { await supabase.from("tickets").update({ assigned_user_id: currentUser.id, status: "IN_PROGRESS" }).eq("id", tid); await supabase.from("audits").insert({ ticket_id: tid, field: "ASSIGN", new_value: currentUser.fullName, changed_by_name: currentUser.fullName, changed_by_user_id: currentUser.id }); await loadData(); render(); showToast("התקלה שויכה אליך והועברה לטיפול"); }); };
+  window.requestManager = async () => { await supabase.from('users').update({ requested_manager: true }).eq('id', currentUser.id); await loadData(); render(); showToast("הבקשה נשלחה לבעלים"); };
+  window.toggleFreeze = async (uid, state) => { await supabase.from("users").update({ is_frozen: state }).eq("id", uid); await loadData(); showToast(state ? "משתמש הוקפא" : "משתמש הופשר"); };
+  window.toggleManager = async (uid, state) => { await supabase.from("users").update({ is_manager: state, requested_manager: false }).eq("id", uid); await loadData(); showToast("הרשאות עודכנו"); };
+  window.approveRole = async (uid, role) => { await supabase.from("users").update({ role: role, role_status: "Approved", requested_role: null }).eq("id", uid); await loadData(); render(); };
+  window.updateTicket = async (tid) => { const st = document.getElementById("upd-status").value; await supabase.from("tickets").update({ status:st, is_closed:(st==='RESOLVED') }).eq("id", tid); await loadData(); render(); };
+  window.postComment = async (e, tid) => { e.preventDefault(); await supabase.from("ticket_comments").insert({ ticket_id: tid, content: e.target.txt.value, author_user_id: currentUser.id, author_name: currentUser.fullName, author_role: currentUser.role }); e.target.reset(); await loadData(); render(); };
+  window.doLogout = async () => { localStorage.clear(); sessionStorage.clear(); try { if ("serviceWorker" in navigator) navigator.serviceWorker.ready.then(reg => reg.pushManager.getSubscription().then(sub => sub && sub.unsubscribe())); } catch(e){} try { await supabase.auth.signOut(); } catch(e){} window.location.reload(); };
+  window.enableNotificationsManual = async () => { try { if (!("serviceWorker" in navigator)) { alert("❌ שגיאה: הדפדפן לא תומך ב-Service Worker"); return; } if (!("PushManager" in window)) { alert("❌ שגיאה: האייפון לא מזהה תמיכה ב-Push. האם פתחת דרך מסך הבית?"); return; } const permission = await Notification.requestPermission(); if (permission !== 'granted') { alert("⚠️ המשתמש לא אישר או שההגדרות חוסמות."); return; } const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const res = await fetch(`${PUSH_WORKER_BASE}/publicKey`); if(!res.ok) throw new Error("לא הצלחתי להביא מפתח ציבורי מהשרת"); const { publicKey } = await res.json(); const convertedKey = urlBase64ToUint8Array(publicKey); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey }); } const saveRes = await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(currentUser.id), subscription: sub }) }); if (saveRes.ok) alert("🎉 הצלחה! המכשיר רשום"); else alert("❌ השרת החזיר שגיאה בשמירה: " + saveRes.status); } catch (err) { alert("💀 קרסה הפונקציה: " + err.message); console.error(err); } };
 
-      // 2. התנתקות מ-Supabase
-      await supabase.auth.signOut(); 
-      
-      // 3. רענון
-      location.reload(); 
-  };
-  window.approve = async (uid, role) => { await withLoader(document.body, async () => { await supabase.from("users").update({ role, role_status: "Approved" }).eq("id", uid); await loadData(); render(); showToast("המשתמש אושר"); }); };
-  window.updateTicket = async (tid) => { const st = document.getElementById("upd-status").value; const rl = document.getElementById("upd-role").value; const isClosed = (st === 'RESOLVED'); await withLoader(document.querySelector(".card"), async () => { const { data: updatedTicket, error } = await supabase.from("tickets").update({ status:st, is_closed:isClosed, assigned_role:rl }).eq("id", tid).select().single(); if(error) throw error; try { await supabase.from("audits").insert({ ticket_id: tid, field: "UPDATE", new_value: `סטטוס: ${st}, הועבר ל: ${roleLabel(rl)}`, changed_by_name: currentUser.fullName, changed_by_user_id: currentUser.id, changed_by_role: currentUser.role }); } catch (logErr) { console.warn(logErr); } const changeText = isClosed ? "הסטטוס שונה ל-סגור 🔒" : `הסטטוס עודכן ל-${STATUS_LABEL[st] || st}`; const ticketTitle = updatedTicket?.title || `תקלה #${updatedTicket?.ticket_number}`; pushTicketShort({ userIds: getNotifyUserIdsForTicket(updatedTicket, currentUser.id), ticketId: updatedTicket.ticket_number, title: ticketTitle, message: `🔄 ${changeText}` }); await loadData(); render(); showToast("התקלה עודכנה בהצלחה!"); }); };
   async function getNextNum() { const {data} = await supabase.from("counters").select("value").eq("name","ticketNumber").single(); const next = (data?.value || 1000) + 1; await supabase.from("counters").upsert({name:"ticketNumber", value:next}); return next; }
-  
-  // --- HELPERS ---
   function urlBase64ToUint8Array(base64String) { const padding = "=".repeat((4 - (base64String.length % 4)) % 4); const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/"); const rawData = atob(base64); return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0))); }
   async function ensurePushAutoForUser(userId) { if(!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
-  async function pushTicketShort({ userIds, ticketId, title, message }) { const cleanIds = [...new Set(userIds.map(String).filter(Boolean))]; if (cleanIds.length === 0) { console.log("No users to notify"); return; } await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: title, body: message, url: `/?ticket=${ticketId}`, icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" }) }); }
-  function getNotifyUserIdsForTicket(ticket, actingUserId) { const ids = new Set(); const creatorId = ticket.createdByUserId || ticket.created_by_user_id; const assigneeId = ticket.assignedUserId || ticket.assigned_user_id; const role = ticket.assignedRole || ticket.assigned_role; if(creatorId && creatorId !== actingUserId) ids.add(creatorId); if(assigneeId && assigneeId !== actingUserId) ids.add(assigneeId); else if (role) { users.forEach(u => { if(u.role === role && !u.isFrozen && u.id !== actingUserId) ids.add(u.id); }); } return [...ids]; }
-  async function enableNotificationsManual() { try { if (!("serviceWorker" in navigator)) { alert("❌ שגיאה: הדפדפן לא תומך ב-Service Worker"); return; } if (!("PushManager" in window)) { alert("❌ שגיאה: האייפון לא מזהה תמיכה ב-Push. האם פתחת דרך מסך הבית?"); return; } const permission = await Notification.requestPermission(); if (permission !== 'granted') { alert("⚠️ המשתמש לא אישר או שההגדרות חוסמות."); return; } const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const res = await fetch(`${PUSH_WORKER_BASE}/publicKey`); if(!res.ok) throw new Error("לא הצלחתי להביא מפתח ציבורי מהשרת"); const { publicKey } = await res.json(); const convertedKey = urlBase64ToUint8Array(publicKey); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey }); } const saveRes = await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(currentUser.id), subscription: sub }) }); if (saveRes.ok) alert("🎉 הצלחה! המכשיר רשום"); else alert("❌ השרת החזיר שגיאה בשמירה: " + saveRes.status); } catch (err) { alert("💀 קרסה הפונקציה: " + err.message); console.error(err); } }
+  async function pushTicketShort({ userIds, ticketId, title, message }) { const cleanIds = [...new Set(userIds.map(String).filter(Boolean))]; if (cleanIds.length === 0) return; await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: title, body: message, url: `/?ticket=${ticketId}`, icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" }) }); }
+  function getNotifyUserIdsForTicket(ticket, actingUserId) { const ids = new Set(); if(ticket.createdByUserId && ticket.createdByUserId !== actingUserId) ids.add(ticket.createdByUserId); users.forEach(u => { if(u.role === ticket.assignedRole && !u.isFrozen && u.id !== actingUserId) ids.add(u.id); }); return [...ids]; }
 
   document.addEventListener("DOMContentLoaded", async () => { if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js"); await loadData(); setupRealtime(); render(); });
-// --- פונקציית התנתקות גלובלית (להדביק בסוף הסקריפט) ---
-  window.doLogout = async () => {
-    console.log("מתחיל התנתקות..."); // בדיקה שזה לחיץ
-    
-    // 1. ניסיון ביטול התראות
-    try {
-      if ("serviceWorker" in navigator) {
-        const reg = await navigator.serviceWorker.ready;
-        const sub = await reg.pushManager.getSubscription();
-        if (sub) {
-          await sub.unsubscribe();
-          console.log("התראות בוטלו בהצלחה");
-        }
-      }
-    } catch (err) {
-      console.error("שגיאה בביטול התראות (לא נורא):", err);
-    }
-
-    // 2. התנתקות מהמערכת
-    try {
-        await supabase.auth.signOut();
-        console.log("התנתק מ-Supabase");
-    } catch (e) {
-        console.error("שגיאה בהתנתקות:", e);
-    }
-    
-    // 3. רענון הדף
-    window.location.reload();
-  };
-
 </script>
 </body>
 </html>
