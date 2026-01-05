@@ -184,36 +184,58 @@
 
   let currentUser = null, users = [], tickets = [], comments = [], units = [], activePage = "HOME";
   let showClosed = false, selectedTicketId = null, analyticsDim = "STATUS", fetchLimit = 100;
-  
   let analyticsView = 'WEEK'; 
   let analyticsRefDate = new Date(); 
-  let isRecoveryMode = false; // Flag for password reset
+  let isRecoveryMode = false;
 
+  // --- Helpers ---
   const escapeHtml = (str) => String(str||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   const formatDate = (ts) => ts ? new Date(ts).toLocaleString("he-IL", {dateStyle:"short", timeStyle:"short"}) : "";
   const roleLabel = (r) => ({OWNER:"בעלים", COMPANY_CMD:'מ"פ', HATAP:'חט"פ', HR:'מש"א', USER:"משתמש", PLHIK:'פלחי"ק', MAMRAM:'ממר"ם', APP:'אפליקציה', NETWORK:'רשת'}[r] || r);
   const STATUS_LABEL = { OPEN:"פתוח", IN_PROGRESS:"בטיפול", RESOLVED:"טופל", CLOSED:"סגור" };
 
-  function timeAgo(dateParam) {
-    if(!dateParam) return null;
-    const date = new Date(dateParam);
-    const now = new Date();
-    const minutes = Math.floor((now - date) / 1000 / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-    if (minutes < 60) return `לפני ${minutes} דק'`;
-    if (hours < 24) return `לפני ${hours} שעות`;
-    return `לפני ${days} ימים`;
-  }
+  function timeAgo(dateParam) { if(!dateParam) return null; const date = new Date(dateParam), now = new Date(), minutes = Math.floor((now - date)/60000), hours = Math.floor(minutes/60), days = Math.floor(hours/24); if (minutes < 60) return `לפני ${minutes} דק'`; if (hours < 24) return `לפני ${hours} שעות`; return `לפני ${days} ימים`; }
+  function isOverHour(dateParam) { if(!dateParam) return false; return (new Date() - new Date(dateParam)) > 3600000; }
   
-  function isOverHour(dateParam) {
-    if(!dateParam) return false;
-    return (new Date() - new Date(dateParam)) > 60 * 60 * 1000;
-  }
-
   function showToast(msg, icon="check") { const el = document.createElement("div"); el.className="toast"; el.innerHTML = `<i data-lucide="${icon}"></i><span>${msg}</span>`; document.getElementById("toast-root").appendChild(el); lucide.createIcons(); setTimeout(() => el.remove(), 3000); }
   function showModal(title, msg, isErr=false) { return new Promise(resolve => { const root = document.getElementById("modal-root"); root.innerHTML = `<div class="modal-overlay"><div class="modal" style="border-color:${isErr?'#f43f5e':'rgba(255,255,255,0.1)'}"><div style="font-size:3rem;margin-bottom:10px;">${isErr?'😓':'✨'}</div><div style="font-size:1.2rem;font-weight:800;margin-bottom:8px;">${title}</div><div style="color:#94a3b8;margin-bottom:24px;line-height:1.5;">${msg}</div><button class="btn btn-primary" style="width:100%;justify-content:center;" id="mod-ok">הבנתי, סגור</button></div></div>`; document.getElementById("mod-ok").onclick = () => { root.innerHTML=""; resolve(); }; }); }
   async function withLoader(el, fn) { const l = document.createElement("div"); l.className="loader-wrap"; l.innerHTML=`<div class="spinner"></div>`; if(getComputedStyle(el).position==="static") el.style.position="relative"; el.appendChild(l); try { await fn(); } catch(e) { console.error(e); showModal("שגיאה", e.message, true); } finally { if(l.parentNode===el) el.removeChild(l); } }
+
+  // --- INITIALIZATION ORDER IS CRITICAL ---
+  // אנחנו מפעילים את המאזין לפני הטעינה הראשונית כדי לתפוס את הקישור מהמייל
+  
+  document.addEventListener("DOMContentLoaded", async () => { 
+      if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js"); 
+      
+      // 1. הגדרת המאזין לשינויי אימות (כולל שחזור סיסמה)
+      supabase.auth.onAuthStateChange((event, session) => {
+          console.log("Auth Event:", event);
+          if (event === 'PASSWORD_RECOVERY') {
+              isRecoveryMode = true;
+              render(); // רינדור מיידי של מסך האיפוס
+          } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+              // אם אנחנו לא במצב שחזור, נטען את המידע הרגיל
+              if (!isRecoveryMode) {
+                  loadData().then(render);
+              }
+          } else if (event === 'SIGNED_OUT') {
+              currentUser = null;
+              render();
+          }
+      });
+
+      // 2. בדיקה אם כבר יש סשן קיים בטעינה
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+          await loadData();
+      }
+      
+      // 3. הגדרת Realtime
+      setupRealtime();
+      
+      // 4. רינדור ראשוני
+      render();
+  });
 
   async function loadData() {
     const {data:{user}} = await supabase.auth.getUser();
@@ -242,44 +264,19 @@
   }
   
   window.loadMoreData = async () => { fetchLimit += 50; await loadData(); renderPage(); };
-  
-  // זיהוי מצב שחזור סיסמה מה-URL
-  function checkRecoveryMode() {
-      // Supabase מוסיף hash ל-URL כשחוזרים מאימייל
-      // לדוגמה: #access_token=...&type=recovery
-      const hash = window.location.hash;
-      if (hash && hash.includes('type=recovery')) {
-          isRecoveryMode = true;
-          console.log("Recovery mode detected from URL hash");
-      }
-  }
+  function setupRealtime() { supabase.channel('public:tickets').on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async () => { await loadData(); render(); showToast("הנתונים התעדכנו", "refresh-cw"); }).subscribe(); }
 
-  function setupRealtime() { 
-      supabase.channel('public:tickets').on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async () => { 
-          await loadData(); render(); showToast("הנתונים התעדכנו", "refresh-cw"); 
-      }).subscribe();
-      
-      // גיבוי למקרה שה-Hash לא נתפס, לפעמים האירוע מגיע מ-Supabase
-      supabase.auth.onAuthStateChange((event, session) => {
-          if (event === 'PASSWORD_RECOVERY') {
-              isRecoveryMode = true;
-              render();
-          }
-      });
-  }
-
+  // --- RENDER LOGIC ---
   function render() { 
-      // אם אנחנו במצב שחזור - הצג רק את מסך האיפוס
-      if (isRecoveryMode) {
-          return renderResetPassword();
-      }
+      // עדיפות עליונה למסך שחזור סיסמה
+      if(isRecoveryMode) return renderResetPassword();
       
       if(!currentUser) return renderLogin(); 
       if(!currentUser.fullName || !currentUser.phone) return renderOnboarding(); 
       renderApp(); 
   }
 
-  // מסך איפוס סיסמה ייעודי
+  // --- RESET PASSWORD SCREEN (Fixed) ---
   function renderResetPassword() {
       document.getElementById("root").innerHTML = `
       <div class="login-wrap">
@@ -302,20 +299,36 @@
           e.preventDefault();
           const newPass = e.target.newPass.value;
           await withLoader(document.querySelector(".login-box"), async () => {
+              // בדיקה קריטית: האם יש סשן? אם לא, אנחנו לא יכולים לעדכן
+              const { data: { session } } = await supabase.auth.getSession();
+              if (!session) {
+                  // ניסיון נואש אחרון - אולי ה-URL עדיין מכיל את הטוקן
+                  console.warn("Session missing during reset, trying to grab from URL...");
+                  const { error: sessionError } = await supabase.auth.getSession(); 
+                  if(sessionError) {
+                      alert("שגיאת סשן: פג תוקף הקישור. אנא שלח בקשת איפוס חדשה.");
+                      window.location.href = "/";
+                      return;
+                  }
+              }
+
               const { error } = await supabase.auth.updateUser({ password: newPass });
-              if (error) throw error;
-              alert("הסיסמה שונתה בהצלחה! מעביר אותך למערכת...");
-              
-              // יציאה ממצב שחזור וניקוי ה-URL
-              isRecoveryMode = false;
-              window.location.hash = ""; 
-              window.location.reload();
+              if (error) {
+                  alert("שגיאה בעדכון הסיסמה: " + error.message);
+              } else {
+                  alert("הסיסמה שונתה בהצלחה! מעביר אותך למערכת...");
+                  isRecoveryMode = false;
+                  // ניקוי ה-URL כדי שלא נחזור למצב שחזור בריענון
+                  window.history.replaceState(null, null, window.location.pathname);
+                  await loadData();
+                  render();
+              }
           });
       };
   }
 
-  function renderLogin() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="shield" style="width:32px;height:32px;"></i></div><h1 style="font-weight:900;font-size:1.8rem;margin-bottom:4px;">TicketFlow</h1><p style="color:#94a3b8;margin-bottom:30px;">מערכת ניהול תקלות מבצעית</p><form id="auth-form"><div class="field-group" style="text-align:right;"><label class="label">כתובת אימייל</label><input class="input" type="email" name="email" required /></div><div class="field-group" style="text-align:right;"><label class="label">סיסמה</label><input class="input" type="password" name="password" required /></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:0.85rem;"><a href="#" id="forgot-btn" style="color:var(--text-soft);text-decoration:none;">שכחתי סיסמה?</a></div><button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:20px;">כניסה למערכת</button><div style="margin-top:16px;font-size:0.8rem;"><span style="color:#64748b;">אין לך משתמש?</span> <a href="#" id="go-sign" style="color:#ec4899;text-decoration:none;font-weight:600;">הרשמה</a></div></form></div></div>`; lucide.createIcons(); const form = document.getElementById("auth-form"); form.onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.signInWithPassword({ email: form.email.value, password: form.password.value }); if(error) throw error; await loadData(); setupRealtime(); render(); }); }; document.getElementById("go-sign").onclick = async (e) => { e.preventDefault(); const em = prompt("אימייל:"); const pw = prompt("סיסמה:"); if(em&&pw) { const {data, error} = await supabase.auth.signUp({email:em, password:pw}); if(!error) { await supabase.from("users").insert({auth_user_id:data.user.id, email:em, role:"USER", role_status:"Pending"}); showModal("נרשמת בהצלחה", "כעת ניתן להתחבר."); } else showModal("שגיאה", error.message, true); } }; document.getElementById("forgot-btn").onclick = async (e) => { e.preventDefault(); const em = form.email.value || prompt("הכנס כתובת אימייל לשחזור:"); if(!em) return; await withLoader(document.querySelector(".login-box"), async () => { const {error} = await supabase.auth.resetPasswordForEmail(em, { redirectTo: window.location.href }); if(error) showModal("שגיאה", error.message, true); else showModal("הודעה נשלחה", "בדוק את האימייל שלך לקבלת קישור לאיפוס סיסמה."); }); }; }
-  function renderOnboarding() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="user-plus"></i></div><h2 style="margin-bottom:10px;">השלמת פרופיל</h2><form id="onb-form" style="text-align:right;"><div class="field-group"><label class="label">שם מלא</label><input class="input" name="fullName" required value="${escapeHtml(currentUser?.fullName||"")}" /></div><div class="field-group"><label class="label">טלפון</label><input class="input" name="phone" required value="${escapeHtml(currentUser?.phone||"")}" /></div><div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא</option>${units.map(u => `<option value="${escapeHtml(u.name)}">${escapeHtml(u.name)}</option>`).join("")}</select></div><button class="btn btn-primary" style="width:100%;justify-content:center;">שמירה והמשך</button></form></div></div>`; lucide.createIcons(); document.getElementById("onb-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { await supabase.from("users").update({ full_name: e.target.fullName.value, phone: e.target.phone.value, unit: e.target.unit.value, role_status: "Pending" }).eq("id", currentUser.id); await loadData(); setupRealtime(); render(); }); }; }
+  function renderLogin() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="shield" style="width:32px;height:32px;"></i></div><h1 style="font-weight:900;font-size:1.8rem;margin-bottom:4px;">TicketFlow</h1><p style="color:#94a3b8;margin-bottom:30px;">מערכת ניהול תקלות מבצעית</p><form id="auth-form"><div class="field-group" style="text-align:right;"><label class="label">כתובת אימייל</label><input class="input" type="email" name="email" required /></div><div class="field-group" style="text-align:right;"><label class="label">סיסמה</label><input class="input" type="password" name="password" required /></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:0.85rem;"><a href="#" id="forgot-btn" style="color:var(--text-soft);text-decoration:none;">שכחתי סיסמה?</a></div><button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:20px;">כניסה למערכת</button><div style="margin-top:16px;font-size:0.8rem;"><span style="color:#64748b;">אין לך משתמש?</span> <a href="#" id="go-sign" style="color:#ec4899;text-decoration:none;font-weight:600;">הרשמה</a></div></form></div></div>`; lucide.createIcons(); const form = document.getElementById("auth-form"); form.onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.signInWithPassword({ email: form.email.value, password: form.password.value }); if(error) throw error; await loadData(); render(); }); }; document.getElementById("go-sign").onclick = async (e) => { e.preventDefault(); const em = prompt("אימייל:"); const pw = prompt("סיסמה:"); if(em&&pw) { const {data, error} = await supabase.auth.signUp({email:em, password:pw}); if(!error) { await supabase.from("users").insert({auth_user_id:data.user.id, email:em, role:"USER", role_status:"Pending"}); showModal("נרשמת בהצלחה", "כעת ניתן להתחבר."); } else showModal("שגיאה", error.message, true); } }; document.getElementById("forgot-btn").onclick = async (e) => { e.preventDefault(); const em = form.email.value || prompt("הכנס כתובת אימייל לשחזור:"); if(!em) return; await withLoader(document.querySelector(".login-box"), async () => { const {error} = await supabase.auth.resetPasswordForEmail(em, { redirectTo: window.location.href }); if(error) showModal("שגיאה", error.message, true); else showModal("הודעה נשלחה", "בדוק את האימייל שלך לקבלת קישור לאיפוס סיסמה."); }); }; }
+  function renderOnboarding() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="user-plus"></i></div><h2 style="margin-bottom:10px;">השלמת פרופיל</h2><form id="onb-form" style="text-align:right;"><div class="field-group"><label class="label">שם מלא</label><input class="input" name="fullName" required value="${escapeHtml(currentUser?.fullName||"")}" /></div><div class="field-group"><label class="label">טלפון</label><input class="input" name="phone" required value="${escapeHtml(currentUser?.phone||"")}" /></div><div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא</option>${units.map(u => `<option value="${escapeHtml(u.name)}">${escapeHtml(u.name)}</option>`).join("")}</select></div><button class="btn btn-primary" style="width:100%;justify-content:center;">שמירה והמשך</button></form></div></div>`; lucide.createIcons(); document.getElementById("onb-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { await supabase.from("users").update({ full_name: e.target.fullName.value, phone: e.target.phone.value, unit: e.target.unit.value, role_status: "Pending" }).eq("id", currentUser.id); await loadData(); render(); }); }; }
 
   function renderApp() {
     const isOwner = currentUser.role === 'OWNER';
@@ -683,17 +696,6 @@
   async function ensurePushAutoForUser(userId) { if(!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
   async function pushTicketShort({ userIds, ticketId, title, message }) { const cleanIds = [...new Set(userIds.map(String).filter(Boolean))]; if (cleanIds.length === 0) return; await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: title, body: message, url: `/?ticket=${ticketId}`, icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" }) }); }
   function getNotifyUserIdsForTicket(ticket, actingUserId) { const ids = new Set(); if(ticket.createdByUserId && ticket.createdByUserId !== actingUserId) ids.add(ticket.createdByUserId); users.forEach(u => { if(u.role === ticket.assignedRole && !u.isFrozen && u.id !== actingUserId) ids.add(u.id); }); return [...ids]; }
-
-  // בדיקת מצב שחזור בטעינה
-  document.addEventListener("DOMContentLoaded", async () => { 
-      checkRecoveryMode(); // בדיקה ראשונית של ה-Hash
-      if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js"); 
-      if (!isRecoveryMode) { // רק אם אנחנו לא בשחזור, טען נתונים
-          await loadData(); 
-      }
-      setupRealtime(); 
-      render(); 
-  });
 </script>
 </body>
 </html>
