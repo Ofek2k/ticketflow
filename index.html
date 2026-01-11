@@ -201,6 +201,21 @@
       .nav-item.active { color: #fff; background: linear-gradient(to bottom, rgba(236,72,153,0.2), transparent) !important; border-top: 3px solid #ec4899; }
       .nav-item[onclick*="CREATE"] span { display: block !important; }
     }
+    .neon-modal-border {
+    border: 1px solid var(--accent) !important;
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.4) !important;
+    border-radius: 28px !important;
+}
+/* צבע ייחודי לכפתור הקפצה */
+.swal2-confirm {
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+}
+/* ביטול עיצוב ברירת המחדל של כפתור הביטול */
+.swal2-cancel {
+    border: 1px solid var(--glass-border) !important;
+    font-family: 'Heebo', sans-serif !important;
+}
   </style>
 </head>
 <body>
@@ -216,7 +231,7 @@
 </div>
 
 <script src="https://unpkg.com/@supabase/supabase-js@2.48.0/dist/umd/supabase.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
   const SUPABASE_URL = "https://tymratzaavokyhbcycgb.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5bXJhdHphYXZva3loYmN5Y2diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwNTE0ODIsImV4cCI6MjA4MDYyNzQ4Mn0.Y73HK3Jgg1FD--o3KMt3A-GbY8S2hfRyr6M-IABu6NY";
@@ -243,7 +258,28 @@
   function showModal(title, msg, isErr=false) { return new Promise(resolve => { const root = document.getElementById("modal-root"); root.innerHTML = `<div class="modal-overlay"><div class="modal" style="border-color:${isErr?'#f43f5e':'rgba(255,255,255,0.1)'}"><div style="font-size:3rem;margin-bottom:10px;">${isErr?'😓':'✨'}</div><div style="font-size:1.2rem;font-weight:800;margin-bottom:8px;">${title}</div><div style="color:#94a3b8;margin-bottom:24px;line-height:1.5;">${msg}</div><button class="btn btn-primary" style="width:100%;justify-content:center;" id="mod-ok">הבנתי, סגור</button></div></div>`; document.getElementById("mod-ok").onclick = () => { root.innerHTML=""; resolve(); }; }); }
   async function withLoader(el, fn) { const l = document.createElement("div"); l.className="loader-wrap"; l.innerHTML=`<div class="spinner"></div>`; if(getComputedStyle(el).position==="static") el.style.position="relative"; el.appendChild(l); try { await fn(); } catch(e) { console.error(e); showModal("שגיאה", e.message, true); } finally { if(l.parentNode===el) el.removeChild(l); } }
 
-  // --- PULL TO REFRESH LOGIC ---
+  // פונקציה לבדיקת דמיון לפני שליחה
+async function checkSimilarity(title, topic) {
+    // השתמש ב-authUserId שהוא ה-UUID מה-Session
+    const userUuid = currentUser.authUserId; 
+    
+    try {
+        const { data, error } = await supabase.rpc('check_recurring_tickets', {
+            input_title: title,
+            input_topic: topic,
+            input_user_uuid: userUuid
+        });
+
+        if (error) throw error;
+
+        return (data && data[0] && parseInt(data[0].occurrence_count) > 0);
+    } catch (e) {
+        console.error("Similarity check error:", e);
+        return false;
+    }
+}
+
+// --- PULL TO REFRESH LOGIC ---
   function initPullToRefresh() {
       const main = document.querySelector('.main');
       const loader = document.getElementById('ptr-loader');
@@ -339,7 +375,7 @@
     ]);
     
     users = (uRes.data || []).map(u => ({ id: u.id, authUserId: u.auth_user_id, fullName: u.full_name, email: u.email, phone: u.phone, role: u.role, isManager: u.is_manager, requestedManager: u.requested_manager, unit: u.unit, unitId: u.unit_id, requestedRole: u.requested_role, roleStatus: u.role_status, isFrozen: u.is_frozen, settings: u.settings }));
-    tickets = (tRes.data || []).map(t => ({ id: t.id, ticketNumber: t.ticket_number, title: t.title, description: t.description, topic: t.topic, status: t.status, unit: t.unit, assignedRole: t.assigned_role, assignedUserId: t.assigned_user_id, createdByUserId: t.created_by_user_id, createdByName: t.created_by_name, isClosed: !!t.is_closed || t.status === 'RESOLVED' || t.status === 'CLOSED', createdAt: t.created_at, imageUrl: t.image_url, isHamalDown: t.is_hamal_down }));
+    tickets = (tRes.data || []).map(t => ({ id: t.id, ticketNumber: t.ticket_number, title: t.title, description: t.description,category:t.category , topic: t.topic, status: t.status, unit: t.unit, assignedRole: t.assigned_role, assignedUserId: t.assigned_user_id, createdByUserId: t.created_by_user_id, createdByName: t.created_by_name, isClosed: !!t.is_closed || t.status === 'RESOLVED' || t.status === 'CLOSED', createdAt: t.created_at, imageUrl: t.image_url, isHamalDown: t.is_hamal_down }));
     comments = cRes.data || [];
     units = unRes.data || [];
     currentUser = users.find(u => u.authUserId === user.id);
@@ -484,9 +520,158 @@
     if(activePage === "CREATE") {
       const isSimpleUser = currentUser.role === 'USER';
       const roleOptions = isSimpleUser ? `<option value="HATAP">חט"פ</option>` : `<option value="HATAP">חט"פ</option><option value="HR">מש"א</option><option value="PLHIK">פלחי"ק</option><option value="MAMRAM">ממר"ם</option><option value="APP">אפליקציה</option><option value="NETWORK">רשת</option>`;
-      main.innerHTML = `<header class="header"><div class="page-title">פתיחת קריאה</div></header><div class="card" style="width:100%;"><form id="create-form"><div style="margin-bottom:20px; padding:15px; border:1px solid #ef4444; background:rgba(239,68,68,0.1); border-radius:12px; display:flex; align-items:center; gap:10px;"><input type="checkbox" name="hamalDown" id="hamalDown" style="width:20px; height:20px; accent-color:#ef4444;"><label for="hamalDown" style="color:#ef4444; font-weight:800; font-size:1.1rem;">🚨 חמ"ל מושבת (דחיפות עליונה)</label></div><div class="grid-2cols"><div class="field-group"><label class="label">נושא</label><select class="select" name="topic"><option>אמצעים</option><option>אפליקציה</option><option>רשת</option><option>מחשב</option><option>עמדה דלה</option></select></div><div class="field-group"><label class="label">גורם מטפל</label><select class="select" name="role">${roleOptions}</select></div></div><div class="field-group"><label class="label">כותרת</label><input class="input" name="title" required /></div><div class="field-group"><label class="label">פירוט</label><textarea class="textarea" name="desc" required style="min-height:150px;"></textarea></div><div class="field-group"><label for="file-upload" class="file-upload-label"><i data-lucide="paperclip"></i><span>צרף תמונה...</span></label><input id="file-upload" type="file" accept="image/*" style="display:none;" onchange="this.previousElementSibling.querySelector('span').innerText = this.files[0] ? this.files[0].name : 'נבחר קובץ'"></div><button class="btn btn-primary" type="submit">שלח קריאה</button></form></div>`;
-      document.getElementById("create-form").onsubmit = async (e) => { e.preventDefault(); const fd = new FormData(e.target); const fileFile = document.getElementById("file-upload").files[0]; const isHamal = document.getElementById("hamalDown").checked; await withLoader(document.querySelector(".card"), async () => { let imageUrl = null; if(fileFile) { const fileName = `${Date.now()}_${fileFile.name}`; const { error: upErr } = await supabase.storage.from('attachments').upload(fileName, fileFile); if(!upErr) { const { data } = supabase.storage.from('attachments').getPublicUrl(fileName); imageUrl = data.publicUrl; } } const num = await getNextNum(); const {data:t, error} = await supabase.from("tickets").insert({ ticket_number: num, title: fd.get("title"), description: fd.get("desc"), topic: fd.get("topic"), created_by_user_id: currentUser.id, created_by_name: currentUser.fullName, created_by_email: currentUser.email, unit: currentUser.unit, assigned_role: fd.get("role"), status: "OPEN", is_closed: false, image_url: imageUrl, is_hamal_down: isHamal }).select().single(); if(error) throw error; let notifyTitle = isHamal ? "🚨 חמ״ל מושבת! 🚨" : "✨ תקלה חדשה"; const notifyUsers = isHamal ? users.filter(u => u.role === 'OWNER' || u.isManager).map(u => u.id) : users.filter(u => { const shouldNotify = u.settings ? u.settings.notifyNew !== false : true; return u.role === t.assigned_role && shouldNotify && u.id !== currentUser.id; }).map(u => u.id); pushTicketShort({ userIds: notifyUsers, ticketId: num, title: notifyTitle, message: t.title }); await loadData(); nav("DETAILS", t.id); }); };
+      
+      main.innerHTML = `
+        <header class="header"><div class="page-title">פתיחת קריאה</div></header>
+        <div class="card" style="width:100%;">
+            <form id="create-form">
+                <div style="margin-bottom:20px; padding:15px; border:1px solid #ef4444; background:rgba(239,68,68,0.1); border-radius:12px; display:flex; align-items:center; gap:10px;">
+                    <input type="checkbox" name="hamalDown" id="hamalDown" style="width:20px; height:20px; accent-color:#ef4444;">
+                    <label for="hamalDown" style="color:#ef4444; font-weight:800; font-size:1.1rem;">🚨 חמ"ל מושבת (דחיפות עליונה)</label>
+                </div>
+                <div class="grid-2cols">
+                    <div class="field-group">
+                        <label class="label">נושא</label>
+                        <select class="select" name="topic" id="topic-select">
+                            <option>אמצעים</option><option>אפליקציה</option><option>רשת</option><option>מחשב</option><option>עמדה דלה</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label class="label">גורם מטפל</label>
+                        <select class="select" name="role">${roleOptions}</select>
+                    </div>
+                </div>
+                <div class="field-group">
+                    <label class="label">כותרת</label>
+                    <input class="input" name="title" id="title-input" required />
+                </div>
+                <div class="field-group">
+                    <label class="label">פירוט</label>
+                    <textarea class="textarea" name="desc" required style="min-height:150px;"></textarea>
+                </div>
+                <div class="field-group">
+                    <label for="file-upload" class="file-upload-label"><i data-lucide="paperclip"></i><span>צרף תמונה...</span></label>
+                    <input id="file-upload" type="file" accept="image/*" style="display:none;" onchange="this.previousElementSibling.querySelector('span').innerText = this.files[0] ? this.files[0].name : 'נבחר קובץ'">
+                </div>
+                <button class="btn btn-primary" type="submit">שלח קריאה</button>
+            </form>
+        </div>`;
+
+      lucide.createIcons();
+
+document.getElementById("create-form").onsubmit = async (e) => { 
+    e.preventDefault(); 
+    const fd = new FormData(e.target); 
+    let title = fd.get("title");
+    let desc = fd.get("desc");
+    const topic = fd.get("topic");
+    const fileFile = document.getElementById("file-upload").files[0]; 
+    const isHamal = document.getElementById("hamalDown").checked; 
+    const assignedRole = fd.get("role");
+
+    await withLoader(document.querySelector(".card"), async () => {
+        // הגדרת משתנים מראש כדי למנוע שגיאות undefined
+        let isRecurring = false; 
+        let shouldCreateNew = true; 
+
+        // 1. בדיקת דמיון ב-RPC
+        const { data: simData, error: simError } = await supabase.rpc('check_recurring_tickets', {
+            input_title: title,
+            input_topic: topic,
+            input_user_uuid: currentUser.authUserId
+        });
+
+        if (!simError && simData && simData.length > 0 && parseInt(simData[0].occurrence_count) > 0) {
+            const found = simData[0];
+            
+            // שלב א': האם זו אותה תקלה?
+            const firstStep = await Swal.fire({
+                title: 'זיהינו תקלה דומה פתוחה',
+                html: `האם התכוונת לתקלה הקיימת הזו?<br><br><b style="color: #ec4899; font-size: 1.1rem;">"${escapeHtml(found.similar_title)}"</b>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'כן, זו אותה אחת',
+                cancelButtonText: 'לא, זו תקלה חדשה',
+                background: '#0f172a',
+                color: '#f8fafc',
+                confirmButtonColor: '#ec4899',
+                cancelButtonColor: 'rgba(255,255,255,0.1)',
+                customClass: { popup: 'neon-modal-border' }
+            });
+
+            if (firstStep.isConfirmed) {
+                // שלב ב': הקפצה או חדשה?
+                const secondStep = await Swal.fire({
+                    title: 'איך תרצה להמשיך?',
+                    text: 'ניתן להקפיץ את התקלה הקיימת לראש הרשימה או לפתוח אחת חדשה בכל זאת.',
+                    icon: 'info',
+                    showCancelButton: true,
+                    confirmButtonText: 'הקפץ את הקיימת',
+                    cancelButtonText: 'פתח חדשה בכל זאת',
+                    background: '#0f172a',
+                    color: '#f8fafc',
+                    confirmButtonColor: '#3b82f6',
+                    customClass: { popup: 'neon-modal-border' }
+                });
+
+                if (secondStep.isConfirmed) {
+                    // הקפצה (Bump)
+                    await bumpExistingTicket(found.similar_id, title);
+                    shouldCreateNew = false; // מסמנים שלא צריך ליצור תקלה חדשה
+                    showToast("התקלה הקיימת הוקפצה בהצלחה!");
+                    nav("MY_TICKETS");
+                } else {
+                    // המשתמש בחר לפתוח חדשה למרות הדמיון
+                    isRecurring = true;
+                    title = "🔄 [תקלה חוזרת] " + title;
+                    desc += "\n\n--- \n⚠️ דווח כאירוע חוזר על ידי המשתמש.";
+                }
+            }
+        }
+
+        // 2. יצירת תקלה חדשה (רק אם לא בחרנו בהקפצה)
+        if (shouldCreateNew) {
+            let imageUrl = null; 
+            if(fileFile) { 
+                const fileName = `${Date.now()}_${fileFile.name}`; 
+                const { error: upErr } = await supabase.storage.from('attachments').upload(fileName, fileFile); 
+                if(!upErr) { 
+                    const { data } = supabase.storage.from('attachments').getPublicUrl(fileName); 
+                    imageUrl = data.publicUrl; 
+                } 
+            } 
+            
+            const num = await getNextNum(); 
+            const {data:t, error} = await supabase.from("tickets").insert({ 
+                ticket_number: num, 
+                title: title, 
+                description: desc, 
+                topic: topic, 
+                created_by_user_id: currentUser.id, 
+                created_by_name: currentUser.fullName, 
+                created_by_email: currentUser.email, 
+                unit: currentUser.unit, 
+                assigned_role: assignedRole, 
+                status: "OPEN", 
+                is_closed: false, 
+                image_url: imageUrl, 
+                is_hamal_down: isHamal,
+                is_recurring: isRecurring 
+            }).select().single(); 
+
+            if(error) throw error; 
+
+            let notifyTitle = isHamal ? "🚨 חמ״ל מושבת! 🚨" : (isRecurring ? "🔄 תקלה חוזרת!" : "✨ תקלה חדשה"); 
+            pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: num, title: notifyTitle, message: title }); 
+            
+            await loadData(); 
+            nav("DETAILS", t.id); 
+        }
+    }); 
+};
+
     }
+
 
     if(activePage === "DETAILS") {
       const t = tickets.find(x => x.id == selectedTicketId);
@@ -579,6 +764,94 @@
   async function ensurePushAutoForUser(userId) { if(!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
   async function pushTicketShort({ userIds, ticketId, title, message }) { const cleanIds = [...new Set(userIds.map(String).filter(Boolean))]; if (cleanIds.length === 0) return; await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: title, body: message, url: `/?ticket=${ticketId}`, icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" }) }); }
   function getNotifyUserIdsForTicket(ticket, actingUserId) { const ids = new Set(); if(ticket.createdByUserId && ticket.createdByUserId !== actingUserId) ids.add(ticket.createdByUserId); users.forEach(u => { if(u.role === ticket.assignedRole && !u.isFrozen && u.id !== actingUserId) ids.add(u.id); }); return [...ids]; }
+  async function bumpExistingTicket(ticketId, userComment) {
+    const bumpNote = `המשתמש דיווח שוב על התקלה: "${userComment}" (הוקפץ מהטופס)`;
+    
+async function bumpExistingTicket(ticketId, userComment) {
+    // 1. שליפת פרטי התקלה המקורית כדי לבדוק זמן פתיחה ומי התפקיד המטפל
+    const { data: ticket, error: ticketErr } = await supabase
+        .from("tickets")
+        .select("created_at, assigned_role, title, ticket_number")
+        .eq("id", ticketId)
+        .single();
+
+    if (ticketErr) return;
+
+    const bumpNote = `⚠️ המשתמש דיווח שוב על התקלה: "${userComment}" (הוקפץ מהטופס)`;
+    
+    // 2. עדכון זמן העדכון של התקלה
+    await supabase.from("tickets").update({ 
+        updated_at: new Date().toISOString() 
+    }).eq("id", ticketId);
+    
+    // 3. הוספת הערה ליומן הטיפול
+    await supabase.from("ticket_comments").insert({
+        ticket_id: ticketId,
+        content: bumpNote,
+        author_user_id: currentUser.id,
+        author_name: currentUser.fullName,
+        author_role: "SYSTEM"
+    });
+
+    // 4. בדיקת 24 שעות והתראות למנהלים
+    const createdAt = new Date(ticket.created_at);
+    const now = new Date();
+    const diffHours = (now - createdAt) / (1000 * 60 * 60);
+
+    if (diffHours >= 24) {
+        await sendManagerAlerts(ticket);
+    }
+}
+  }
+  async function sendManagerAlerts(ticket) {
+    const currentRoleAtTicket = ticket.assigned_role; // התפקיד שאצלו התקלה כרגע (למשל: 'MAMRAM')
+    
+    // 1. שליפת המשתמשים הרלוונטיים:
+    // א. בעלים (OWNER)
+    // ב. כל מי שהוא מנהל של מש"א (role = 'MASHA' וגם is_manager = true)
+    // ג. כל מי שהוא מנהל של התפקיד הנוכחי (role = currentRoleAtTicket וגם is_manager = true)
+    
+    const { data: managers, error } = await supabase
+        .from("users")
+        .select("id, role, is_manager")
+        .or(`role.eq.OWNER,and(role.eq.MASHA,is_manager.eq.true),and(role.eq.${currentRoleAtTicket},is_manager.eq.true)`);
+
+    if (error || !managers) {
+        console.error("Error fetching managers for alert:", error);
+        return;
+    }
+
+    // 2. איסוף ה-IDs למניעת כפילויות (למשל אם בעלים הוא גם מנהל מש"א)
+    const notifyUserIds = new Set();
+    
+    managers.forEach(m => {
+        // תנאי הבעלים
+        if (m.role === 'OWNER') {
+            notifyUserIds.add(m.id);
+        }
+        // תנאי מנהל מש"א
+        else if (m.role === 'MASHA' && m.is_manager) {
+            notifyUserIds.add(m.id);
+        }
+        // תנאי מנהל התפקיד המוקצה (בתנאי שזה לא משא - כי כבר טיפלנו בו למעלה)
+        else if (m.role === currentRoleAtTicket && m.is_manager && currentRoleAtTicket !== 'MASHA') {
+            notifyUserIds.add(m.id);
+        }
+    });
+
+    // 3. שליחת ההתראה בפועל
+    if (notifyUserIds.size > 0) {
+        const alertTitle = `⏰ חריגת זמן: תקלה #${ticket.ticket_number}`;
+        const alertMsg = `תקלה חוזרת שפתוחה מעל 24 שעות: "${ticket.title}" נמצאת כעת בטיפול ${currentRoleAtTicket}.`;
+
+        pushTicketShort({ 
+            userIds: Array.from(notifyUserIds), 
+            ticketId: ticket.ticket_number, 
+            title: alertTitle, 
+            message: alertMsg 
+        });
+    }
+}
 </script>
 </body>
 </html>
