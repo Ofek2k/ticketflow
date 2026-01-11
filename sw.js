@@ -2,8 +2,8 @@ self.addEventListener('push', function(event) {
   const data = event.data.json();
   const options = {
     body: data.body,
-    icon: 'logo.png', // הלוגו
-    badge: 'logo.png',
+    icon: '/logo.png', // הלוגו
+    badge: '/logo.png',
     data: { url: data.url }
   };
   event.waitUntil(
