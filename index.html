@@ -502,21 +502,117 @@ async function checkSimilarity(title, topic) {
       const hamalOpen = tickets.filter(t => !t.isClosed && t.isHamalDown).length;
       main.innerHTML = `<header class="header"><div><div class="page-title">שלום , ${escapeHtml(currentUser.fullName?.split(' ')[0]||'חבר')} 👋</div><div class="page-subtitle">סטטוס מבצעי עדכני</div></div><button class="btn btn-primary" onclick="nav('CREATE')"><i data-lucide="plus"></i>תקלה חדשה</button></header><div class="grid-dashboard"><div class="stat-card"><div class="stat-val" style="color:#ec4899;">${myOpen}</div><div class="stat-lbl">תקלות שלי</div></div><div class="stat-card"><div class="stat-val" style="color:#8b5cf6;">${totalOpen}</div><div class="stat-lbl">סה״כ פתוחות</div></div><div class="stat-card"><div class="stat-val" style="color:#10b981;">${totalClosed}</div><div class="stat-lbl">תקלות שטופלו</div></div><div class="stat-card" style="border-color:${hamalOpen>0?'var(--urgent)':'var(--border)'}"><div class="stat-val" style="color:#ef4444;">${hamalOpen}</div><div class="stat-lbl">מושבת (חמ"ל)</div></div></div><div class="card"><div class="card-title"><i data-lucide="clock"></i> עדכונים אחרונים</div>${tickets.slice(0,5).map((t,i) => { const isLate = !t.isClosed && isOverHour(t.createdAt); return `<div class="list-item ${isLate ? 'ticket-urgent' : ''}" style="animation-delay:${i*0.05}s" onclick="nav('DETAILS', '${t.id}')"><div style="display:flex;align-items:center;gap:12px;"><div class="badge badge-${t.status}" style="width:8px;height:8px;padding:0;border-radius:50%;"></div><div><div style="font-weight:600;font-size:0.9rem;">${t.isHamalDown ? '🚨 ' : ''}${escapeHtml(t.title)}</div><div style="font-size:0.75rem;color:var(--text-soft);">${timeAgo(t.createdAt)} • ${escapeHtml(t.createdByName)}</div></div></div><div class="badge badge-${t.status}">${t.status === 'RESOLVED' ? 'טופל' : (STATUS_LABEL[t.status] || t.status)}</div></div>`; }).join('')}</div>`;
     }
-
     if(activePage === "MY_TICKETS" || activePage === "ALL_TICKETS") {
       const isAll = activePage === "ALL_TICKETS";
-      if (typeof window.filterState === 'undefined') window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" };
-      window.setSearch = (val) => { window.filterState.search = val.toLowerCase(); render(); }; window.setSort = (val) => { window.filterState.sort = val; render(); }; window.setFilterTopic = (val) => { window.filterState.topic = val; render(); }; window.setFilterRole = (val) => { window.filterState.role = val; render(); }; window.clearFilters = () => { window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" }; render(); showToast("הסינון אופס"); };
-      let list = isAll ? tickets : tickets.filter(t => t.createdByUserId===currentUser.id || t.assignedUserId===currentUser.id || t.assignedRole===currentUser.role);
-      list = list.filter(t => t.isClosed === showClosed);
-      if (window.filterState.search) list = list.filter(t => (t.title && t.title.toLowerCase().includes(window.filterState.search)) || (t.ticketNumber && t.ticketNumber.toString().includes(window.filterState.search)) || (t.createdByName && t.createdByName.toLowerCase().includes(window.filterState.search)));
-      if (window.filterState.topic !== "ALL") list = list.filter(t => t.topic === window.filterState.topic);
-      if (window.filterState.role !== "ALL") list = list.filter(t => t.assignedRole === window.filterState.role);
-      list.sort((a,b) => { const dateA = new Date(a.createdAt).getTime(); const dateB = new Date(b.createdAt).getTime(); return window.filterState.sort === "DESC" ? dateB - dateA : dateA - dateB; });
-      const hasActiveFilters = window.filterState.search !== "" || window.filterState.topic !== "ALL" || window.filterState.role !== "ALL";
-      main.innerHTML = `<header class="header"><div class="page-title">${isAll?'כל התקלות':'התקלות שלי'} <span style="font-size:1rem;opacity:0.5;">(${list.length})</span></div><div><button class="btn ${showClosed?'btn-primary':'btn-ghost'}" onclick="toggleClosed()"><i data-lucide="archive"></i> ${showClosed ? 'חזרה לפתוחות' : 'ארכיון'}</button></div></header><div class="card" style="padding:16px; margin-bottom:20px; background:rgba(30, 41, 59, 0.7);"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;"><div style="font-size:0.85rem; font-weight:600; color:var(--text-soft);">חיפוש וסינון</div>${hasActiveFilters ? `<button onclick="clearFilters()" style="background:none; border:none; color:#ec4899; font-size:0.8rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:4px;"><i data-lucide="x-circle" style="width:14px; height:14px;"></i> איפוס</button>` : ''}</div><div style="position:relative; margin-bottom:12px;"><i data-lucide="search" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--text-soft); width:18px;"></i><input class="input" placeholder="הקלד לחיפוש..." value="${window.filterState.search}" oninput="setSearch(this.value)" style="padding-right:38px; background:rgba(0,0,0,0.3); border-color:rgba(255,255,255,0.1);" /></div><div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:4px;"><select class="select ${window.filterState.sort!=='DESC'?'active-filter':''}" onchange="setSort(this.value)" style="min-width:110px;"><option value="DESC" ${window.filterState.sort==='DESC'?'selected':''}>📅 חדש</option><option value="ASC" ${window.filterState.sort==='ASC'?'selected':''}>📅 ישן</option></select><select class="select ${window.filterState.topic!=='ALL'?'active-filter':''}" onchange="setFilterTopic(this.value)" style="min-width:100px;"><option value="ALL">🔧 נושא</option><option value="אמצעים" ${window.filterState.topic==='אמצעים'?'selected':''}>אמצעים</option><option value="אפליקציה" ${window.filterState.topic==='אפליקציה'?'selected':''}>אפליקציה</option><option value="רשת" ${window.filterState.topic==='רשת'?'selected':''}>רשת</option><option value="מחשב" ${window.filterState.topic==='מחשב'?'selected':''}>מחשב</option><option value="עמדה דלה" ${window.filterState.topic==='עמדה דלה'?'selected':''}>עמדה דלה</option></select><select class="select ${window.filterState.role!=='ALL'?'active-filter':''}" onchange="setFilterRole(this.value)" style="min-width:100px;"><option value="ALL">👮 תפקיד</option><option value="HATAP" ${window.filterState.role==='HATAP'?'selected':''}>חט"פ</option><option value="HR" ${window.filterState.role==='HR'?'selected':''}>מש"א</option><option value="PLHIK" ${window.filterState.role==='PLHIK'?'selected':''}>פלחי"ק</option><option value="MAMRAM" ${window.filterState.role==='MAMRAM'?'selected':''}>ממר"ם</option></select></div></div><div class="card" style="padding:0; background:transparent; border:none; box-shadow:none;">${list.map(t => { const isOver1Hour = !t.isClosed && isOverHour(t.createdAt); let itemClass = ''; if (t.isHamalDown) itemClass = 'ticket-hamal'; else if (isOver1Hour) itemClass = 'ticket-urgent'; return `<div class="list-item ${itemClass}" onclick="nav('DETAILS', '${t.id}')"><div style="display:flex; gap:16px; align-items:center;"><div style="font-family:monospace; opacity:0.5; font-size:0.8rem;">#${t.ticketNumber}</div><div><div style="font-weight:700; font-size:0.95rem;">${t.isHamalDown ? '🚨 ' : ''}${escapeHtml(t.title)}</div><div style="font-size:0.75rem; color:var(--text-soft); display:flex; gap:8px;"><span>${timeAgo(t.createdAt)}</span> • <span>${roleLabel(t.assignedRole)}</span>${isOver1Hour ? '<span style="color:var(--urgent); font-weight:bold;">(בעיכוב)</span>' : ''}</div></div></div><div class="badge badge-${t.status}">${STATUS_LABEL[t.status] || t.status}</div></div>`; }).join('')}${list.length === 0 ? '<div style="text-align:center;padding:20px;opacity:0.5;">לא נמצאו תקלות</div>' : ''}${tickets.length >= fetchLimit ? `<div style="text-align:center; padding:20px;"><button id="load-more-btn" class="btn btn-ghost" onclick="loadMoreData()">טען תקלות ישנות יותר <i data-lucide="arrow-down"></i></button></div>` : ''}</div>`;
-    }
+      
+      // הגדרת הרשאות ניהול
+      const isOwner = currentUser.role === 'OWNER';
+      const isSystemManager = currentUser.isManager || isOwner;
 
+      if (typeof window.filterState === 'undefined') window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" };
+      
+      // לוגיקת סינון רשימה:
+      // אם זה "כל התקלות" ומדובר במנהל/בעלים -> אל תסנן לפי שיוך אישי (הצג הכל)
+      // אחרת (משתמש רגיל או דף "התקלות שלי") -> הצג רק מה שקשור למשתמש
+      let list = (isAll && isSystemManager) 
+        ? [...tickets] 
+        : tickets.filter(t => t.createdByUserId === currentUser.id || t.assignedUserId === currentUser.id || t.assignedRole === currentUser.role);
+
+      // סינון ארכיון (פתוח/סגור)
+      list = list.filter(t => t.isClosed === showClosed);
+
+      // סינון חיפוש חופשי
+      if (window.filterState.search) {
+        list = list.filter(t => 
+            (t.title && t.title.toLowerCase().includes(window.filterState.search)) || 
+            (t.ticketNumber && t.ticketNumber.toString().includes(window.filterState.search)) ||
+            (t.createdByName && t.createdByName.toLowerCase().includes(window.filterState.search))
+        );
+      }
+
+      // סינון לפי נושא
+      if (window.filterState.topic !== "ALL") {
+        list = list.filter(t => t.topic === window.filterState.topic);
+      }
+
+      // סינון לפי תפקיד מטפל
+      if (window.filterState.role !== "ALL") {
+        list = list.filter(t => t.assignedRole === window.filterState.role);
+      }
+
+      // מיון לפי תאריך עדכון (כדי שהקפצות יקפצו למעלה)
+      list.sort((a, b) => {
+        const dateA = new Date(a.updated_at || a.createdAt).getTime();
+        const dateB = new Date(b.updated_at || b.createdAt).getTime();
+        return window.filterState.sort === "DESC" ? dateB - dateA : dateA - dateB;
+      });
+
+      const hasActiveFilters = window.filterState.search !== "" || window.filterState.topic !== "ALL" || window.filterState.role !== "ALL";
+      
+      main.innerHTML = `
+        <header class="header">
+            <div class="page-title">${isAll ? 'כל התקלות' : 'התקלות שלי'} <span style="font-size:1rem;opacity:0.5;">(${list.length})</span></div>
+            <div><button class="btn ${showClosed ? 'btn-primary' : 'btn-ghost'}" onclick="toggleClosed()"><i data-lucide="archive"></i> ${showClosed ? 'חזרה לפתוחות' : 'ארכיון'}</button></div>
+        </header>
+        
+        <div class="card" style="padding:16px; margin-bottom:20px; background:rgba(30, 41, 59, 0.7);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="font-size:0.85rem; font-weight:600; color:var(--text-soft);">חיפוש וסינון</div>
+                ${hasActiveFilters ? `<button onclick="clearFilters()" style="background:none; border:none; color:#ec4899; font-size:0.8rem; font-weight:600; cursor:pointer;">איפוס סינון</button>` : ''}
+            </div>
+            <div style="position:relative; margin-bottom:12px;">
+                <i data-lucide="search" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--text-soft); width:18px;"></i>
+                <input class="input" placeholder="חפש תקלה, מספר או שם..." value="${window.filterState.search}" oninput="setSearch(this.value)" style="padding-right:38px;" />
+            </div>
+            <div style="display:flex; gap:8px; overflow-x:auto;">
+                <select class="select" onchange="setFilterTopic(this.value)">
+                    <option value="ALL">כל הנושאים</option>
+                    <option value="אמצעים" ${window.filterState.topic==='אמצעים'?'selected':''}>אמצעים</option>
+                    <option value="מחשב" ${window.filterState.topic==='מחשב'?'selected':''}>מחשב</option>
+                </select>
+                <select class="select" onchange="setFilterRole(this.value)">
+                    <option value="ALL">כל התפקידים</option>
+                    <option value="MAMRAM" ${window.filterState.role==='MAMRAM'?'selected':''}>ממר"ם</option>
+                    <option value="HATAP" ${window.filterState.role==='HATAP'?'selected':''}>חט"פ</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card" style="padding:0; background:transparent; border:none;">
+            ${list.map(t => {
+                const isOver1Hour = !t.isClosed && isOverHour(t.createdAt);
+                const isBumped = t.is_bumped === true;
+                let itemClass = '';
+                if (t.isHamalDown) itemClass = 'ticket-hamal';
+                else if (isBumped) itemClass = 'bumped-ticket';
+                else if (isOver1Hour) itemClass = 'ticket-urgent';
+
+                return `
+                <div class="list-item ${itemClass}" onclick="nav('DETAILS', '${t.id}')">
+                    <div style="display:flex; gap:16px; align-items:center;">
+                        <div style="font-family:monospace; opacity:0.5; font-size:0.8rem;">#${t.ticketNumber}</div>
+                        <div>
+                            <div style="font-weight:700;">
+                                ${t.isHamalDown ? '🚨 ' : ''}
+                                ${isBumped ? '🔥 ' : ''}
+                                ${escapeHtml(t.title)}
+                            </div>
+                            <div style="font-size:0.75rem; color:var(--text-soft);">
+                                ${timeAgo(t.createdAt)} • ${roleLabel(t.assignedRole)} 
+                                ${isBumped ? `<span style="color:#ef4444; font-weight:bold;">(הוקפץ ${t.bump_count || 1} פעמים)</span>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="badge badge-${t.status}">${STATUS_LABEL[t.status]}</div>
+                </div>`;
+            }).join('')}
+            ${list.length === 0 ? '<div style="text-align:center;padding:40px;opacity:0.5;">לא נמצאו תקלות התואמות לסינון</div>' : ''}
+        </div>`;
+      
+      lucide.createIcons();
+    }
+    
+    
     if(activePage === "CREATE") {
       const isSimpleUser = currentUser.role === 'USER';
       const roleOptions = isSimpleUser ? `<option value="HATAP">חט"פ</option>` : `<option value="HATAP">חט"פ</option><option value="HR">מש"א</option><option value="PLHIK">פלחי"ק</option><option value="MAMRAM">ממר"ם</option><option value="APP">אפליקציה</option><option value="NETWORK">רשת</option>`;
