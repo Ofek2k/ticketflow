@@ -1080,6 +1080,9 @@
         let isRecoveryMode = false;
         let debounceTimer = null;
 
+        // FIXED: Initialize global state variables to prevent ReferenceError crashes
+        let users = [], tickets = [], units = [], currentUser = null, activePage = 'HOME';
+
 
         // --- Helpers ---
         const escapeHtml = (str) => String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -1204,7 +1207,8 @@
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return null;
             const [uRes, tRes, unRes] = await Promise.all([
-                supabase.from("users").select("*"),
+                // FIXED: Select only necessary columns to minimize data leak surface (Backend RLS still required)
+                supabase.from("users").select("id, auth_user_id, full_name, email, phone, role, is_manager, requested_manager, unit, unit_id, requested_role, role_status, is_frozen, settings"),
                 supabase.from("tickets").select("*").order("created_at", { ascending: false }).limit(fetchLimit),
                 supabase.from("units").select("*")
             ]);
