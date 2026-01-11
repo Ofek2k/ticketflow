@@ -53,7 +53,20 @@
     .list-item:hover { background: rgba(255,255,255,0.1); border-color: #fff; transform: scale(1.005); box-shadow: 0 0 20px rgba(236, 72, 153, 0.1); }
     
     .ticket-urgent { border: 1px solid var(--urgent) !important; background: rgba(239, 68, 68, 0.08) !important; box-shadow: 0 0 20px rgba(239, 68, 68, 0.25) !important; }
-    .ticket-hamal { border: 2px solid #ef4444 !important; background: rgba(239, 68, 68, 0.15) !important; animation: pulseRed 1.5s infinite; }
+    .ticket-hamal {
+    border: 2px solid #ef4444 !important;
+    background: rgba(239, 68, 68, 0.2) !important; /* רקע אדום חזק יותר */
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
+    display: flex !important; /* מבטיח שהאלמנט לא יעלם */
+}
+
+/* הגנה כללית לכל פריט ברשימה */
+.list-item {
+    min-height: 80px;
+    margin-bottom: 12px;
+    opacity: 1 !important;
+    transform: none !important;
+}
     @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
     .ticket-new { border-right: 3px solid var(--new) !important; }
 
@@ -375,8 +388,24 @@ async function checkSimilarity(title, topic) {
     ]);
     
     users = (uRes.data || []).map(u => ({ id: u.id, authUserId: u.auth_user_id, fullName: u.full_name, email: u.email, phone: u.phone, role: u.role, isManager: u.is_manager, requestedManager: u.requested_manager, unit: u.unit, unitId: u.unit_id, requestedRole: u.requested_role, roleStatus: u.role_status, isFrozen: u.is_frozen, settings: u.settings }));
-    tickets = (tRes.data || []).map(t => ({ id: t.id, ticketNumber: t.ticket_number, title: t.title, description: t.description,category:t.category , topic: t.topic, status: t.status, unit: t.unit, assignedRole: t.assigned_role, assignedUserId: t.assigned_user_id, createdByUserId: t.created_by_user_id, createdByName: t.created_by_name, isClosed: !!t.is_closed || t.status === 'RESOLVED' || t.status === 'CLOSED', createdAt: t.created_at, imageUrl: t.image_url, isHamalDown: t.is_hamal_down }));
-    comments = cRes.data || [];
+    tickets = (tRes.data || []).map(t => ({
+    id: t.id,
+    ticketNumber: t.ticket_number,
+    title: t.title,
+    description: t.description,
+    topic: t.topic,
+    status: t.status,
+    assignedRole: t.assigned_role,
+    createdByUserId: t.created_by_user_id,
+    createdByName: t.created_by_name,
+    createdAt: t.created_at,
+    updatedAt: t.updated_at,
+    // מיפוי כפול כדי להיות בטוחים:
+    is_closed: !!t.is_closed, 
+    isClosed: !!t.is_closed,
+    isHamalDown: !!t.is_hamal_down,
+    is_bumped: !!t.is_bumped
+}));
     units = unRes.data || [];
     currentUser = users.find(u => u.authUserId === user.id);
     
@@ -519,7 +548,12 @@ async function checkSimilarity(title, topic) {
         : tickets.filter(t => t.createdByUserId === currentUser.id || t.assignedUserId === currentUser.id || t.assignedRole === currentUser.role);
 
       // סינון ארכיון (פתוח/סגור)
-      list = list.filter(t => t.isClosed === showClosed);
+      // סינון ארכיון - שימוש בשם השדה המדויק מה-Database (is_closed)
+        list = list.filter(t => {
+            // אנחנו מוודאים שערך FALSE ב-DB תואם למצב שבו הארכיון כבוי (showClosed = false)
+            const closedStatus = t.is_closed === true; 
+            return closedStatus === showClosed;
+        });
 
       // סינון חיפוש חופשי
       if (window.filterState.search) {
