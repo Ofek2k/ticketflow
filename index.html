@@ -1,462 +1,1299 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
+
 <head>
-  <meta charset="UTF-8" />
-  <title>TicketFlow - Yanai</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    /* --- משתנים ועיצוב Midnight Neon --- */
-    :root {
-      --bg-dark: #020617;
-      --bg-pink: #831843;
-      --text: #f8fafc;
-      --text-soft: #cbd5e1;
-      --accent: #ec4899;
-      --glass-bg: rgba(30, 41, 59, 0.6); 
-      --glass-border: rgba(255, 255, 255, 0.2);
-      --border: rgba(255, 255, 255, 0.1);
-      --urgent: #ef4444; 
-      --new: #10b981;    
-    }
-    * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-    
-    body {
-      margin: 0; padding: 0;
-      font-family: 'Heebo', sans-serif;
-      background-color: var(--bg-dark);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex; align-items: stretch; justify-content: center;
-      background-image: 
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 800 800'%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-width='1.5' stroke-opacity='0.35'%3E%3Cpath d='M769 229L1037 260.9M927 880L731 737 520 660 309 538 40 599 295 764 126 552 20 570 71 613 15 236 56 214 186 319 243 412 191 501 10 300 200 400 300 500 400 600 500 700 600 800 700 800 800 700 900 600 1000 500'/%3E%3C/g%3E%3C/svg%3E"),
-        linear-gradient(135deg, var(--bg-dark) 0%, #1e1b4b 50%, var(--bg-pink) 100%);
-      background-size: 600px 600px, cover;
-      background-repeat: repeat, no-repeat;
-      background-position: 0 0, center;
-      animation: contourMove 60s linear infinite;
-      overscroll-behavior-y: contain;
-    }
-    @keyframes contourMove { 0% { background-position: 0 0, center; } 100% { background-position: 600px 600px, center; } }
+    <meta charset="UTF-8" />
+    <title>TicketFlow - Yanai</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* --- משתנים ועיצוב Midnight Neon --- */
+        :root {
+            --bg-dark: #020617;
+            --bg-pink: #831843;
+            --text: #f8fafc;
+            --text-soft: #cbd5e1;
+            --accent: #ec4899;
+            --glass-bg: rgba(30, 41, 59, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --border: rgba(255, 255, 255, 0.1);
+            --urgent: #ef4444;
+            --new: #10b981;
+        }
 
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+        * {
+            box-sizing: border-box;
+            outline: none;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    .app-root { width: 100%; max-width: 100%; margin: 0; overflow: hidden; background: rgba(15, 23, 42, 0.3); backdrop-filter: blur(8px); display: flex; flex-direction: row; height: 100vh; position: relative; }
-    .sidebar { width: 280px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(20px); border-inline-start: 1px solid var(--glass-border); padding: 24px 20px; display: flex; flex-direction: column; gap: 24px; flex-shrink: 0; z-index: 2000; }
-    
-    .card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-top: 1px solid rgba(255, 255, 255, 0.3); border-radius: 24px; padding: 32px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); backdrop-filter: blur(20px); transition: transform 0.3s, box-shadow 0.3s; width: 100%; }
-    .card-title { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
-    
-    .list-item { display: flex; align-items: center; justify-content: space-between; padding: 20px; background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 18px; margin-bottom: 12px; cursor: pointer; transition: all 0.2s; animation: fade-in-up 0.4s ease-out forwards; opacity: 0; transform: translateY(10px); position: relative; overflow: hidden; }
-    .list-item:hover { background: rgba(255,255,255,0.1); border-color: #fff; transform: scale(1.005); box-shadow: 0 0 20px rgba(236, 72, 153, 0.1); }
-    
-    .ticket-urgent { border: 1px solid var(--urgent) !important; background: rgba(239, 68, 68, 0.08) !important; box-shadow: 0 0 20px rgba(239, 68, 68, 0.25) !important; }
-    .ticket-hamal {
-    border: 2px solid #ef4444 !important;
-    background: rgba(239, 68, 68, 0.2) !important; /* רקע אדום חזק יותר */
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
-    display: flex !important; /* מבטיח שהאלמנט לא יעלם */
-}
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Heebo', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: stretch;
+            justify-content: center;
+            background-image:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400' viewBox='0 0 800 800'%3E%3Cg fill='none' stroke='%23FFFFFF' stroke-width='1.5' stroke-opacity='0.35'%3E%3Cpath d='M769 229L1037 260.9M927 880L731 737 520 660 309 538 40 599 295 764 126 552 20 570 71 613 15 236 56 214 186 319 243 412 191 501 10 300 200 400 300 500 400 600 500 700 600 800 700 800 800 700 900 600 1000 500'/%3E%3C/g%3E%3C/svg%3E"),
+                linear-gradient(135deg, var(--bg-dark) 0%, #1e1b4b 50%, var(--bg-pink) 100%);
+            background-size: 600px 600px, cover;
+            background-repeat: repeat, no-repeat;
+            background-position: 0 0, center;
+            animation: contourMove 60s linear infinite;
+            overscroll-behavior-y: contain;
+        }
 
-/* הגנה כללית לכל פריט ברשימה */
-.list-item {
-    min-height: 80px;
-    margin-bottom: 12px;
-    opacity: 1 !important;
-    transform: none !important;
-}
-    @keyframes pulseRed { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-    .ticket-new { border-right: 3px solid var(--new) !important; }
+        @keyframes contourMove {
+            0% {
+                background-position: 0 0, center;
+            }
 
-    @keyframes fade-in-up { to { opacity: 1; transform: translateY(0); } }
+            100% {
+                background-position: 600px 600px, center;
+            }
+        }
 
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 24px; border-radius: 14px; font-size: 0.9rem; font-weight: 600; cursor: pointer; border: 1px solid var(--glass-border); background: rgba(255,255,255,0.05); color: var(--text); transition: all 0.2s; }
-    .btn:hover { background: rgba(255,255,255,0.15); border-color: #fff; transform: translateY(-2px); }
-    .btn-primary { background: var(--accent); border: 1px solid var(--accent); color: #fff; box-shadow: 0 0 20px rgba(236, 72, 153, 0.3); font-weight: 700; }
-    .btn-primary:hover { background: #db2777; box-shadow: 0 0 40px rgba(236, 72, 153, 0.6); transform: translateY(-2px) scale(1.02); }
-    .btn-danger { color: #ef4444; border-color: #ef4444; background: rgba(239,68,68,0.1); } .btn-danger:hover { background: #ef4444; color: #fff; }
-    .btn-ghost { background: transparent; border: none; color: var(--text-soft); }
-    .btn-ghost:hover { background: rgba(255,255,255,0.1); color: white; }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
 
-    .input, .select, .textarea { width: 100%; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--glass-border); border-radius: 14px; padding: 14px 18px; color: #fff; font-family: inherit; font-size: 0.95rem; transition: 0.2s; }
-    .input:focus, .select:focus, .textarea:focus { border-color: var(--accent); box-shadow: 0 0 15px rgba(236, 72, 153, 0.3); background: rgba(15, 23, 42, 0.8); }
-    .select option { background-color: var(--bg-dark); color: #fff; }
-    .select.active-filter { border-color: #ec4899 !important; color: #ec4899 !important; font-weight: 600; }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
 
-    .main { flex: 1; padding: 40px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; position: relative; overscroll-behavior-y: contain; }
-    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; } 
-    .page-title { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.8px; } 
-    .page-subtitle { font-size: 0.95rem; color: var(--text-soft); margin-top: 4px; }
-    .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.7rem; font-weight: 700; border: 1px solid currentColor; display: inline-flex; align-items: center; gap: 6px; }
-    .badge-OPEN { color: #60a5fa; } .badge-IN_PROGRESS { color: #fbbf24; } .badge-RESOLVED { color: #4ade80; } .badge-CLOSED { color: #94a3b8; border-color: rgba(255,255,255,0.2); box-shadow: none; }
-    .chat-bubble { background: rgba(255,255,255,0.05); border-radius: 18px; padding: 16px; margin-bottom: 14px; border: 1px solid var(--glass-border); } 
-    .chat-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.8rem; color: var(--text-soft); } 
-    
-    .file-upload-label { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 12px; border: 1px dashed var(--glass-border); border-radius: 14px; transition: 0.2s; color: var(--text-soft); background: rgba(0,0,0,0.3); } 
-    .file-upload-label:hover { border-color: var(--accent); color: var(--text); background: rgba(236,72,153,0.1); }
-    .ticket-image-preview { width: 100%; max-height: 300px; object-fit: cover; border-radius: 12px; margin-top: 12px; border: 1px solid var(--glass-border); cursor: pointer; }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+        }
 
-    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; } 
-    .login-box { width: 100%; max-width: 440px; padding: 48px; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(30px); border: 1px solid var(--glass-border); border-radius: 32px; box-shadow: 0 40px 80px -20px rgba(0,0,0,0.8); text-align: center; } 
-    .login-icon { width: 72px; height: 72px; background: linear-gradient(135deg, #ec4899, #8b5cf6); border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; box-shadow: 0 0 30px rgba(236,72,153,0.6); color: white; }
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 9999; display: flex; align-items: center; justify-content: center; animation: fade 0.2s; } 
-    .modal { background: var(--bg-dark); border: 1px solid rgba(255,255,255,0.2); width: 90%; max-width: 400px; padding: 32px; border-radius: 28px; text-align: center; box-shadow: 0 0 50px rgba(0,0,0,0.8); animation: pop 0.3s cubic-bezier(0.16, 1, 0.3, 1); } 
-    @keyframes pop { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } } @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-    .loader-wrap { position: absolute; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 50; border-radius: inherit; } 
-    .spinner { width: 44px; height: 44px; border: 3px solid rgba(236,72,153,0.1); border-top-color: #ec4899; border-radius: 50%; animation: spin 0.8s linear infinite; box-shadow: 0 0 15px rgba(236, 72, 153, 0.4); } 
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 14px 28px; border-radius: 99px; box-shadow: 0 0 20px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; gap: 12px; z-index: 10000; font-weight: 500; animation: slide-up-fade 0.4s cubic-bezier(0.16, 1, 0.3, 1); } 
-    @keyframes slide-up-fade { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
-    
-    /* --- Dashboard Grid Fix --- */
-    .grid-dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; } 
-    .stat-card { background: rgba(255,255,255,0.05); padding: 24px; border-radius: 24px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); } 
-    .stat-val { font-size: 2.2rem; font-weight: 800; line-height: 1; text-shadow: 0 0 10px currentColor; } 
-    .stat-lbl { font-size: 0.8rem; color: var(--text-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
-    
-    /* --- Analytics New Styles --- */
-    .grid-dashboard-compact { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .stat-card-compact { background: rgba(255,255,255,0.05); padding: 16px; border-radius: 20px; border: 1px solid var(--border); display: flex; flex-direction: column; gap: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
-    .stat-val-compact { font-size: 1.8rem; font-weight: 800; line-height: 1; text-shadow: 0 0 15px currentColor; }
-    .stat-lbl-compact { font-size: 0.75rem; color: var(--text-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-    
-    .date-control-bar { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 8px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
-    .date-nav-btn { background: transparent; border: none; color: var(--text); padding: 8px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
-    .date-nav-btn:hover { background: rgba(255,255,255,0.1); }
-    .view-toggle-btn { padding: 6px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; background: transparent; color: var(--text-soft); transition: 0.2s; }
-    .view-toggle-btn.active { background: var(--accent); color: white; box-shadow: 0 0 10px rgba(236, 72, 153, 0.4); }
+        .app-root {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            overflow: hidden;
+            background: rgba(15, 23, 42, 0.3);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: row;
+            height: 100vh;
+            position: relative;
+        }
 
-    .analytics-filter-toggle { display: flex; gap: 10px; margin-bottom: 24px; } 
-    .analytics-filter-chip { padding: 8px 16px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-soft); cursor: pointer; font-size: 0.9rem; transition: 0.2s; } 
-    .analytics-filter-chip.active { background: rgba(236,72,153,0.2); color: #fff; border-color: rgba(236,72,153,0.4); box-shadow: 0 0 10px rgba(236,72,153,0.2); } 
-    .pie-slice { transition: transform 0.2s ease-out; cursor: pointer; transform-origin: center; transform-box: fill-box; } 
-    .pie-slice:hover { transform: scale(1.05); filter: drop-shadow(0 0 8px rgba(236,72,153,0.6)); } 
-    .chart-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; } @media(max-width:900px){ .chart-grid-2 { grid-template-columns: 1fr; } }
+        .sidebar {
+            width: 280px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border-inline-start: 1px solid var(--glass-border);
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            flex-shrink: 0;
+            z-index: 2000;
+        }
 
-    .grid-2cols { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; width: 100%; } @media(max-width:700px){ .grid-2cols { grid-template-columns: 1fr; gap: 20px; } }
-    .field-group { margin-bottom: 20px; width: 100%; } .label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-soft); margin-bottom: 8px; }
+        .card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            transition: transform 0.3s, box-shadow 0.3s;
+            width: 100%;
+        }
 
-    .brand { display: flex; align-items: center; gap: 12px; padding: 0 8px; margin-bottom: 8px; } 
-    .brand img { width: 42px; height: 42px; filter: drop-shadow(0 0 20px rgba(236,72,153,0.6)); } 
-    .brand-title { font-weight: 800; font-size: 1.2rem; letter-spacing: -0.5px; background: linear-gradient(to right, #fff, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .nav-group { display: flex; flex-direction: column; gap: 6px; } 
-    .nav-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-soft); padding: 0 12px; margin-bottom: 4px; font-weight: 600; opacity: 0.6; }
-    .nav-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 14px; cursor: pointer; color: var(--text-soft); font-size: 0.9rem; font-weight: 500; transition: all 0.2s; border: 1px solid transparent; } 
-    .nav-item:hover { background: rgba(255,255,255,0.1); color: #fff; transform: translateX(-4px); } 
-    .nav-item.active { background: linear-gradient(90deg, rgba(236,72,153,0.2), transparent); color: #fff; border-color: rgba(236,72,153,0.4); box-shadow: 0 0 20px rgba(236, 72, 153, 0.15); } 
-    .nav-item svg { width: 20px; height: 20px; transition: transform 0.2s; } 
-    .nav-item.active svg { color: var(--accent); transform: scale(1.1); filter: drop-shadow(0 0 8px var(--accent)); }
-    .notification-dot { width: 8px; height: 8px; background: var(--urgent); border-radius: 50%; margin-left: auto; box-shadow: 0 0 5px var(--urgent); }
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
 
-    /* ניהול משתמשים */
-    .table-responsive { overflow-x: auto; }
-    .table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.9rem; }
-    .table th { text-align: right; padding: 16px; color: var(--text-soft); border-bottom: 1px solid var(--border); }
-    .table td { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.2); transition: .4s; border-radius: 34px; }
-    .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-    input:checked + .slider { background-color: var(--new); }
-    input:checked + .slider:before { transform: translateX(18px); }
+        .list-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            animation: fade-in-up 0.4s ease-out forwards;
+            opacity: 0;
+            transform: translateY(10px);
+            position: relative;
+            overflow: hidden;
+        }
 
-    .user-card { margin-top: auto; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 16px; display: flex; align-items: center; gap: 12px; border: 1px solid var(--glass-border); }
-    .avatar { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #ec4899, #8b5cf6); color: #fff; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px rgba(236,72,153,0.4); font-size: 1rem; flex-shrink: 0; }
-    .user-info { flex: 1; min-width: 0; text-align: right; }
-    .user-name { font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .user-role { font-size: 0.75rem; color: var(--text-soft); }
-    .logout-btn { background: transparent; border: none; color: var(--text-soft); cursor: pointer; padding: 8px; border-radius: 10px; transition: 0.2s; }
-    .logout-btn:hover { background: rgba(244,63,94,0.15); color: #f43f5e; box-shadow: 0 0 15px rgba(244, 63, 94, 0.3); }
+        .list-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #fff;
+            transform: scale(1.005);
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.1);
+        }
 
-    /* Pull to Refresh Indicator */
-    .ptr-loader {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 70px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transform: translateY(-100%);
-        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        z-index: 9999;
-        pointer-events: none;
-    }
-    .ptr-content {
-        background: rgba(15, 23, 42, 0.9);
-        border: 1px solid var(--accent);
-        border-radius: 50px;
-        padding: 8px 20px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        box-shadow: 0 10px 40px rgba(236, 72, 153, 0.3);
-        color: #fff;
-        font-weight: 600;
-        font-size: 0.9rem;
-    }
-    .ptr-icon {
-        animation: spin 1s linear infinite;
-        color: var(--accent);
-    }
+        .ticket-urgent {
+            border: 1px solid var(--urgent) !important;
+            background: rgba(239, 68, 68, 0.08) !important;
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.25) !important;
+        }
 
-    @media (max-width: 900px) {
-      .app-root { flex-direction: column; height: 100vh; overflow: hidden; } 
-      .main { padding: 16px; padding-bottom: 80px; width: 100%; overflow-y: auto; }
-      .sidebar { top: auto; bottom: 0; left: 0; right: 0; width: 100vw; height: 60px; transform: none; background: rgba(15, 23, 42, 0.95); border-top: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: row; overflow-x: auto; padding: 0; z-index: 9999; }
-      .sidebar .brand, .sidebar .user-card, .sidebar .nav-label { display: none !important; }
-      .nav-group { display: contents; }
-      .nav-item { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; height: 100%; padding: 0 16px; background: transparent !important; border: none; margin: 0; }
-      .nav-item svg { display: none !important; }
-      .nav-item.active { color: #fff; background: linear-gradient(to bottom, rgba(236,72,153,0.2), transparent) !important; border-top: 3px solid #ec4899; }
-      .nav-item[onclick*="CREATE"] span { display: block !important; }
-    }
-    .neon-modal-border {
-    border: 1px solid var(--accent) !important;
-    box-shadow: 0 0 20px rgba(236, 72, 153, 0.4) !important;
-    border-radius: 28px !important;
-}
-/* צבע ייחודי לכפתור הקפצה */
-.swal2-confirm {
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
-}
-/* ביטול עיצוב ברירת המחדל של כפתור הביטול */
-.swal2-cancel {
-    border: 1px solid var(--glass-border) !important;
-    font-family: 'Heebo', sans-serif !important;
-}
-  </style>
+        .ticket-hamal {
+            border: 2px solid #ef4444 !important;
+            background: rgba(239, 68, 68, 0.2) !important;
+            /* רקע אדום חזק יותר */
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
+            display: flex !important;
+            /* מבטיח שהאלמנט לא יעלם */
+        }
+
+        /* הגנה כללית לכל פריט ברשימה */
+        .list-item {
+            min-height: 80px;
+            margin-bottom: 12px;
+            opacity: 1 !important;
+            transform: none !important;
+        }
+
+        @keyframes pulseRed {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+            }
+        }
+
+        .ticket-new {
+            border-right: 3px solid var(--new) !important;
+        }
+
+        @keyframes fade-in-up {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #fff;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border: 1px solid var(--accent);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.3);
+            font-weight: 700;
+        }
+
+        .btn-primary:hover {
+            background: #db2777;
+            box-shadow: 0 0 40px rgba(236, 72, 153, 0.6);
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .btn-danger {
+            color: #ef4444;
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .btn-danger:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border: none;
+            color: var(--text-soft);
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .input,
+        .select,
+        .textarea {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 14px 18px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: 0.2s;
+        }
+
+        .input:focus,
+        .select:focus,
+        .textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .select option {
+            background-color: var(--bg-dark);
+            color: #fff;
+        }
+
+        .select.active-filter {
+            border-color: #ec4899 !important;
+            color: #ec4899 !important;
+            font-weight: 600;
+        }
+
+        .main {
+            flex: 1;
+            padding: 40px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            position: relative;
+            overscroll-behavior-y: contain;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .page-title {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.8px;
+        }
+
+        .page-subtitle {
+            font-size: 0.95rem;
+            color: var(--text-soft);
+            margin-top: 4px;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            border: 1px solid currentColor;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-OPEN {
+            color: #60a5fa;
+        }
+
+        .badge-IN_PROGRESS {
+            color: #fbbf24;
+        }
+
+        .badge-RESOLVED {
+            color: #4ade80;
+        }
+
+        .badge-CLOSED {
+            color: #94a3b8;
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: none;
+        }
+
+        .chat-bubble {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 18px;
+            padding: 16px;
+            margin-bottom: 14px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .chat-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            font-size: 0.8rem;
+            color: var(--text-soft);
+        }
+
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 12px;
+            border: 1px dashed var(--glass-border);
+            border-radius: 14px;
+            transition: 0.2s;
+            color: var(--text-soft);
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .file-upload-label:hover {
+            border-color: var(--accent);
+            color: var(--text);
+            background: rgba(236, 72, 153, 0.1);
+        }
+
+        .ticket-image-preview {
+            width: 100%;
+            max-height: 300px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-top: 12px;
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+        }
+
+        .login-wrap {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 440px;
+            padding: 48px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(30px);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.8);
+            text-align: center;
+        }
+
+        .login-icon {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            box-shadow: 0 0 30px rgba(236, 72, 153, 0.6);
+            color: white;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fade 0.2s;
+        }
+
+        .modal {
+            background: var(--bg-dark);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 90%;
+            max-width: 400px;
+            padding: 32px;
+            border-radius: 28px;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+            animation: pop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes pop {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        @keyframes fade {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .loader-wrap {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            border-radius: inherit;
+        }
+
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 3px solid rgba(236, 72, 153, 0.1);
+            border-top-color: #ec4899;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1e293b;
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 99px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 10000;
+            font-weight: 500;
+            animation: slide-up-fade 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slide-up-fade {
+            from {
+                opacity: 0;
+                transform: translate(-50%, 20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+
+        /* --- Dashboard Grid Fix --- */
+        .grid-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 24px;
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-val {
+            font-size: 2.2rem;
+            font-weight: 800;
+            line-height: 1;
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        .stat-lbl {
+            font-size: 0.8rem;
+            color: var(--text-soft);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* --- Analytics New Styles --- */
+        .grid-dashboard-compact {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card-compact {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 16px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-val-compact {
+            font-size: 1.8rem;
+            font-weight: 800;
+            line-height: 1;
+            text-shadow: 0 0 15px currentColor;
+        }
+
+        .stat-lbl-compact {
+            font-size: 0.75rem;
+            color: var(--text-soft);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .date-control-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .date-nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .date-nav-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .view-toggle-btn {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-soft);
+            transition: 0.2s;
+        }
+
+        .view-toggle-btn.active {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 0 10px rgba(236, 72, 153, 0.4);
+        }
+
+        .analytics-filter-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .analytics-filter-chip {
+            padding: 8px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-soft);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: 0.2s;
+        }
+
+        .analytics-filter-chip.active {
+            background: rgba(236, 72, 153, 0.2);
+            color: #fff;
+            border-color: rgba(236, 72, 153, 0.4);
+            box-shadow: 0 0 10px rgba(236, 72, 153, 0.2);
+        }
+
+        .pie-slice {
+            transition: transform 0.2s ease-out;
+            cursor: pointer;
+            transform-origin: center;
+            transform-box: fill-box;
+        }
+
+        .pie-slice:hover {
+            transform: scale(1.05);
+            filter: drop-shadow(0 0 8px rgba(236, 72, 153, 0.6));
+        }
+
+        .chart-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+
+        @media(max-width:900px) {
+            .chart-grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .grid-2cols {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            width: 100%;
+        }
+
+        @media(max-width:700px) {
+            .grid-2cols {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        .field-group {
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-soft);
+            margin-bottom: 8px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 8px;
+            margin-bottom: 8px;
+        }
+
+        .brand img {
+            width: 42px;
+            height: 42px;
+            filter: drop-shadow(0 0 20px rgba(236, 72, 153, 0.6));
+        }
+
+        .brand-title {
+            font-weight: 800;
+            font-size: 1.2rem;
+            letter-spacing: -0.5px;
+            background: linear-gradient(to right, #fff, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .nav-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-soft);
+            padding: 0 12px;
+            margin-bottom: 4px;
+            font-weight: 600;
+            opacity: 0.6;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 14px;
+            cursor: pointer;
+            color: var(--text-soft);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transform: translateX(-4px);
+        }
+
+        .nav-item.active {
+            background: linear-gradient(90deg, rgba(236, 72, 153, 0.2), transparent);
+            color: #fff;
+            border-color: rgba(236, 72, 153, 0.4);
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.15);
+        }
+
+        .nav-item svg {
+            width: 20px;
+            height: 20px;
+            transition: transform 0.2s;
+        }
+
+        .nav-item.active svg {
+            color: var(--accent);
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px var(--accent));
+        }
+
+        .notification-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--urgent);
+            border-radius: 50%;
+            margin-left: auto;
+            box-shadow: 0 0 5px var(--urgent);
+        }
+
+        /* ניהול משתמשים */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.9rem;
+        }
+
+        .table th {
+            text-align: right;
+            padding: 16px;
+            color: var(--text-soft);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table td {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.2);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--new);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(18px);
+        }
+
+        .user-card {
+            margin-top: auto;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #ec4899, #8b5cf6);
+            color: #fff;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+
+        .user-info {
+            flex: 1;
+            min-width: 0;
+            text-align: right;
+        }
+
+        .user-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-role {
+            font-size: 0.75rem;
+            color: var(--text-soft);
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-soft);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 10px;
+            transition: 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(244, 63, 94, 0.15);
+            color: #f43f5e;
+            box-shadow: 0 0 15px rgba(244, 63, 94, 0.3);
+        }
+
+        /* Pull to Refresh Indicator */
+        .ptr-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translateY(-100%);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .ptr-content {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--accent);
+            border-radius: 50px;
+            padding: 8px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 10px 40px rgba(236, 72, 153, 0.3);
+            color: #fff;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .ptr-icon {
+            animation: spin 1s linear infinite;
+            color: var(--accent);
+        }
+
+        @media (max-width: 900px) {
+            .app-root {
+                flex-direction: column;
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            .main {
+                padding: 16px;
+                padding-bottom: 80px;
+                width: 100%;
+                overflow-y: auto;
+            }
+
+            .sidebar {
+                top: auto;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100vw;
+                height: 60px;
+                transform: none;
+                background: rgba(15, 23, 42, 0.95);
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                display: flex;
+                flex-direction: row;
+                overflow-x: auto;
+                padding: 0;
+                z-index: 9999;
+            }
+
+            .sidebar .brand,
+            .sidebar .user-card,
+            .sidebar .nav-label {
+                display: none !important;
+            }
+
+            .nav-group {
+                display: contents;
+            }
+
+            .nav-item {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                flex: 0 0 auto;
+                height: 100%;
+                padding: 0 16px;
+                background: transparent !important;
+                border: none;
+                margin: 0;
+            }
+
+            .nav-item svg {
+                display: none !important;
+            }
+
+            .nav-item.active {
+                color: #fff;
+                background: linear-gradient(to bottom, rgba(236, 72, 153, 0.2), transparent) !important;
+                border-top: 3px solid #ec4899;
+            }
+
+            .nav-item[onclick*="CREATE"] span {
+                display: block !important;
+            }
+        }
+
+        .neon-modal-border {
+            border: 1px solid var(--accent) !important;
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.4) !important;
+            border-radius: 28px !important;
+        }
+
+        /* צבע ייחודי לכפתור הקפצה */
+        .swal2-confirm {
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+        }
+
+        /* ביטול עיצוב ברירת המחדל של כפתור הביטול */
+        .swal2-cancel {
+            border: 1px solid var(--glass-border) !important;
+            font-family: 'Heebo', sans-serif !important;
+        }
+    </style>
 </head>
+
 <body>
-<div id="root"></div>
-<div id="modal-root"></div>
-<div id="toast-root"></div>
+    <div id="root"></div>
+    <div id="modal-root"></div>
+    <div id="toast-root"></div>
 
-<div id="ptr-loader" class="ptr-loader">
-    <div class="ptr-content">
-        <i data-lucide="loader-2" class="ptr-icon"></i>
-        <span>מרענן נתונים...</span>
+    <div id="ptr-loader" class="ptr-loader">
+        <div class="ptr-content">
+            <i data-lucide="loader-2" class="ptr-icon"></i>
+            <span>מרענן נתונים...</span>
+        </div>
     </div>
-</div>
 
-<script src="https://unpkg.com/@supabase/supabase-js@2.48.0/dist/umd/supabase.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-  const SUPABASE_URL = "https://tymratzaavokyhbcycgb.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5bXJhdHphYXZva3loYmN5Y2diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwNTE0ODIsImV4cCI6MjA4MDYyNzQ4Mn0.Y73HK3Jgg1FD--o3KMt3A-GbY8S2hfRyr6M-IABu6NY";
-  const PUSH_WORKER_BASE = "https://ticketflow-push.galaxyskin350.workers.dev";
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <script src="https://unpkg.com/@supabase/supabase-js@2.48.0/dist/umd/supabase.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const SUPABASE_URL = "https://tymratzaavokyhbcycgb.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR5bXJhdHphYXZva3loYmN5Y2diIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjUwNTE0ODIsImV4cCI6MjA4MDYyNzQ4Mn0.Y73HK3Jgg1FD--o3KMt3A-GbY8S2hfRyr6M-IABu6NY";
+        const PUSH_WORKER_BASE = "https://ticketflow-push.galaxyskin350.workers.dev";
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  let currentUser = null, users = [], tickets = [], comments = [], units = [], activePage = "HOME";
-  let showClosed = false, selectedTicketId = null, analyticsDim = "STATUS", fetchLimit = 100;
-  
-  let analyticsView = 'WEEK'; 
-  let analyticsRefDate = new Date(); 
-  let isRecoveryMode = false;
+        let showClosed = false, selectedTicketId = null, analyticsDim = "STATUS", fetchLimit = 100;
 
-  // --- Helpers ---
-  const escapeHtml = (str) => String(str||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-  const formatDate = (ts) => ts ? new Date(ts).toLocaleString("he-IL", {dateStyle:"short", timeStyle:"short"}) : "";
-  const roleLabel = (r) => ({OWNER:"בעלים", COMPANY_CMD:'מ"פ', HATAP:'חט"פ', HR:'מש"א', USER:"משתמש", PLHIK:'פלחי"ק', MAMRAM:'ממר"ם', APP:'אפליקציה', NETWORK:'רשת'}[r] || r);
-  const STATUS_LABEL = { OPEN:"פתוח", IN_PROGRESS:"בטיפול", RESOLVED:"טופל", CLOSED:"סגור" };
+        let analyticsView = 'WEEK';
+        let analyticsRefDate = new Date();
+        let isRecoveryMode = false;
+        let debounceTimer = null;
 
-  function timeAgo(dateParam) { if(!dateParam) return null; const date = new Date(dateParam), now = new Date(), minutes = Math.floor((now - date)/60000), hours = Math.floor(minutes/60), days = Math.floor(hours/24); if (minutes < 60) return `לפני ${minutes} דק'`; if (hours < 24) return `לפני ${hours} שעות`; return `לפני ${days} ימים`; }
-  function isOverHour(dateParam) { if(!dateParam) return false; return (new Date() - new Date(dateParam)) > 3600000; }
-  
-  function showToast(msg, icon="check") { const el = document.createElement("div"); el.className="toast"; el.innerHTML = `<i data-lucide="${icon}"></i><span>${msg}</span>`; document.getElementById("toast-root").appendChild(el); lucide.createIcons(); setTimeout(() => el.remove(), 3000); }
-  function showModal(title, msg, isErr=false) { return new Promise(resolve => { const root = document.getElementById("modal-root"); root.innerHTML = `<div class="modal-overlay"><div class="modal" style="border-color:${isErr?'#f43f5e':'rgba(255,255,255,0.1)'}"><div style="font-size:3rem;margin-bottom:10px;">${isErr?'😓':'✨'}</div><div style="font-size:1.2rem;font-weight:800;margin-bottom:8px;">${title}</div><div style="color:#94a3b8;margin-bottom:24px;line-height:1.5;">${msg}</div><button class="btn btn-primary" style="width:100%;justify-content:center;" id="mod-ok">הבנתי, סגור</button></div></div>`; document.getElementById("mod-ok").onclick = () => { root.innerHTML=""; resolve(); }; }); }
-  async function withLoader(el, fn) { const l = document.createElement("div"); l.className="loader-wrap"; l.innerHTML=`<div class="spinner"></div>`; if(getComputedStyle(el).position==="static") el.style.position="relative"; el.appendChild(l); try { await fn(); } catch(e) { console.error(e); showModal("שגיאה", e.message, true); } finally { if(l.parentNode===el) el.removeChild(l); } }
 
-  // פונקציה לבדיקת דמיון לפני שליחה
-async function checkSimilarity(title, topic) {
-    // השתמש ב-authUserId שהוא ה-UUID מה-Session
-    const userUuid = currentUser.authUserId; 
-    
-    try {
-        const { data, error } = await supabase.rpc('check_recurring_tickets', {
-            input_title: title,
-            input_topic: topic,
-            input_user_uuid: userUuid
+        // --- Helpers ---
+        const escapeHtml = (str) => String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        const formatDate = (ts) => ts ? new Date(ts).toLocaleString("he-IL", { dateStyle: "short", timeStyle: "short" }) : "";
+        const roleLabel = (r) => ({ OWNER: "בעלים", COMPANY_CMD: 'מ"פ', HATAP: 'חט"פ', HR: 'מש"א', USER: "משתמש", PLHIK: 'פלחי"ק', MAMRAM: 'ממר"ם', APP: 'אפליקציה', NETWORK: 'רשת' }[r] || r);
+        const STATUS_LABEL = { OPEN: "פתוח", IN_PROGRESS: "בטיפול", RESOLVED: "טופל", CLOSED: "סגור" };
+
+        function timeAgo(dateParam) { if (!dateParam) return null; const date = new Date(dateParam), now = new Date(), minutes = Math.floor((now - date) / 60000), hours = Math.floor(minutes / 60), days = Math.floor(hours / 24); if (minutes < 60) return `לפני ${minutes} דק'`; if (hours < 24) return `לפני ${hours} שעות`; return `לפני ${days} ימים`; }
+        function isOverHour(dateParam) { if (!dateParam) return false; return (new Date() - new Date(dateParam)) > 3600000; }
+
+        function showToast(msg, icon = "check") { const el = document.createElement("div"); el.className = "toast"; el.innerHTML = `<i data-lucide="${icon}"></i><span>${msg}</span>`; document.getElementById("toast-root").appendChild(el); lucide.createIcons(); setTimeout(() => el.remove(), 3000); }
+        function showModal(title, msg, isErr = false) { return new Promise(resolve => { const root = document.getElementById("modal-root"); root.innerHTML = `<div class="modal-overlay"><div class="modal" style="border-color:${isErr ? '#f43f5e' : 'rgba(255,255,255,0.1)'}"><div style="font-size:3rem;margin-bottom:10px;">${isErr ? '😓' : '✨'}</div><div style="font-size:1.2rem;font-weight:800;margin-bottom:8px;">${title}</div><div style="color:#94a3b8;margin-bottom:24px;line-height:1.5;">${msg}</div><button class="btn btn-primary" style="width:100%;justify-content:center;" id="mod-ok">הבנתי, סגור</button></div></div>`; document.getElementById("mod-ok").onclick = () => { root.innerHTML = ""; resolve(); }; }); }
+        async function withLoader(el, fn) { const l = document.createElement("div"); l.className = "loader-wrap"; l.innerHTML = `<div class="spinner"></div>`; if (getComputedStyle(el).position === "static") el.style.position = "relative"; el.appendChild(l); try { await fn(); } catch (e) { console.error(e); showModal("שגיאה", e.message, true); } finally { if (l.parentNode === el) el.removeChild(l); } }
+
+        // פונקציה לבדיקת דמיון לפני שליחה
+        async function checkSimilarity(title, topic) {
+            // השתמש ב-authUserId שהוא ה-UUID מה-Session
+            const userUuid = currentUser.authUserId;
+
+            try {
+                const { data, error } = await supabase.rpc('check_recurring_tickets', {
+                    input_title: title,
+                    input_topic: topic,
+                    input_user_uuid: userUuid
+                });
+
+                if (error) throw error;
+
+                return (data && data[0] && parseInt(data[0].occurrence_count) > 0);
+            } catch (e) {
+                console.error("Similarity check error:", e);
+                return false;
+            }
+        }
+
+        // --- PULL TO REFRESH LOGIC ---
+        function initPullToRefresh() {
+            const main = document.querySelector('.main');
+            const loader = document.getElementById('ptr-loader');
+            if (!main || !loader) return;
+
+            let startY = 0;
+            let isPulling = false;
+            const threshold = 120; // מרחק גלילה כדי להפעיל רענון
+
+            main.addEventListener('touchstart', (e) => {
+                if (main.scrollTop === 0) {
+                    startY = e.touches[0].clientY;
+                    isPulling = true;
+                }
+            }, { passive: true });
+
+            main.addEventListener('touchmove', (e) => {
+                if (!isPulling) return;
+                const y = e.touches[0].clientY;
+                const diff = y - startY;
+
+                if (diff > 0 && main.scrollTop === 0) {
+                    // משיכה למטה
+                    // prevent default כדי שלא יהיה הרענון המכוער של הכרום
+                    if (diff > threshold) {
+                        loader.style.transform = `translateY(20px)`;
+                    }
+                } else {
+                    isPulling = false;
+                }
+            }, { passive: true });
+
+            main.addEventListener('touchend', (e) => {
+                if (!isPulling) return;
+                const y = e.changedTouches[0].clientY;
+                const diff = y - startY;
+
+                if (diff > threshold && main.scrollTop === 0) {
+                    // Trigger Refresh
+                    loader.style.transform = `translateY(20px)`;
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+                } else {
+                    loader.style.transform = `translateY(-100%)`;
+                }
+                isPulling = false;
+            });
+        }
+
+        // --- INITIALIZATION ---
+        document.addEventListener("DOMContentLoaded", async () => {
+            if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
+
+            supabase.auth.onAuthStateChange((event, session) => {
+                if (event === 'PASSWORD_RECOVERY') {
+                    isRecoveryMode = true;
+                    render();
+                } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+                    if (!isRecoveryMode) {
+                        loadData().then(() => {
+                            render();
+                            initPullToRefresh(); // הפעלת ה-Pull to Refresh אחרי טעינה
+                        });
+                    }
+                } else if (event === 'SIGNED_OUT') {
+                    currentUser = null;
+                    render();
+                }
+            });
+
+            if (!window.location.hash.includes('type=recovery')) {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    await loadData();
+                }
+            } else {
+                isRecoveryMode = true;
+            }
+
+            setupRealtime();
+            render();
         });
 
-        if (error) throw error;
+        async function loadData() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return null;
+            const [uRes, tRes, unRes] = await Promise.all([
+                supabase.from("users").select("*"),
+                supabase.from("tickets").select("*").order("created_at", { ascending: false }).limit(fetchLimit),
+                supabase.from("units").select("*")
+            ]);
 
-        return (data && data[0] && parseInt(data[0].occurrence_count) > 0);
-    } catch (e) {
-        console.error("Similarity check error:", e);
-        return false;
-    }
-}
+            users = (uRes.data || []).map(u => ({ id: u.id, authUserId: u.auth_user_id, fullName: u.full_name, email: u.email, phone: u.phone, role: u.role, isManager: u.is_manager, requestedManager: u.requested_manager, unit: u.unit, unitId: u.unit_id, requestedRole: u.requested_role, roleStatus: u.role_status, isFrozen: u.is_frozen, settings: u.settings }));
+            tickets = (tRes.data || []).map(t => ({
+                id: t.id,
+                ticketNumber: t.ticket_number,
+                title: t.title,
+                description: t.description,
+                topic: t.topic,
+                status: t.status,
+                assignedRole: t.assigned_role,
+                createdByUserId: t.created_by_user_id,
+                createdByName: t.created_by_name,
+                createdAt: t.created_at,
+                updatedAt: t.updated_at,
+                // מיפוי כפול כדי להיות בטוחים:
+                is_closed: !!t.is_closed,
+                isClosed: !!t.is_closed,
+                isHamalDown: !!t.is_hamal_down,
+                is_bumped: !!t.is_bumped
+            }));
+            units = unRes.data || [];
+            currentUser = users.find(u => u.authUserId === user.id);
 
-// --- PULL TO REFRESH LOGIC ---
-  function initPullToRefresh() {
-      const main = document.querySelector('.main');
-      const loader = document.getElementById('ptr-loader');
-      if (!main || !loader) return;
+            if (currentUser && currentUser.isFrozen) {
+                await supabase.auth.signOut();
+                alert("החשבון הוקפא. פנה למנהל המערכת.");
+                location.reload();
+                return null;
+            }
+            if (currentUser) ensurePushAutoForUser(currentUser.id).catch(console.error);
 
-      let startY = 0;
-      let isPulling = false;
-      const threshold = 120; // מרחק גלילה כדי להפעיל רענון
+            startOverdueCheck();
 
-      main.addEventListener('touchstart', (e) => {
-          if (main.scrollTop === 0) {
-              startY = e.touches[0].clientY;
-              isPulling = true;
-          }
-      }, { passive: true });
+            return currentUser;
+        }
 
-      main.addEventListener('touchmove', (e) => {
-          if (!isPulling) return;
-          const y = e.touches[0].clientY;
-          const diff = y - startY;
+        function startOverdueCheck() {
+            setInterval(() => {
+                if (!currentUser || (!currentUser.isManager && currentUser.role !== 'OWNER')) return;
+                const settings = currentUser.settings || {};
+                if (!settings.notifyOverdue) return;
+                const limitMinutes = parseInt(settings.overdueTime || 60);
+                const notifiedSet = new Set(JSON.parse(sessionStorage.getItem('notifiedTickets') || '[]'));
+                tickets.forEach(t => {
+                    if (t.isClosed) return;
+                    const minutesOpen = (new Date() - new Date(t.createdAt)) / 60000;
+                    if (minutesOpen > limitMinutes && !notifiedSet.has(t.id)) {
+                        new Notification(`⏳ חריגת זמנים: תקלה #${t.ticketNumber}`, {
+                            body: `התקלה "${t.title}" פתוחה כבר מעל ${Math.floor(minutesOpen)} דקות.`,
+                            icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png"
+                        });
+                        notifiedSet.add(t.id);
+                    }
+                });
+                sessionStorage.setItem('notifiedTickets', JSON.stringify([...notifiedSet]));
+            }, 60000);
+        }
 
-          if (diff > 0 && main.scrollTop === 0) {
-              // משיכה למטה
-              // prevent default כדי שלא יהיה הרענון המכוער של הכרום
-              if (diff > threshold) {
-                  loader.style.transform = `translateY(20px)`; 
-              }
-          } else {
-              isPulling = false;
-          }
-      }, { passive: true });
+        window.loadMoreData = async () => { fetchLimit += 50; await loadData(); renderPage(); };
+        function setupRealtime() {
+            supabase.channel('public:tickets').on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async () => {
+                // בדיקה האם המשתמש באמצע הקלדה או בעמוד יצירה
+                if (activePage === 'CREATE' || (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA'))) {
+                    showToast("מידע חדש התקבל (רענן לצפייה)", "info");
+                    return;
+                }
+                // DEBOUNCE LOGIC
+                if (debounceTimer) clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(async () => {
+                    await loadData();
+                    render();
+                    showToast("הנתונים התעדכנו", "refresh-cw");
+                }, 1000);
+            }).subscribe();
+        }
 
-      main.addEventListener('touchend', (e) => {
-          if (!isPulling) return;
-          const y = e.changedTouches[0].clientY;
-          const diff = y - startY;
+        function render() {
+            if (isRecoveryMode) return renderResetPassword();
+            if (!currentUser) return renderLogin();
+            if (!currentUser.fullName || !currentUser.phone) return renderOnboarding();
+            renderApp();
+            setTimeout(initPullToRefresh, 500); // הבטחה שהאלמנטים קיימים
+        }
 
-          if (diff > threshold && main.scrollTop === 0) {
-              // Trigger Refresh
-              loader.style.transform = `translateY(20px)`;
-              setTimeout(() => {
-                  window.location.reload();
-              }, 500);
-          } else {
-              loader.style.transform = `translateY(-100%)`;
-          }
-          isPulling = false;
-      });
-  }
-
-  // --- INITIALIZATION ---
-  document.addEventListener("DOMContentLoaded", async () => { 
-      if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js"); 
-      
-      supabase.auth.onAuthStateChange((event, session) => {
-          if (event === 'PASSWORD_RECOVERY') {
-              isRecoveryMode = true;
-              render(); 
-          } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-              if (!isRecoveryMode) {
-                  loadData().then(() => {
-                      render();
-                      initPullToRefresh(); // הפעלת ה-Pull to Refresh אחרי טעינה
-                  });
-              }
-          } else if (event === 'SIGNED_OUT') {
-              currentUser = null;
-              render();
-          }
-      });
-
-      if(!window.location.hash.includes('type=recovery')) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (session) {
-              await loadData();
-          }
-      } else {
-          isRecoveryMode = true;
-      }
-      
-      setupRealtime();
-      render();
-  });
-
-  async function loadData() {
-    const {data:{user}} = await supabase.auth.getUser();
-    if(!user) return null;
-    const [uRes, tRes, cRes, unRes] = await Promise.all([ 
-        supabase.from("users").select("*"), 
-        supabase.from("tickets").select("*").order("created_at",{ascending:false}).limit(fetchLimit), 
-        supabase.from("ticket_comments").select("*"), 
-        supabase.from("units").select("*") 
-    ]);
-    
-    users = (uRes.data || []).map(u => ({ id: u.id, authUserId: u.auth_user_id, fullName: u.full_name, email: u.email, phone: u.phone, role: u.role, isManager: u.is_manager, requestedManager: u.requested_manager, unit: u.unit, unitId: u.unit_id, requestedRole: u.requested_role, roleStatus: u.role_status, isFrozen: u.is_frozen, settings: u.settings }));
-    tickets = (tRes.data || []).map(t => ({
-    id: t.id,
-    ticketNumber: t.ticket_number,
-    title: t.title,
-    description: t.description,
-    topic: t.topic,
-    status: t.status,
-    assignedRole: t.assigned_role,
-    createdByUserId: t.created_by_user_id,
-    createdByName: t.created_by_name,
-    createdAt: t.created_at,
-    updatedAt: t.updated_at,
-    // מיפוי כפול כדי להיות בטוחים:
-    is_closed: !!t.is_closed, 
-    isClosed: !!t.is_closed,
-    isHamalDown: !!t.is_hamal_down,
-    is_bumped: !!t.is_bumped
-}));
-    units = unRes.data || [];
-    currentUser = users.find(u => u.authUserId === user.id);
-    
-    if(currentUser && currentUser.isFrozen) {
-        await supabase.auth.signOut();
-        alert("החשבון הוקפא. פנה למנהל המערכת.");
-        location.reload();
-        return null;
-    }
-    if(currentUser) ensurePushAutoForUser(currentUser.id).catch(console.error);
-    
-    startOverdueCheck();
-    
-    return currentUser;
-  }
-  
-  function startOverdueCheck() {
-      setInterval(() => {
-          if (!currentUser || (!currentUser.isManager && currentUser.role !== 'OWNER')) return;
-          const settings = currentUser.settings || {};
-          if (!settings.notifyOverdue) return;
-          const limitMinutes = parseInt(settings.overdueTime || 60);
-          const notifiedSet = new Set(JSON.parse(sessionStorage.getItem('notifiedTickets') || '[]'));
-          tickets.forEach(t => {
-              if (t.isClosed) return;
-              const minutesOpen = (new Date() - new Date(t.createdAt)) / 60000;
-              if (minutesOpen > limitMinutes && !notifiedSet.has(t.id)) {
-                  new Notification(`⏳ חריגת זמנים: תקלה #${t.ticketNumber}`, {
-                      body: `התקלה "${t.title}" פתוחה כבר מעל ${Math.floor(minutesOpen)} דקות.`,
-                      icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png"
-                  });
-                  notifiedSet.add(t.id);
-              }
-          });
-          sessionStorage.setItem('notifiedTickets', JSON.stringify([...notifiedSet]));
-      }, 60000);
-  }
-  
-  window.loadMoreData = async () => { fetchLimit += 50; await loadData(); renderPage(); };
-  function setupRealtime() { supabase.channel('public:tickets').on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async () => { await loadData(); render(); showToast("הנתונים התעדכנו", "refresh-cw"); }).subscribe(); }
-
-  function render() { 
-      if(isRecoveryMode) return renderResetPassword();
-      if(!currentUser) return renderLogin(); 
-      if(!currentUser.fullName || !currentUser.phone) return renderOnboarding(); 
-      renderApp(); 
-      setTimeout(initPullToRefresh, 500); // הבטחה שהאלמנטים קיימים
-  }
-
-  function renderResetPassword() {
-      document.getElementById("root").innerHTML = `
+        function renderResetPassword() {
+            document.getElementById("root").innerHTML = `
       <div class="login-wrap">
           <div class="login-box" style="border-color:#ec4899; box-shadow:0 0 30px rgba(236,72,153,0.2);">
               <div class="login-icon"><i data-lucide="key" style="width:32px;height:32px;"></i></div>
@@ -471,119 +1308,119 @@ async function checkSimilarity(title, topic) {
               </form>
           </div>
       </div>`;
-      lucide.createIcons();
-      document.getElementById("reset-form").onsubmit = async (e) => {
-          e.preventDefault();
-          const newPass = e.target.newPass.value;
-          await withLoader(document.querySelector(".login-box"), async () => {
-              const { error } = await supabase.auth.updateUser({ password: newPass });
-              if (error) { alert("שגיאה בעדכון הסיסמה: " + error.message); } 
-              else { alert("הסיסמה שונתה בהצלחה! מעביר אותך למערכת..."); isRecoveryMode = false; window.history.replaceState(null, null, window.location.pathname); window.location.reload(); }
-          });
-      };
-  }
+            lucide.createIcons();
+            document.getElementById("reset-form").onsubmit = async (e) => {
+                e.preventDefault();
+                const newPass = e.target.newPass.value;
+                await withLoader(document.querySelector(".login-box"), async () => {
+                    const { error } = await supabase.auth.updateUser({ password: newPass });
+                    if (error) { alert("שגיאה בעדכון הסיסמה: " + error.message); }
+                    else { alert("הסיסמה שונתה בהצלחה! מעביר אותך למערכת..."); isRecoveryMode = false; window.history.replaceState(null, null, window.location.pathname); window.location.reload(); }
+                });
+            };
+        }
 
-  function renderLogin() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="shield" style="width:32px;height:32px;"></i></div><h1 style="font-weight:900;font-size:1.8rem;margin-bottom:4px;">TicketFlow</h1><p style="color:#94a3b8;margin-bottom:30px;">מערכת ניהול תקלות מבצעית</p><form id="auth-form"><div class="field-group" style="text-align:right;"><label class="label">כתובת אימייל</label><input class="input" type="email" name="email" required /></div><div class="field-group" style="text-align:right;"><label class="label">סיסמה</label><input class="input" type="password" name="password" required /></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:0.85rem;"><a href="#" id="forgot-btn" style="color:var(--text-soft);text-decoration:none;">שכחתי סיסמה?</a></div><button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:20px;">כניסה למערכת</button><div style="margin-top:16px;font-size:0.8rem;"><span style="color:#64748b;">אין לך משתמש?</span> <a href="#" id="go-sign" style="color:#ec4899;text-decoration:none;font-weight:600;">הרשמה</a></div></form></div></div>`; lucide.createIcons(); const form = document.getElementById("auth-form"); form.onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.signInWithPassword({ email: form.email.value, password: form.password.value }); if(error) throw error; await loadData(); setupRealtime(); render(); }); }; document.getElementById("go-sign").onclick = async (e) => { e.preventDefault(); const em = prompt("אימייל:"); const pw = prompt("סיסמה:"); if(em&&pw) { const {data, error} = await supabase.auth.signUp({email:em, password:pw}); if(!error) { await supabase.from("users").insert({auth_user_id:data.user.id, email:em, role:"USER", role_status:"Pending"}); showModal("נרשמת בהצלחה", "כעת ניתן להתחבר."); } else showModal("שגיאה", error.message, true); } }; document.getElementById("forgot-btn").onclick = async (e) => { e.preventDefault(); const em = form.email.value || prompt("הכנס כתובת אימייל לשחזור:"); if(!em) return; await withLoader(document.querySelector(".login-box"), async () => { const {error} = await supabase.auth.resetPasswordForEmail(em, { redirectTo: window.location.href }); if(error) showModal("שגיאה", error.message, true); else showModal("הודעה נשלחה", "בדוק את האימייל שלך לקבלת קישור לאיפוס סיסמה."); }); }; }
-  function renderOnboarding() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="user-plus"></i></div><h2 style="margin-bottom:10px;">השלמת פרופיל</h2><form id="onb-form" style="text-align:right;"><div class="field-group"><label class="label">שם מלא</label><input class="input" name="fullName" required value="${escapeHtml(currentUser?.fullName||"")}" /></div><div class="field-group"><label class="label">טלפון</label><input class="input" name="phone" required value="${escapeHtml(currentUser?.phone||"")}" /></div><div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא</option>${units.map(u => `<option value="${escapeHtml(u.name)}">${escapeHtml(u.name)}</option>`).join("")}</select></div><button class="btn btn-primary" style="width:100%;justify-content:center;">שמירה והמשך</button></form></div></div>`; lucide.createIcons(); document.getElementById("onb-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { await supabase.from("users").update({ full_name: e.target.fullName.value, phone: e.target.phone.value, unit: e.target.unit.value, role_status: "Pending" }).eq("id", currentUser.id); await loadData(); setupRealtime(); render(); }); }; }
+        function renderLogin() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="shield" style="width:32px;height:32px;"></i></div><h1 style="font-weight:900;font-size:1.8rem;margin-bottom:4px;">TicketFlow</h1><p style="color:#94a3b8;margin-bottom:30px;">מערכת ניהול תקלות מבצעית</p><form id="auth-form"><div class="field-group" style="text-align:right;"><label class="label">כתובת אימייל</label><input class="input" type="email" name="email" required /></div><div class="field-group" style="text-align:right;"><label class="label">סיסמה</label><input class="input" type="password" name="password" required /></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:0.85rem;"><a href="#" id="forgot-btn" style="color:var(--text-soft);text-decoration:none;">שכחתי סיסמה?</a></div><button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:20px;">כניסה למערכת</button><div style="margin-top:16px;font-size:0.8rem;"><span style="color:#64748b;">אין לך משתמש?</span> <a href="#" id="go-sign" style="color:#ec4899;text-decoration:none;font-weight:600;">הרשמה</a></div></form></div></div>`; lucide.createIcons(); const form = document.getElementById("auth-form"); form.onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.signInWithPassword({ email: form.email.value, password: form.password.value }); if (error) throw error; await loadData(); setupRealtime(); render(); }); }; document.getElementById("go-sign").onclick = async (e) => { e.preventDefault(); const em = prompt("אימייל:"); const pw = prompt("סיסמה:"); if (em && pw) { const { data, error } = await supabase.auth.signUp({ email: em, password: pw }); if (!error) { await supabase.from("users").insert({ auth_user_id: data.user.id, email: em, role: "USER", role_status: "Pending" }); showModal("נרשמת בהצלחה", "כעת ניתן להתחבר."); } else showModal("שגיאה", error.message, true); } }; document.getElementById("forgot-btn").onclick = async (e) => { e.preventDefault(); const em = form.email.value || prompt("הכנס כתובת אימייל לשחזור:"); if (!em) return; await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.resetPasswordForEmail(em, { redirectTo: window.location.href }); if (error) showModal("שגיאה", error.message, true); else showModal("הודעה נשלחה", "בדוק את האימייל שלך לקבלת קישור לאיפוס סיסמה."); }); }; }
+        function renderOnboarding() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="user-plus"></i></div><h2 style="margin-bottom:10px;">השלמת פרופיל</h2><form id="onb-form" style="text-align:right;"><div class="field-group"><label class="label">שם מלא</label><input class="input" name="fullName" required value="${escapeHtml(currentUser?.fullName || "")}" /></div><div class="field-group"><label class="label">טלפון</label><input class="input" name="phone" required value="${escapeHtml(currentUser?.phone || "")}" /></div><div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא</option>${units.map(u => `<option value="${escapeHtml(u.name)}">${escapeHtml(u.name)}</option>`).join("")}</select></div><button class="btn btn-primary" style="width:100%;justify-content:center;">שמירה והמשך</button></form></div></div>`; lucide.createIcons(); document.getElementById("onb-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { await supabase.from("users").update({ full_name: e.target.fullName.value, phone: e.target.phone.value, unit: e.target.unit.value, role_status: "Pending" }).eq("id", currentUser.id); await loadData(); setupRealtime(); render(); }); }; }
 
-  function renderApp() {
-    const isOwner = currentUser.role === 'OWNER';
-    const isManager = currentUser.isManager || isOwner;
-    const pendingManagerRequests = users.filter(u => u.requestedManager).length;
+        function renderApp() {
+            const isOwner = currentUser.role === 'OWNER';
+            const isManager = currentUser.isManager || isOwner;
+            const pendingManagerRequests = users.filter(u => u.requestedManager).length;
 
-    const root = document.getElementById("root");
-    root.innerHTML = `
+            const root = document.getElementById("root");
+            root.innerHTML = `
       <div class="app-root">
         <aside class="sidebar">
           <div class="brand"><img src="logo.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/906/906343.png'"><div><div class="brand-title">TicketFlow</div><div style="font-size:1rem;color:#94a3b8;">Yanai</div></div></div>
           <div class="nav-group">
             <div class="nav-label">ראשי</div>
-            <div class="nav-item ${activePage==='HOME'?'active':''}" onclick="nav('HOME')"><i data-lucide="layout-grid"></i><span>דשבורד</span></div>
-            <div class="nav-item ${activePage==='MY_TICKETS'?'active':''}" onclick="nav('MY_TICKETS')"><i data-lucide="list"></i><span>התקלות שלי</span></div>
-            <div class="nav-item ${activePage==='CREATE'?'active':''}" onclick="nav('CREATE')"><i data-lucide="plus-circle"></i><span>פתיחת תקלה</span></div>
+            <div class="nav-item ${activePage === 'HOME' ? 'active' : ''}" onclick="nav('HOME')"><i data-lucide="layout-grid"></i><span>דשבורד</span></div>
+            <div class="nav-item ${activePage === 'MY_TICKETS' ? 'active' : ''}" onclick="nav('MY_TICKETS')"><i data-lucide="list"></i><span>התקלות שלי</span></div>
+            <div class="nav-item ${activePage === 'CREATE' ? 'active' : ''}" onclick="nav('CREATE')"><i data-lucide="plus-circle"></i><span>פתיחת תקלה</span></div>
           </div>
           <div class="nav-group">
             <div class="nav-label">ניהול</div>
-            ${isManager ? `<div class="nav-item ${activePage==='ALL_TICKETS'?'active':''}" onclick="nav('ALL_TICKETS')"><i data-lucide="layers"></i><span>כל התקלות</span></div>` : ''}
-            ${isManager ? `<div class="nav-item ${activePage==='ANALYTICS'?'active':''}" onclick="nav('ANALYTICS')"><i data-lucide="bar-chart-3"></i><span>אנליטיקה</span></div>` : ''}
-            ${isManager ? `<div class="nav-item ${activePage==='NOTIFICATIONS'?'active':''}" onclick="nav('NOTIFICATIONS')"><i data-lucide="bell-ring"></i><span>הגדרות התראות</span></div>` : ''}
-            ${isOwner ? `<div class="nav-item ${activePage==='MANAGE_USERS'?'active':''}" onclick="nav('MANAGE_USERS')"><i data-lucide="users"></i><span>ניהול משתמשים</span> ${pendingManagerRequests > 0 ? `<span class="notification-dot"></span>` : ''}</div>` : ''} 
-            ${isOwner ? `<div class="nav-item ${activePage==='ROLE_APPROVAL'?'active':''}" onclick="nav('ROLE_APPROVAL')"><i data-lucide="shield-check"></i><span>אישור תפקידים</span></div>` : ''}
-            <div class="nav-item ${activePage==='PROFILE'?'active':''}" onclick="nav('PROFILE')"><i data-lucide="user-circle"></i><span>פרופיל אישי</span></div>
+            ${isManager ? `<div class="nav-item ${activePage === 'ALL_TICKETS' ? 'active' : ''}" onclick="nav('ALL_TICKETS')"><i data-lucide="layers"></i><span>כל התקלות</span></div>` : ''}
+            ${isManager ? `<div class="nav-item ${activePage === 'ANALYTICS' ? 'active' : ''}" onclick="nav('ANALYTICS')"><i data-lucide="bar-chart-3"></i><span>אנליטיקה</span></div>` : ''}
+            ${isManager ? `<div class="nav-item ${activePage === 'NOTIFICATIONS' ? 'active' : ''}" onclick="nav('NOTIFICATIONS')"><i data-lucide="bell-ring"></i><span>הגדרות התראות</span></div>` : ''}
+            ${isOwner ? `<div class="nav-item ${activePage === 'MANAGE_USERS' ? 'active' : ''}" onclick="nav('MANAGE_USERS')"><i data-lucide="users"></i><span>ניהול משתמשים</span> ${pendingManagerRequests > 0 ? `<span class="notification-dot"></span>` : ''}</div>` : ''} 
+            ${isOwner ? `<div class="nav-item ${activePage === 'ROLE_APPROVAL' ? 'active' : ''}" onclick="nav('ROLE_APPROVAL')"><i data-lucide="shield-check"></i><span>אישור תפקידים</span></div>` : ''}
+            <div class="nav-item ${activePage === 'PROFILE' ? 'active' : ''}" onclick="nav('PROFILE')"><i data-lucide="user-circle"></i><span>פרופיל אישי</span></div>
           </div>
-          <div class="user-card"><div class="avatar">${(currentUser.fullName?.[0]||'U')}</div><div class="user-info"><div class="user-name">${escapeHtml(currentUser.fullName)}</div><div class="user-role">${currentUser.role === 'OWNER' ? 'בעלים' : (currentUser.isManager ? 'מנהל ' + roleLabel(currentUser.role) : roleLabel(currentUser.role))}</div></div><button class="logout-btn" onclick="doLogout()"><i data-lucide="log-out"></i></button></div>
+          <div class="user-card"><div class="avatar">${(currentUser.fullName?.[0] || 'U')}</div><div class="user-info"><div class="user-name">${escapeHtml(currentUser.fullName)}</div><div class="user-role">${currentUser.role === 'OWNER' ? 'בעלים' : (currentUser.isManager ? 'מנהל ' + roleLabel(currentUser.role) : roleLabel(currentUser.role))}</div></div><button class="logout-btn" onclick="doLogout()"><i data-lucide="log-out"></i></button></div>
         </aside>
         <main class="main" id="main-content"></main>
       </div>`;
-    renderPage();
-    lucide.createIcons();
-  }
+            renderPage();
+            lucide.createIcons();
+        }
 
-  function renderPage() {
-    const main = document.getElementById("main-content");
-    main.classList.remove("page-animate"); void main.offsetWidth; main.classList.add("page-animate");    
-    main.innerHTML = "";
-    
-    if(activePage === "HOME") {
-      const myOpen = tickets.filter(t => !t.isClosed && (t.createdByUserId===currentUser.id || t.assignedUserId===currentUser.id)).length;
-      const totalOpen = tickets.filter(t => !t.isClosed).length;
-      const totalClosed = tickets.filter(t => t.isClosed).length;
-      const hamalOpen = tickets.filter(t => !t.isClosed && t.isHamalDown).length;
-      main.innerHTML = `<header class="header"><div><div class="page-title">שלום , ${escapeHtml(currentUser.fullName?.split(' ')[0]||'חבר')} 👋</div><div class="page-subtitle">סטטוס מבצעי עדכני</div></div><button class="btn btn-primary" onclick="nav('CREATE')"><i data-lucide="plus"></i>תקלה חדשה</button></header><div class="grid-dashboard"><div class="stat-card"><div class="stat-val" style="color:#ec4899;">${myOpen}</div><div class="stat-lbl">תקלות שלי</div></div><div class="stat-card"><div class="stat-val" style="color:#8b5cf6;">${totalOpen}</div><div class="stat-lbl">סה״כ פתוחות</div></div><div class="stat-card"><div class="stat-val" style="color:#10b981;">${totalClosed}</div><div class="stat-lbl">תקלות שטופלו</div></div><div class="stat-card" style="border-color:${hamalOpen>0?'var(--urgent)':'var(--border)'}"><div class="stat-val" style="color:#ef4444;">${hamalOpen}</div><div class="stat-lbl">מושבת (חמ"ל)</div></div></div><div class="card"><div class="card-title"><i data-lucide="clock"></i> עדכונים אחרונים</div>${tickets.slice(0,5).map((t,i) => { const isLate = !t.isClosed && isOverHour(t.createdAt); return `<div class="list-item ${isLate ? 'ticket-urgent' : ''}" style="animation-delay:${i*0.05}s" onclick="nav('DETAILS', '${t.id}')"><div style="display:flex;align-items:center;gap:12px;"><div class="badge badge-${t.status}" style="width:8px;height:8px;padding:0;border-radius:50%;"></div><div><div style="font-weight:600;font-size:0.9rem;">${t.isHamalDown ? '🚨 ' : ''}${escapeHtml(t.title)}</div><div style="font-size:0.75rem;color:var(--text-soft);">${timeAgo(t.createdAt)} • ${escapeHtml(t.createdByName)}</div></div></div><div class="badge badge-${t.status}">${t.status === 'RESOLVED' ? 'טופל' : (STATUS_LABEL[t.status] || t.status)}</div></div>`; }).join('')}</div>`;
-    }
-    if(activePage === "MY_TICKETS" || activePage === "ALL_TICKETS") {
-      const isAll = activePage === "ALL_TICKETS";
-      
-      // הגדרת הרשאות ניהול
-      const isOwner = currentUser.role === 'OWNER';
-      const isSystemManager = currentUser.isManager || isOwner;
+        function renderPage() {
+            const main = document.getElementById("main-content");
+            main.classList.remove("page-animate"); void main.offsetWidth; main.classList.add("page-animate");
+            main.innerHTML = "";
 
-      if (typeof window.filterState === 'undefined') window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" };
-      
-      // לוגיקת סינון רשימה:
-      // אם זה "כל התקלות" ומדובר במנהל/בעלים -> אל תסנן לפי שיוך אישי (הצג הכל)
-      // אחרת (משתמש רגיל או דף "התקלות שלי") -> הצג רק מה שקשור למשתמש
-      let list = (isAll && isSystemManager) 
-        ? [...tickets] 
-        : tickets.filter(t => t.createdByUserId === currentUser.id || t.assignedUserId === currentUser.id || t.assignedRole === currentUser.role);
+            if (activePage === "HOME") {
+                const myOpen = tickets.filter(t => !t.isClosed && (t.createdByUserId === currentUser.id || t.assignedUserId === currentUser.id)).length;
+                const totalOpen = tickets.filter(t => !t.isClosed).length;
+                const totalClosed = tickets.filter(t => t.isClosed).length;
+                const hamalOpen = tickets.filter(t => !t.isClosed && t.isHamalDown).length;
+                main.innerHTML = `<header class="header"><div><div class="page-title">שלום , ${escapeHtml(currentUser.fullName?.split(' ')[0] || 'חבר')} 👋</div><div class="page-subtitle">סטטוס מבצעי עדכני</div></div><button class="btn btn-primary" onclick="nav('CREATE')"><i data-lucide="plus"></i>תקלה חדשה</button></header><div class="grid-dashboard"><div class="stat-card"><div class="stat-val" style="color:#ec4899;">${myOpen}</div><div class="stat-lbl">תקלות שלי</div></div><div class="stat-card"><div class="stat-val" style="color:#8b5cf6;">${totalOpen}</div><div class="stat-lbl">סה״כ פתוחות</div></div><div class="stat-card"><div class="stat-val" style="color:#10b981;">${totalClosed}</div><div class="stat-lbl">תקלות שטופלו</div></div><div class="stat-card" style="border-color:${hamalOpen > 0 ? 'var(--urgent)' : 'var(--border)'}"><div class="stat-val" style="color:#ef4444;">${hamalOpen}</div><div class="stat-lbl">מושבת (חמ"ל)</div></div></div><div class="card"><div class="card-title"><i data-lucide="clock"></i> עדכונים אחרונים</div>${tickets.slice(0, 5).map((t, i) => { const isLate = !t.isClosed && isOverHour(t.createdAt); return `<div class="list-item ${isLate ? 'ticket-urgent' : ''}" style="animation-delay:${i * 0.05}s" onclick="nav('DETAILS', '${t.id}')"><div style="display:flex;align-items:center;gap:12px;"><div class="badge badge-${t.status}" style="width:8px;height:8px;padding:0;border-radius:50%;"></div><div><div style="font-weight:600;font-size:0.9rem;">${t.isHamalDown ? '🚨 ' : ''}${escapeHtml(t.title)}</div><div style="font-size:0.75rem;color:var(--text-soft);">${timeAgo(t.createdAt)} • ${escapeHtml(t.createdByName)}</div></div></div><div class="badge badge-${t.status}">${t.status === 'RESOLVED' ? 'טופל' : (STATUS_LABEL[t.status] || t.status)}</div></div>`; }).join('')}</div>`;
+            }
+            if (activePage === "MY_TICKETS" || activePage === "ALL_TICKETS") {
+                const isAll = activePage === "ALL_TICKETS";
 
-      // סינון ארכיון (פתוח/סגור)
-      // סינון ארכיון - שימוש בשם השדה המדויק מה-Database (is_closed)
-        list = list.filter(t => {
-            // אנחנו מוודאים שערך FALSE ב-DB תואם למצב שבו הארכיון כבוי (showClosed = false)
-            const closedStatus = t.is_closed === true; 
-            return closedStatus === showClosed;
-        });
+                // הגדרת הרשאות ניהול
+                const isOwner = currentUser.role === 'OWNER';
+                const isSystemManager = currentUser.isManager || isOwner;
 
-      // סינון חיפוש חופשי
-      if (window.filterState.search) {
-        list = list.filter(t => 
-            (t.title && t.title.toLowerCase().includes(window.filterState.search)) || 
-            (t.ticketNumber && t.ticketNumber.toString().includes(window.filterState.search)) ||
-            (t.createdByName && t.createdByName.toLowerCase().includes(window.filterState.search))
-        );
-      }
+                if (typeof window.filterState === 'undefined') window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" };
 
-      // סינון לפי נושא
-      if (window.filterState.topic !== "ALL") {
-        list = list.filter(t => t.topic === window.filterState.topic);
-      }
+                // לוגיקת סינון רשימה:
+                // אם זה "כל התקלות" ומדובר במנהל/בעלים -> אל תסנן לפי שיוך אישי (הצג הכל)
+                // אחרת (משתמש רגיל או דף "התקלות שלי") -> הצג רק מה שקשור למשתמש
+                let list = (isAll && isSystemManager)
+                    ? [...tickets]
+                    : tickets.filter(t => t.createdByUserId === currentUser.id || t.assignedUserId === currentUser.id || t.assignedRole === currentUser.role);
 
-      // סינון לפי תפקיד מטפל
-      if (window.filterState.role !== "ALL") {
-        list = list.filter(t => t.assignedRole === window.filterState.role);
-      }
+                // סינון ארכיון (פתוח/סגור)
+                // סינון ארכיון - שימוש בשם השדה המדויק מה-Database (is_closed)
+                list = list.filter(t => {
+                    // אנחנו מוודאים שערך FALSE ב-DB תואם למצב שבו הארכיון כבוי (showClosed = false)
+                    const closedStatus = t.is_closed === true;
+                    return closedStatus === showClosed;
+                });
 
-      // מיון לפי תאריך עדכון (כדי שהקפצות יקפצו למעלה)
-      list.sort((a, b) => {
-        const dateA = new Date(a.updated_at || a.createdAt).getTime();
-        const dateB = new Date(b.updated_at || b.createdAt).getTime();
-        return window.filterState.sort === "DESC" ? dateB - dateA : dateA - dateB;
-      });
+                // סינון חיפוש חופשי
+                if (window.filterState.search) {
+                    list = list.filter(t =>
+                        (t.title && t.title.toLowerCase().includes(window.filterState.search)) ||
+                        (t.ticketNumber && t.ticketNumber.toString().includes(window.filterState.search)) ||
+                        (t.createdByName && t.createdByName.toLowerCase().includes(window.filterState.search))
+                    );
+                }
 
-      const hasActiveFilters = window.filterState.search !== "" || window.filterState.topic !== "ALL" || window.filterState.role !== "ALL";
-      
-      main.innerHTML = `
+                // סינון לפי נושא
+                if (window.filterState.topic !== "ALL") {
+                    list = list.filter(t => t.topic === window.filterState.topic);
+                }
+
+                // סינון לפי תפקיד מטפל
+                if (window.filterState.role !== "ALL") {
+                    list = list.filter(t => t.assignedRole === window.filterState.role);
+                }
+
+                // מיון לפי תאריך עדכון (כדי שהקפצות יקפצו למעלה)
+                list.sort((a, b) => {
+                    const dateA = new Date(a.updated_at || a.createdAt).getTime();
+                    const dateB = new Date(b.updated_at || b.createdAt).getTime();
+                    return window.filterState.sort === "DESC" ? dateB - dateA : dateA - dateB;
+                });
+
+                const hasActiveFilters = window.filterState.search !== "" || window.filterState.topic !== "ALL" || window.filterState.role !== "ALL";
+
+                main.innerHTML = `
         <header class="header">
             <div class="page-title">${isAll ? 'כל התקלות' : 'התקלות שלי'} <span style="font-size:1rem;opacity:0.5;">(${list.length})</span></div>
             <div><button class="btn ${showClosed ? 'btn-primary' : 'btn-ghost'}" onclick="toggleClosed()"><i data-lucide="archive"></i> ${showClosed ? 'חזרה לפתוחות' : 'ארכיון'}</button></div>
@@ -601,27 +1438,27 @@ async function checkSimilarity(title, topic) {
             <div style="display:flex; gap:8px; overflow-x:auto;">
                 <select class="select" onchange="setFilterTopic(this.value)">
                     <option value="ALL">כל הנושאים</option>
-                    <option value="אמצעים" ${window.filterState.topic==='אמצעים'?'selected':''}>אמצעים</option>
-                    <option value="מחשב" ${window.filterState.topic==='מחשב'?'selected':''}>מחשב</option>
+                    <option value="אמצעים" ${window.filterState.topic === 'אמצעים' ? 'selected' : ''}>אמצעים</option>
+                    <option value="מחשב" ${window.filterState.topic === 'מחשב' ? 'selected' : ''}>מחשב</option>
                 </select>
                 <select class="select" onchange="setFilterRole(this.value)">
                     <option value="ALL">כל התפקידים</option>
-                    <option value="MAMRAM" ${window.filterState.role==='MAMRAM'?'selected':''}>ממר"ם</option>
-                    <option value="HATAP" ${window.filterState.role==='HATAP'?'selected':''}>חט"פ</option>
+                    <option value="MAMRAM" ${window.filterState.role === 'MAMRAM' ? 'selected' : ''}>ממר"ם</option>
+                    <option value="HATAP" ${window.filterState.role === 'HATAP' ? 'selected' : ''}>חט"פ</option>
                 </select>
             </div>
         </div>
 
         <div class="card" style="padding:0; background:transparent; border:none;">
             ${list.map(t => {
-                const isOver1Hour = !t.isClosed && isOverHour(t.createdAt);
-                const isBumped = t.is_bumped === true;
-                let itemClass = '';
-                if (t.isHamalDown) itemClass = 'ticket-hamal';
-                else if (isBumped) itemClass = 'bumped-ticket';
-                else if (isOver1Hour) itemClass = 'ticket-urgent';
+                    const isOver1Hour = !t.isClosed && isOverHour(t.createdAt);
+                    const isBumped = t.is_bumped === true;
+                    let itemClass = '';
+                    if (t.isHamalDown) itemClass = 'ticket-hamal';
+                    else if (isBumped) itemClass = 'bumped-ticket';
+                    else if (isOver1Hour) itemClass = 'ticket-urgent';
 
-                return `
+                    return `
                 <div class="list-item ${itemClass}" onclick="nav('DETAILS', '${t.id}')">
                     <div style="display:flex; gap:16px; align-items:center;">
                         <div style="font-family:monospace; opacity:0.5; font-size:0.8rem;">#${t.ticketNumber}</div>
@@ -639,19 +1476,19 @@ async function checkSimilarity(title, topic) {
                     </div>
                     <div class="badge badge-${t.status}">${STATUS_LABEL[t.status]}</div>
                 </div>`;
-            }).join('')}
+                }).join('')}
             ${list.length === 0 ? '<div style="text-align:center;padding:40px;opacity:0.5;">לא נמצאו תקלות התואמות לסינון</div>' : ''}
         </div>`;
-      
-      lucide.createIcons();
-    }
-    
-    
-    if(activePage === "CREATE") {
-      const isSimpleUser = currentUser.role === 'USER';
-      const roleOptions = isSimpleUser ? `<option value="HATAP">חט"פ</option>` : `<option value="HATAP">חט"פ</option><option value="HR">מש"א</option><option value="PLHIK">פלחי"ק</option><option value="MAMRAM">ממר"ם</option><option value="APP">אפליקציה</option><option value="NETWORK">רשת</option>`;
-      
-      main.innerHTML = `
+
+                lucide.createIcons();
+            }
+
+
+            if (activePage === "CREATE") {
+                const isSimpleUser = currentUser.role === 'USER';
+                const roleOptions = isSimpleUser ? `<option value="HATAP">חט"פ</option>` : `<option value="HATAP">חט"פ</option><option value="HR">מש"א</option><option value="PLHIK">פלחי"ק</option><option value="MAMRAM">ממר"ם</option><option value="APP">אפליקציה</option><option value="NETWORK">רשת</option>`;
+
+                main.innerHTML = `
         <header class="header"><div class="page-title">פתיחת קריאה</div></header>
         <div class="card" style="width:100%;">
             <form id="create-form">
@@ -687,323 +1524,395 @@ async function checkSimilarity(title, topic) {
             </form>
         </div>`;
 
-      lucide.createIcons();
+                lucide.createIcons();
 
-document.getElementById("create-form").onsubmit = async (e) => { 
-    e.preventDefault(); 
-    const fd = new FormData(e.target); 
-    let title = fd.get("title");
-    let desc = fd.get("desc");
-    const topic = fd.get("topic");
-    const fileFile = document.getElementById("file-upload").files[0]; 
-    const isHamal = document.getElementById("hamalDown").checked; 
-    const assignedRole = fd.get("role");
+                document.getElementById("create-form").onsubmit = async (e) => {
+                    e.preventDefault();
+                    const fd = new FormData(e.target);
+                    let title = fd.get("title");
+                    let desc = fd.get("desc");
+                    const topic = fd.get("topic");
+                    const fileFile = document.getElementById("file-upload").files[0];
+                    const isHamal = document.getElementById("hamalDown").checked;
+                    const assignedRole = fd.get("role");
 
-    await withLoader(document.querySelector(".card"), async () => {
-        // הגדרת משתנים מראש כדי למנוע שגיאות undefined
-        let isRecurring = false; 
-        let shouldCreateNew = true; 
+                    await withLoader(document.querySelector(".card"), async () => {
+                        // הגדרת משתנים מראש כדי למנוע שגיאות undefined
+                        let isRecurring = false;
+                        let shouldCreateNew = true;
 
-        // 1. בדיקת דמיון ב-RPC
-        const { data: simData, error: simError } = await supabase.rpc('check_recurring_tickets', {
-            input_title: title,
-            input_topic: topic,
-            input_user_uuid: currentUser.authUserId
-        });
+                        // 1. בדיקת דמיון ב-RPC
+                        const { data: simData, error: simError } = await supabase.rpc('check_recurring_tickets', {
+                            input_title: title,
+                            input_topic: topic,
+                            input_user_uuid: currentUser.authUserId
+                        });
 
-        if (!simError && simData && simData.length > 0 && parseInt(simData[0].occurrence_count) > 0) {
-            const found = simData[0];
-            
-            // שלב א': האם זו אותה תקלה?
-            const firstStep = await Swal.fire({
-                title: 'זיהינו תקלה דומה פתוחה',
-                html: `האם התכוונת לתקלה הקיימת הזו?<br><br><b style="color: #ec4899; font-size: 1.1rem;">"${escapeHtml(found.similar_title)}"</b>`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'כן, זו אותה אחת',
-                cancelButtonText: 'לא, זו תקלה חדשה',
-                background: '#0f172a',
-                color: '#f8fafc',
-                confirmButtonColor: '#ec4899',
-                cancelButtonColor: 'rgba(255,255,255,0.1)',
-                customClass: { popup: 'neon-modal-border' }
-            });
+                        if (!simError && simData && simData.length > 0 && parseInt(simData[0].occurrence_count) > 0) {
+                            const found = simData[0];
 
-            if (firstStep.isConfirmed) {
-                // שלב ב': הקפצה או חדשה?
-                const secondStep = await Swal.fire({
-                    title: 'איך תרצה להמשיך?',
-                    text: 'ניתן להקפיץ את התקלה הקיימת לראש הרשימה או לפתוח אחת חדשה בכל זאת.',
-                    icon: 'info',
-                    showCancelButton: true,
-                    confirmButtonText: 'הקפץ את הקיימת',
-                    cancelButtonText: 'פתח חדשה בכל זאת',
-                    background: '#0f172a',
-                    color: '#f8fafc',
-                    confirmButtonColor: '#3b82f6',
-                    customClass: { popup: 'neon-modal-border' }
-                });
+                            // שלב א': האם זו אותה תקלה?
+                            const firstStep = await Swal.fire({
+                                title: 'זיהינו תקלה דומה פתוחה',
+                                html: `האם התכוונת לתקלה הקיימת הזו?<br><br><b style="color: #ec4899; font-size: 1.1rem;">"${escapeHtml(found.similar_title)}"</b>`,
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonText: 'כן, זו אותה אחת',
+                                cancelButtonText: 'לא, זו תקלה חדשה',
+                                background: '#0f172a',
+                                color: '#f8fafc',
+                                confirmButtonColor: '#ec4899',
+                                cancelButtonColor: 'rgba(255,255,255,0.1)',
+                                customClass: { popup: 'neon-modal-border' }
+                            });
 
-                if (secondStep.isConfirmed) {
-                    // הקפצה (Bump)
-                    await bumpExistingTicket(found.similar_id, title);
-                    shouldCreateNew = false; // מסמנים שלא צריך ליצור תקלה חדשה
-                    showToast("התקלה הקיימת הוקפצה בהצלחה!");
-                    nav("MY_TICKETS");
-                } else {
-                    // המשתמש בחר לפתוח חדשה למרות הדמיון
-                    isRecurring = true;
-                    title = "🔄 [תקלה חוזרת] " + title;
-                    desc += "\n\n--- \n⚠️ דווח כאירוע חוזר על ידי המשתמש.";
-                }
+                            if (firstStep.isConfirmed) {
+                                // שלב ב': הקפצה או חדשה?
+                                const secondStep = await Swal.fire({
+                                    title: 'איך תרצה להמשיך?',
+                                    text: 'ניתן להקפיץ את התקלה הקיימת לראש הרשימה או לפתוח אחת חדשה בכל זאת.',
+                                    icon: 'info',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'הקפץ את הקיימת',
+                                    cancelButtonText: 'פתח חדשה בכל זאת',
+                                    background: '#0f172a',
+                                    color: '#f8fafc',
+                                    confirmButtonColor: '#3b82f6',
+                                    customClass: { popup: 'neon-modal-border' }
+                                });
+
+                                if (secondStep.isConfirmed) {
+                                    // הקפצה (Bump)
+                                    await bumpExistingTicket(found.similar_id, title);
+                                    shouldCreateNew = false; // מסמנים שלא צריך ליצור תקלה חדשה
+                                    showToast("התקלה הקיימת הוקפצה בהצלחה!");
+                                    nav("MY_TICKETS");
+                                } else {
+                                    // המשתמש בחר לפתוח חדשה למרות הדמיון
+                                    isRecurring = true;
+                                    title = "🔄 [תקלה חוזרת] " + title;
+                                    desc += "\n\n--- \n⚠️ דווח כאירוע חוזר על ידי המשתמש.";
+                                }
+                            }
+                        }
+
+                        // 2. יצירת תקלה חדשה (רק אם לא בחרנו בהקפצה)
+                        if (shouldCreateNew) {
+                            let imageUrl = null;
+                            if (fileFile) {
+                                const fileName = `${Date.now()}_${fileFile.name}`;
+                                const { error: upErr } = await supabase.storage.from('attachments').upload(fileName, fileFile);
+                                if (!upErr) {
+                                    const { data } = supabase.storage.from('attachments').getPublicUrl(fileName);
+                                    imageUrl = data.publicUrl;
+                                }
+                            }
+
+                            const num = await getNextNum();
+                            const { data: t, error } = await supabase.from("tickets").insert({
+                                ticket_number: num,
+                                title: title,
+                                description: desc,
+                                topic: topic,
+                                created_by_user_id: currentUser.id,
+                                created_by_name: currentUser.fullName,
+                                created_by_email: currentUser.email,
+                                unit: currentUser.unit,
+                                assigned_role: assignedRole,
+                                status: "OPEN",
+                                is_closed: false,
+                                image_url: imageUrl,
+                                is_hamal_down: isHamal,
+                                is_recurring: isRecurring
+                            }).select().single();
+
+                            if (error) throw error;
+
+                            let notifyTitle = isHamal ? "🚨 חמ״ל מושבת! 🚨" : (isRecurring ? "🔄 תקלה חוזרת!" : "✨ תקלה חדשה");
+                            pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: num, title: notifyTitle, message: title });
+
+                            await loadData();
+                            nav("DETAILS", t.id);
+                        }
+                    });
+                };
+
+            }
+
+
+            if (activePage === "DETAILS") {
+                const t = tickets.find(x => x.id == selectedTicketId);
+                if (!t) return nav("HOME");
+                const isOwner = currentUser.role === 'OWNER';
+                const canTakeResponsibility = (t.assignedRole === currentUser.role || isOwner) && t.status === 'OPEN';
+
+                // Filter the LOCAL comments loaded for this ticket
+                const ticketComments = comments || [];
+
+                main.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;"><button class="btn" onclick="nav('HOME')"><i data-lucide="chevron-left"></i></button><div class="page-title">תקלה #${t.ticketNumber}</div></div>${t.isHamalDown ? '<div style="background:#ef4444; color:white; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:bold; text-align:center; animation:pulseRed 2s infinite;">🚨 התראה: חמ"ל מושבת</div>' : ''}<div class="card">${canTakeResponsibility ? `<button onclick="takeTicket('${t.id}')" class="btn btn-primary" style="width:100%; justify-content:center; margin-bottom:20px; background:#10b981; border-color:#10b981;">✋ קח לטיפולך (שיוך עצמי)</button>` : ''}<div style="font-size:1.2rem;font-weight:700;margin-bottom:10px;">${escapeHtml(t.title)}</div><div style="color:var(--text-soft);margin-bottom:20px;white-space:pre-wrap;">${escapeHtml(t.description)}</div>${t.imageUrl ? `<img src="${t.imageUrl}" class="ticket-image-preview" onclick="window.open('${t.imageUrl}')" />` : ''}<div class="grid-2cols" style="background:rgba(255,255,255,0.05);padding:15px;border-radius:12px;"><div><span class="label">נפתח ע״י</span>${escapeHtml(t.createdByName)}</div><div><span class="label">יחידה</span>${escapeHtml(t.unit || '-')}</div><div><span class="label">נושא</span>${escapeHtml(t.topic)}</div><div><span class="label">אחראי</span>${roleLabel(t.assignedRole)}</div><div><span class="label">סטטוס</span>${STATUS_LABEL[t.status]}</div></div>${(isOwner || currentUser.isManager || t.assignedRole === currentUser.role) ? `<div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);"><div class="label">עדכון סטטוס</div><div style="display:flex; gap:10px;"><select class="select" id="upd-status"><option value="OPEN" ${t.status == 'OPEN' ? 'selected' : ''}>פתוח</option><option value="IN_PROGRESS" ${t.status == 'IN_PROGRESS' ? 'selected' : ''}>בטיפול</option><option value="RESOLVED" ${t.status == 'RESOLVED' ? 'selected' : ''}>טופל (סגירה)</option></select><button class="btn btn-primary" onclick="updateTicket('${t.id}')">עדכן</button></div></div>` : ''}</div><div class="card" style="margin-top:20px;"><div class="card-title">יומן טיפול</div><div style="max-height:300px;overflow-y:auto;margin-bottom:15px;">${ticketComments.map(c => `<div class="chat-bubble"><div class="chat-meta"><b>${escapeHtml(c.authorName)}</b> <span>${formatDate(c.createdAt)}</span></div>${escapeHtml(c.content)}</div>`).join('')}</div><form onsubmit="postComment(event, '${t.id}')" style="display:flex;gap:8px;"><input class="input" name="txt" placeholder="כתוב תגובה..." required /><button class="btn btn-primary"><i data-lucide="send"></i></button></form></div>`;
+            }
+
+            if (activePage === "MANAGE_USERS") {
+                if (currentUser.role !== 'OWNER') return nav('HOME');
+                main.innerHTML = `<header class="header"><div class="page-title">ניהול משתמשים</div></header><div class="card" style="overflow-x:auto;"><table class="table"><thead><tr><th>שם</th><th>תפקיד</th><th>מנהל?</th><th>יחידה</th><th>סטטוס</th><th>הקפאה</th></tr></thead><tbody>${users.map(u => `<tr><td>${escapeHtml(u.fullName)}</td><td>${roleLabel(u.role)}</td><td><div style="display:flex;align-items:center;gap:6px;"><input type="checkbox" ${u.isManager ? 'checked' : ''} onchange="toggleManager('${u.id}', this.checked)">${u.requestedManager ? '<span class="badge" style="background:#ec4899;color:white;font-size:0.6rem;animation:pulseRed 2s infinite;">מבקש!</span>' : ''}</div></td><td>${escapeHtml(u.unit || '-')}</td><td>${u.roleStatus}</td><td><label class="switch"><input type="checkbox" ${u.isFrozen ? 'checked' : ''} onchange="toggleFreeze('${u.id}', this.checked)"><span class="slider"></span></label></td></tr>`).join('')}</tbody></table></div>`;
+            }
+
+            if (activePage === "ANALYTICS") {
+                window.setView = (v) => { analyticsView = v; render(); };
+                window.moveDate = (dir) => { const d = new Date(analyticsRefDate); if (analyticsView === 'WEEK') d.setDate(d.getDate() + (dir * 7)); else d.setMonth(d.getMonth() + dir); analyticsRefDate = d; render(); };
+                const getStartEnd = () => { const now = new Date(analyticsRefDate); let start, end; if (analyticsView === 'WEEK') { const day = now.getDay(); const diff = now.getDate() - day + (day == 0 ? -6 : 1) - 1; start = new Date(now.setDate(diff)); start.setHours(0, 0, 0, 0); end = new Date(start); end.setDate(end.getDate() + 6); end.setHours(23, 59, 59, 999); } else { start = new Date(now.getFullYear(), now.getMonth(), 1); end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); } return { start, end }; };
+                const range = getStartEnd();
+                const dateLabel = analyticsView === 'WEEK' ? `${range.start.getDate()}/${range.start.getMonth() + 1} - ${range.end.getDate()}/${range.end.getMonth() + 1}` : range.start.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
+                const isComp = currentUser.role === 'COMPANY_CMD';
+                let list = isComp ? tickets.filter(t => (t.unit || "") === (currentUser.unit || "")) : tickets;
+                list = list.filter(t => { const d = new Date(t.createdAt); return d >= range.start && d <= range.end; });
+                const open = list.filter(t => !t.isClosed).length;
+                const closed = list.filter(t => t.isClosed).length;
+                const total = list.length;
+                const hamalCount = list.filter(t => t.isHamalDown).length;
+                const counts = {};
+                list.forEach(t => { let key = "אחר"; if (analyticsDim === "STATUS") key = STATUS_LABEL[t.status] || t.status; else if (analyticsDim === "ROLE") key = roleLabel(t.assignedRole) || "לא הוקצה"; else if (analyticsDim === "TOPIC") key = t.topic || "ללא"; else if (analyticsDim === "UNIT") key = t.unit || "כללי"; counts[key] = (counts[key] || 0) + 1; });
+                const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+                const colors = ["#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#14b8a6"];
+                let paths = "", startAngle = 0;
+                const pieTotal = total || 1;
+                if (sorted.length === 1 && total > 0) { paths = `<circle cx="50" cy="50" r="50" fill="${colors[0]}" class="pie-slice"><title>${sorted[0][0]}</title></circle>`; } else if (total > 0) { sorted.forEach(([label, val], i) => { const pct = val / pieTotal; const sliceAngle = pct * 360; const endAngle = startAngle + sliceAngle; const x1 = 50 + 50 * Math.cos(Math.PI * startAngle / 180); const y1 = 50 + 50 * Math.sin(Math.PI * startAngle / 180); const x2 = 50 + 50 * Math.cos(Math.PI * endAngle / 180); const y2 = 50 + 50 * Math.sin(Math.PI * endAngle / 180); const largeArc = sliceAngle > 180 ? 1 : 0; const d = `M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`; paths += `<path d="${d}" fill="${colors[i % colors.length]}" class="pie-slice" stroke="rgba(15,23,42,0.5)" stroke-width="1"><title>${label}: ${val}</title></path>`; startAngle = endAngle; }); }
+
+                main.innerHTML = `<div class="page-header"><div class="page-title">דשבורד אנליטיקה</div></div><div class="date-control-bar"><div style="display:flex;gap:5px;"><button class="view-toggle-btn ${analyticsView === 'WEEK' ? 'active' : ''}" onclick="setView('WEEK')">שבוע</button><button class="view-toggle-btn ${analyticsView === 'MONTH' ? 'active' : ''}" onclick="setView('MONTH')">חודש</button></div><div style="display:flex;align-items:center;gap:15px;font-weight:700;"><button class="date-nav-btn" onclick="moveDate(-1)"><i data-lucide="chevron-right"></i></button><span style="min-width:150px;text-align:center;">${dateLabel}</span><button class="date-nav-btn" onclick="moveDate(1)"><i data-lucide="chevron-left"></i></button></div></div><div class="grid-dashboard-compact"><div class="stat-card-compact"><div class="stat-val-compact" style="color:#ec4899;">${open}</div><div class="stat-lbl-compact">פתוחות</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#10b981;">${closed}</div><div class="stat-lbl-compact">סגורות</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#f59e0b;">${total}</div><div class="stat-lbl-compact">סה"כ לתקופה</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#ef4444;">${hamalCount}</div><div class="stat-lbl-compact">תקלות משביתות</div></div></div><div class="card" style="margin-top:16px;"><div class="card-title">פילוח נתונים</div><div class="analytics-filter-toggle">${[{ k: "STATUS", l: "סטטוס" }, { k: "ROLE", l: "תפקיד" }, { k: "TOPIC", l: "נושא" }, { k: "UNIT", l: "חטיבה" }].map(x => `<button class="analytics-filter-chip ${analyticsDim === x.k ? 'active' : ''}" onclick="setDim('${x.k}')">${x.l}</button>`).join("")}</div><div class="chart-grid-2"><div style="display:flex;align-items:center;justify-content:center;min-height:200px;">${total > 0 ? `<svg viewBox="-5 -5 110 110" style="width:180px;overflow:visible;transform:rotate(-90deg);">${paths}</svg>` : '<div style="opacity:0.5;">אין נתונים לתקופה זו</div>'}</div><div style="display:flex;flex-direction:column;justify-content:center;">${sorted.map(([l, v], i) => `<div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:10px;height:10px;border-radius:3px;background:${colors[i % colors.length]}"></div><span>${escapeHtml(l)}</span></div><strong>${v}</strong></div><div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${(v / total) * 100}%;background:${colors[i % colors.length]};border-radius:3px;"></div></div></div>`).join("")}</div></div></div>`;
+                window.setDim = (d) => { analyticsDim = d; render(); };
+            }
+
+            if (activePage === "NOTIFICATIONS") {
+                if (!currentUser.isManager && currentUser.role !== 'OWNER') return nav('HOME');
+
+                const settings = currentUser.settings || { notifyNew: true, notifyOverdue: false, overdueTime: 60, overdueVal: 60, overdueUnit: 'min' };
+
+                const displayVal = settings.overdueVal || settings.overdueTime || 60;
+                const displayUnit = settings.overdueUnit || 'min';
+
+                main.innerHTML = `<header class="header"><div class="page-title">הגדרות התראות</div></header><div class="card"><p style="color:var(--text-soft); margin-bottom:24px;">נהל את ההתראות שברצונך לקבל עבור התפקיד שלך.</p><form id="notify-form"><div style="margin-bottom:24px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><div style="font-weight:600;">התראה על תקלה חדשה</div><label class="switch"><input type="checkbox" name="notifyNew" ${settings.notifyNew !== false ? 'checked' : ''}><span class="slider"></span></label></div><div style="font-size:0.8rem; color:var(--text-soft);">קבלת התראה לטלפון בכל פעם שנפתחת תקלה המשויכת לתפקיד שלך.</div></div><hr style="border:none; border-bottom:1px solid var(--border); margin:20px 0;"><div style="margin-bottom:24px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><div style="font-weight:600;">התראה על חריגת זמנים</div><label class="switch"><input type="checkbox" name="notifyOverdue" id="overdue-toggle" ${settings.notifyOverdue ? 'checked' : ''} onchange="document.getElementById('overdue-time-wrap').style.display = this.checked ? 'block' : 'none'"><span class="slider"></span></label></div><div style="font-size:0.8rem; color:var(--text-soft);">קבלת התראה כאשר תקלה נשארת פתוחה מעבר לזמן מסוים.</div><div id="overdue-time-wrap" style="margin-top:16px; display:${settings.notifyOverdue ? 'block' : 'none'}; animation: fade-in-up 0.3s ease;"><label class="label">הגדר זמן לחריגה</label><div style="display:flex; gap:10px;"><input class="input" type="number" name="overdueVal" value="${displayVal}" min="1" style="flex:1;"><select class="select" name="overdueUnit" style="flex:1;"><option value="min" ${displayUnit === 'min' ? 'selected' : ''}>דקות</option><option value="hour" ${displayUnit === 'hour' ? 'selected' : ''}>שעות</option><option value="day" ${displayUnit === 'day' ? 'selected' : ''}>ימים</option></select></div></div></div><button class="btn btn-primary" style="width:100%;">שמור הגדרות</button></form></div>`;
+
+                document.getElementById("notify-form").onsubmit = async (e) => {
+                    e.preventDefault();
+                    const val = parseInt(e.target.overdueVal.value);
+                    const unit = e.target.overdueUnit.value;
+                    let totalMinutes = val;
+                    if (unit === 'hour') totalMinutes = val * 60;
+                    if (unit === 'day') totalMinutes = val * 1440;
+
+                    const newSettings = { notifyNew: e.target.notifyNew.checked, notifyOverdue: e.target.notifyOverdue.checked, overdueTime: totalMinutes, overdueVal: val, overdueUnit: unit };
+                    await withLoader(document.querySelector(".card"), async () => { await supabase.from("users").update({ settings: newSettings }).eq("id", currentUser.id); await loadData(); showToast("ההגדרות נשמרו בהצלחה"); });
+                };
+            }
+
+            if (activePage === "PROFILE") {
+                const isOwner = currentUser.role === 'OWNER';
+                main.innerHTML = `<header class="header"><div class="page-title">פרופיל</div></header>${currentUser.isManager || isOwner ? `<div class="card" style="margin-bottom:20px; background:rgba(16, 185, 129, 0.1); border:1px solid #10b981;"><div style="display:flex; align-items:center; gap:12px; color:#10b981;"><i data-lucide="shield-check" style="width:32px; height:32px;"></i><div><div style="font-weight:800; font-size:1.1rem;">${isOwner ? 'בעלים (Admin)' : 'מנהל מערכת (Manager)'}</div><div style="font-size:0.85rem; opacity:0.8;">יש לך הרשאות מורחבות לצפייה וניהול.</div></div></div></div>` : ''}<div class="card"><form id="profile-form"><div class="field-group"><label class="label">שם מלא</label><input class="input" name="fn" value="${escapeHtml(currentUser.fullName)}" /></div><div class="field-group"><label class="label">טלפון</label><input class="input" name="ph" value="${escapeHtml(currentUser.phone)}" /></div><div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא שיוך</option>${units.map(u => `<option value="${u.id}" ${currentUser.unitId == u.id ? 'selected' : ''}>${escapeHtml(u.name)}</option>`).join('')}</select></div>${!isOwner && !currentUser.isManager ? `<div style="margin:20px 0; padding:15px; border:1px dashed var(--accent); border-radius:12px; text-align:center;"><div style="margin-bottom:8px;">האם אתה מנהל בתפקידך?</div>${currentUser.requestedManager ? '<span style="color:#fbbf24;">⏳ בקשה נשלחה (ממתין לאישור)</span>' : '<button type="button" class="btn" onclick="requestManager()" style="color:var(--accent);">👮 בקש הרשאת מנהל</button>'}</div>` : ''}<div class="field-group"><label class="label">תפקיד (לשינוי יש לבקש אישור)</label><select class="select" name="requestedRole">${['HATAP', 'PLHIK', 'HR', 'MAMRAM', 'APP', 'NETWORK'].map(r => `<option value="${r}" ${currentUser.requestedRole === r ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}</select></div><div style="background: rgba(236, 72, 153, 0.1); padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center;"><button type="button" class="btn" style="width:100%; justify-content:center; color:#ec4899;" onclick="enableNotificationsManual()"><i data-lucide="bell"></i> הפעל התראות (iPhone/Android)</button></div><button class="btn btn-primary" style="width:100%;">שמור שינויים</button></form><button class="btn btn-danger" onclick="doLogout()" style="width:100%; margin-top:20px; justify-content:center;"><i data-lucide="log-out"></i> התנתקות מהחשבון</button></div>`;
+                document.getElementById("profile-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".card"), async () => { const updates = { full_name: e.target.fn.value, phone: e.target.ph.value, unit_id: e.target.unit.value || null, requested_role: e.target.requestedRole.value, role_status: "Pending" }; await supabase.from("users").update(updates).eq("id", currentUser.id); await loadData(); showToast("פרופיל עודכן בהצלחה"); }); };
+            }
+
+            if (activePage === "ROLE_APPROVAL") {
+                const pending = users.filter(u => u.roleStatus === "Pending");
+                main.innerHTML = `<header class="header"><div class="page-title">אישור תפקידים</div></header><div class="card">${pending.length === 0 ? 'אין בקשות ממתינות' : pending.map(u => `<div class="list-item"><div><b>${escapeHtml(u.fullName)}</b> מבקש לעבור ל-<b>${roleLabel(u.requestedRole)}</b></div><button class="btn btn-primary" onclick="approveRole('${u.id}', '${u.requestedRole}')">אשר</button></div>`).join('')}</div>`;
             }
         }
 
-        // 2. יצירת תקלה חדשה (רק אם לא בחרנו בהקפצה)
-        if (shouldCreateNew) {
-            let imageUrl = null; 
-            if(fileFile) { 
-                const fileName = `${Date.now()}_${fileFile.name}`; 
-                const { error: upErr } = await supabase.storage.from('attachments').upload(fileName, fileFile); 
-                if(!upErr) { 
-                    const { data } = supabase.storage.from('attachments').getPublicUrl(fileName); 
-                    imageUrl = data.publicUrl; 
-                } 
-            } 
-            
-            const num = await getNextNum(); 
-            const {data:t, error} = await supabase.from("tickets").insert({ 
-                ticket_number: num, 
-                title: title, 
-                description: desc, 
-                topic: topic, 
-                created_by_user_id: currentUser.id, 
-                created_by_name: currentUser.fullName, 
-                created_by_email: currentUser.email, 
-                unit: currentUser.unit, 
-                assigned_role: assignedRole, 
-                status: "OPEN", 
-                is_closed: false, 
-                image_url: imageUrl, 
-                is_hamal_down: isHamal,
-                is_recurring: isRecurring 
-            }).select().single(); 
-
-            if(error) throw error; 
-
-            let notifyTitle = isHamal ? "🚨 חמ״ל מושבת! 🚨" : (isRecurring ? "🔄 תקלה חוזרת!" : "✨ תקלה חדשה"); 
-            pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: num, title: notifyTitle, message: title }); 
-            
-            await loadData(); 
-            nav("DETAILS", t.id); 
-        }
-    }); 
-};
-
-    }
-
-
-    if(activePage === "DETAILS") {
-      const t = tickets.find(x => x.id == selectedTicketId);
-      if(!t) return nav("HOME");
-      const isOwner = currentUser.role === 'OWNER';
-      const canTakeResponsibility = (t.assignedRole === currentUser.role || isOwner) && t.status === 'OPEN';
-      main.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;"><button class="btn" onclick="nav('HOME')"><i data-lucide="chevron-left"></i></button><div class="page-title">תקלה #${t.ticketNumber}</div></div>${t.isHamalDown ? '<div style="background:#ef4444; color:white; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:bold; text-align:center; animation:pulseRed 2s infinite;">🚨 התראה: חמ"ל מושבת</div>' : ''}<div class="card">${canTakeResponsibility ? `<button onclick="takeTicket('${t.id}')" class="btn btn-primary" style="width:100%; justify-content:center; margin-bottom:20px; background:#10b981; border-color:#10b981;">✋ קח לטיפולך (שיוך עצמי)</button>` : ''}<div style="font-size:1.2rem;font-weight:700;margin-bottom:10px;">${escapeHtml(t.title)}</div><div style="color:var(--text-soft);margin-bottom:20px;white-space:pre-wrap;">${escapeHtml(t.description)}</div>${t.imageUrl ? `<img src="${t.imageUrl}" class="ticket-image-preview" onclick="window.open('${t.imageUrl}')" />` : ''}<div class="grid-2cols" style="background:rgba(255,255,255,0.05);padding:15px;border-radius:12px;"><div><span class="label">נפתח ע״י</span>${escapeHtml(t.createdByName)}</div><div><span class="label">יחידה</span>${escapeHtml(t.unit||'-')}</div><div><span class="label">נושא</span>${escapeHtml(t.topic)}</div><div><span class="label">אחראי</span>${roleLabel(t.assignedRole)}</div><div><span class="label">סטטוס</span>${STATUS_LABEL[t.status]}</div></div>${(isOwner || currentUser.isManager || t.assignedRole===currentUser.role) ? `<div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);"><div class="label">עדכון סטטוס</div><div style="display:flex; gap:10px;"><select class="select" id="upd-status"><option value="OPEN" ${t.status=='OPEN'?'selected':''}>פתוח</option><option value="IN_PROGRESS" ${t.status=='IN_PROGRESS'?'selected':''}>בטיפול</option><option value="RESOLVED" ${t.status=='RESOLVED'?'selected':''}>טופל (סגירה)</option></select><button class="btn btn-primary" onclick="updateTicket('${t.id}')">עדכן</button></div></div>` : ''}</div><div class="card" style="margin-top:20px;"><div class="card-title">יומן טיפול</div><div style="max-height:300px;overflow-y:auto;margin-bottom:15px;">${comments.filter(c=>c.ticketId==t.id).map(c=>`<div class="chat-bubble"><div class="chat-meta"><b>${escapeHtml(c.authorName)}</b> <span>${formatDate(c.createdAt)}</span></div>${escapeHtml(c.content)}</div>`).join('')}</div><form onsubmit="postComment(event, '${t.id}')" style="display:flex;gap:8px;"><input class="input" name="txt" placeholder="כתוב תגובה..." required /><button class="btn btn-primary"><i data-lucide="send"></i></button></form></div>`;
-    }
-
-    if(activePage === "MANAGE_USERS") {
-        if(currentUser.role !== 'OWNER') return nav('HOME');
-        main.innerHTML = `<header class="header"><div class="page-title">ניהול משתמשים</div></header><div class="card" style="overflow-x:auto;"><table class="table"><thead><tr><th>שם</th><th>תפקיד</th><th>מנהל?</th><th>יחידה</th><th>סטטוס</th><th>הקפאה</th></tr></thead><tbody>${users.map(u => `<tr><td>${escapeHtml(u.fullName)}</td><td>${roleLabel(u.role)}</td><td><div style="display:flex;align-items:center;gap:6px;"><input type="checkbox" ${u.isManager?'checked':''} onchange="toggleManager('${u.id}', this.checked)">${u.requestedManager ? '<span class="badge" style="background:#ec4899;color:white;font-size:0.6rem;animation:pulseRed 2s infinite;">מבקש!</span>' : ''}</div></td><td>${escapeHtml(u.unit||'-')}</td><td>${u.roleStatus}</td><td><label class="switch"><input type="checkbox" ${u.isFrozen?'checked':''} onchange="toggleFreeze('${u.id}', this.checked)"><span class="slider"></span></label></td></tr>`).join('')}</tbody></table></div>`;
-    }
-
-    if(activePage === "ANALYTICS") {
-        window.setView = (v) => { analyticsView = v; render(); };
-        window.moveDate = (dir) => { const d = new Date(analyticsRefDate); if(analyticsView === 'WEEK') d.setDate(d.getDate() + (dir * 7)); else d.setMonth(d.getMonth() + dir); analyticsRefDate = d; render(); };
-        const getStartEnd = () => { const now = new Date(analyticsRefDate); let start, end; if (analyticsView === 'WEEK') { const day = now.getDay(); const diff = now.getDate() - day + (day == 0 ? -6 : 1) -1; start = new Date(now.setDate(diff)); start.setHours(0,0,0,0); end = new Date(start); end.setDate(end.getDate() + 6); end.setHours(23,59,59,999); } else { start = new Date(now.getFullYear(), now.getMonth(), 1); end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); } return {start, end}; };
-        const range = getStartEnd();
-        const dateLabel = analyticsView === 'WEEK' ? `${range.start.getDate()}/${range.start.getMonth()+1} - ${range.end.getDate()}/${range.end.getMonth()+1}` : range.start.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
-        const isComp = currentUser.role === 'COMPANY_CMD';
-        let list = isComp ? tickets.filter(t => (t.unit || "") === (currentUser.unit || "")) : tickets;
-        list = list.filter(t => { const d = new Date(t.createdAt); return d >= range.start && d <= range.end; });
-        const open = list.filter(t => !t.isClosed).length;
-        const closed = list.filter(t => t.isClosed).length;
-        const total = list.length;
-        const hamalCount = list.filter(t => t.isHamalDown).length;
-        const counts = {};
-        list.forEach(t => { let key = "אחר"; if (analyticsDim === "STATUS") key = STATUS_LABEL[t.status] || t.status; else if (analyticsDim === "ROLE") key = roleLabel(t.assignedRole) || "לא הוקצה"; else if (analyticsDim === "TOPIC") key = t.topic || "ללא"; else if (analyticsDim === "UNIT") key = t.unit || "כללי"; counts[key] = (counts[key] || 0) + 1; });
-        const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]); 
-        const colors = ["#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#14b8a6"];
-        let paths = "", startAngle = 0; 
-        const pieTotal = total || 1;
-        if (sorted.length === 1 && total > 0) { paths = `<circle cx="50" cy="50" r="50" fill="${colors[0]}" class="pie-slice"><title>${sorted[0][0]}</title></circle>`; } else if (total > 0) { sorted.forEach(([label, val], i) => { const pct = val / pieTotal; const sliceAngle = pct * 360; const endAngle = startAngle + sliceAngle; const x1 = 50 + 50 * Math.cos(Math.PI * startAngle / 180); const y1 = 50 + 50 * Math.sin(Math.PI * startAngle / 180); const x2 = 50 + 50 * Math.cos(Math.PI * endAngle / 180); const y2 = 50 + 50 * Math.sin(Math.PI * endAngle / 180); const largeArc = sliceAngle > 180 ? 1 : 0; const d = `M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`; paths += `<path d="${d}" fill="${colors[i % colors.length]}" class="pie-slice" stroke="rgba(15,23,42,0.5)" stroke-width="1"><title>${label}: ${val}</title></path>`; startAngle = endAngle; }); }
-        
-        main.innerHTML = `<div class="page-header"><div class="page-title">דשבורד אנליטיקה</div></div><div class="date-control-bar"><div style="display:flex;gap:5px;"><button class="view-toggle-btn ${analyticsView==='WEEK'?'active':''}" onclick="setView('WEEK')">שבוע</button><button class="view-toggle-btn ${analyticsView==='MONTH'?'active':''}" onclick="setView('MONTH')">חודש</button></div><div style="display:flex;align-items:center;gap:15px;font-weight:700;"><button class="date-nav-btn" onclick="moveDate(-1)"><i data-lucide="chevron-right"></i></button><span style="min-width:150px;text-align:center;">${dateLabel}</span><button class="date-nav-btn" onclick="moveDate(1)"><i data-lucide="chevron-left"></i></button></div></div><div class="grid-dashboard-compact"><div class="stat-card-compact"><div class="stat-val-compact" style="color:#ec4899;">${open}</div><div class="stat-lbl-compact">פתוחות</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#10b981;">${closed}</div><div class="stat-lbl-compact">סגורות</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#f59e0b;">${total}</div><div class="stat-lbl-compact">סה"כ לתקופה</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#ef4444;">${hamalCount}</div><div class="stat-lbl-compact">תקלות משביתות</div></div></div><div class="card" style="margin-top:16px;"><div class="card-title">פילוח נתונים</div><div class="analytics-filter-toggle">${[{k:"STATUS",l:"סטטוס"},{k:"ROLE",l:"תפקיד"},{k:"TOPIC",l:"נושא"},{k:"UNIT",l:"חטיבה"}].map(x => `<button class="analytics-filter-chip ${analyticsDim===x.k?'active':''}" onclick="setDim('${x.k}')">${x.l}</button>`).join("")}</div><div class="chart-grid-2"><div style="display:flex;align-items:center;justify-content:center;min-height:200px;">${total > 0 ? `<svg viewBox="-5 -5 110 110" style="width:180px;overflow:visible;transform:rotate(-90deg);">${paths}</svg>` : '<div style="opacity:0.5;">אין נתונים לתקופה זו</div>'}</div><div style="display:flex;flex-direction:column;justify-content:center;">${sorted.map(([l,v], i) => `<div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:10px;height:10px;border-radius:3px;background:${colors[i%colors.length]}"></div><span>${escapeHtml(l)}</span></div><strong>${v}</strong></div><div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${(v/total)*100}%;background:${colors[i%colors.length]};border-radius:3px;"></div></div></div>`).join("")}</div></div></div>`;
-        window.setDim = (d) => { analyticsDim = d; render(); };
-    }
-
-    if(activePage === "NOTIFICATIONS") {
-        if(!currentUser.isManager && currentUser.role !== 'OWNER') return nav('HOME');
-        
-        const settings = currentUser.settings || { notifyNew: true, notifyOverdue: false, overdueTime: 60, overdueVal: 60, overdueUnit: 'min' };
-        
-        const displayVal = settings.overdueVal || settings.overdueTime || 60;
-        const displayUnit = settings.overdueUnit || 'min';
-
-        main.innerHTML = `<header class="header"><div class="page-title">הגדרות התראות</div></header><div class="card"><p style="color:var(--text-soft); margin-bottom:24px;">נהל את ההתראות שברצונך לקבל עבור התפקיד שלך.</p><form id="notify-form"><div style="margin-bottom:24px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><div style="font-weight:600;">התראה על תקלה חדשה</div><label class="switch"><input type="checkbox" name="notifyNew" ${settings.notifyNew !== false ? 'checked' : ''}><span class="slider"></span></label></div><div style="font-size:0.8rem; color:var(--text-soft);">קבלת התראה לטלפון בכל פעם שנפתחת תקלה המשויכת לתפקיד שלך.</div></div><hr style="border:none; border-bottom:1px solid var(--border); margin:20px 0;"><div style="margin-bottom:24px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><div style="font-weight:600;">התראה על חריגת זמנים</div><label class="switch"><input type="checkbox" name="notifyOverdue" id="overdue-toggle" ${settings.notifyOverdue ? 'checked' : ''} onchange="document.getElementById('overdue-time-wrap').style.display = this.checked ? 'block' : 'none'"><span class="slider"></span></label></div><div style="font-size:0.8rem; color:var(--text-soft);">קבלת התראה כאשר תקלה נשארת פתוחה מעבר לזמן מסוים.</div><div id="overdue-time-wrap" style="margin-top:16px; display:${settings.notifyOverdue ? 'block' : 'none'}; animation: fade-in-up 0.3s ease;"><label class="label">הגדר זמן לחריגה</label><div style="display:flex; gap:10px;"><input class="input" type="number" name="overdueVal" value="${displayVal}" min="1" style="flex:1;"><select class="select" name="overdueUnit" style="flex:1;"><option value="min" ${displayUnit==='min'?'selected':''}>דקות</option><option value="hour" ${displayUnit==='hour'?'selected':''}>שעות</option><option value="day" ${displayUnit==='day'?'selected':''}>ימים</option></select></div></div></div><button class="btn btn-primary" style="width:100%;">שמור הגדרות</button></form></div>`;
-        
-        document.getElementById("notify-form").onsubmit = async (e) => {
-            e.preventDefault();
-            const val = parseInt(e.target.overdueVal.value);
-            const unit = e.target.overdueUnit.value;
-            let totalMinutes = val;
-            if(unit === 'hour') totalMinutes = val * 60;
-            if(unit === 'day') totalMinutes = val * 1440;
-
-            const newSettings = { notifyNew: e.target.notifyNew.checked, notifyOverdue: e.target.notifyOverdue.checked, overdueTime: totalMinutes, overdueVal: val, overdueUnit: unit };
-            await withLoader(document.querySelector(".card"), async () => { await supabase.from("users").update({ settings: newSettings }).eq("id", currentUser.id); await loadData(); showToast("ההגדרות נשמרו בהצלחה"); });
+        // --- ACTIONS ---
+        window.nav = async (p, id = null) => {
+            // אם עוברים ל-DETAILS, טוענים קודם את התגובות
+            if (p === 'DETAILS' && id) {
+                activePage = p;
+                selectedTicketId = id;
+                comments = []; // איפוס תצוגה
+                render(); // הצגת שלד
+                await withLoader(document.querySelector(".main"), async () => {
+                    const { data } = await supabase.from("ticket_comments").select("*").eq("ticket_id", id).order("created_at");
+                    if (data) {
+                        // מיפוי לפורמט בשימוש במערכת
+                        comments = data.map(c => ({
+                            id: c.id,
+                            ticketId: c.ticket_id,
+                            content: c.content,
+                            authorName: c.author_name,
+                            authorRole: c.author_role,
+                            createdAt: c.created_at
+                        }));
+                    }
+                });
+            } else {
+                activePage = p;
+                if (id) selectedTicketId = id;
+            }
+            render();
         };
-    }
+        window.toggleClosed = () => { showClosed = !showClosed; render(); };
+        window.takeTicket = async (tid) => {
+            // SECURITY GUARD
+            const t = tickets.find(x => x.id == tid);
+            if (!t) return;
+            if (t.assignedRole !== currentUser.role && currentUser.role !== 'OWNER') {
+                alert("Security Alert: You cannot take a ticket not assigned to your role.");
+                return;
+            }
 
-    if(activePage === "PROFILE") {
-      const isOwner = currentUser.role === 'OWNER';
-      main.innerHTML = `<header class="header"><div class="page-title">פרופיל</div></header>${currentUser.isManager || isOwner ? `<div class="card" style="margin-bottom:20px; background:rgba(16, 185, 129, 0.1); border:1px solid #10b981;"><div style="display:flex; align-items:center; gap:12px; color:#10b981;"><i data-lucide="shield-check" style="width:32px; height:32px;"></i><div><div style="font-weight:800; font-size:1.1rem;">${isOwner ? 'בעלים (Admin)' : 'מנהל מערכת (Manager)'}</div><div style="font-size:0.85rem; opacity:0.8;">יש לך הרשאות מורחבות לצפייה וניהול.</div></div></div></div>` : ''}<div class="card"><form id="profile-form"><div class="field-group"><label class="label">שם מלא</label><input class="input" name="fn" value="${escapeHtml(currentUser.fullName)}" /></div><div class="field-group"><label class="label">טלפון</label><input class="input" name="ph" value="${escapeHtml(currentUser.phone)}" /></div><div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא שיוך</option>${units.map(u=>`<option value="${u.id}" ${currentUser.unitId==u.id?'selected':''}>${escapeHtml(u.name)}</option>`).join('')}</select></div>${!isOwner && !currentUser.isManager ? `<div style="margin:20px 0; padding:15px; border:1px dashed var(--accent); border-radius:12px; text-align:center;"><div style="margin-bottom:8px;">האם אתה מנהל בתפקידך?</div>${currentUser.requestedManager ? '<span style="color:#fbbf24;">⏳ בקשה נשלחה (ממתין לאישור)</span>' : '<button type="button" class="btn" onclick="requestManager()" style="color:var(--accent);">👮 בקש הרשאת מנהל</button>'}</div>` : ''}<div class="field-group"><label class="label">תפקיד (לשינוי יש לבקש אישור)</label><select class="select" name="requestedRole">${['HATAP','PLHIK','HR','MAMRAM','APP','NETWORK'].map(r => `<option value="${r}" ${currentUser.requestedRole === r ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}</select></div><div style="background: rgba(236, 72, 153, 0.1); padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center;"><button type="button" class="btn" style="width:100%; justify-content:center; color:#ec4899;" onclick="enableNotificationsManual()"><i data-lucide="bell"></i> הפעל התראות (iPhone/Android)</button></div><button class="btn btn-primary" style="width:100%;">שמור שינויים</button></form><button class="btn btn-danger" onclick="doLogout()" style="width:100%; margin-top:20px; justify-content:center;"><i data-lucide="log-out"></i> התנתקות מהחשבון</button></div>`;
-      document.getElementById("profile-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".card"), async () => { const updates = { full_name: e.target.fn.value, phone: e.target.ph.value, unit_id: e.target.unit.value||null, requested_role: e.target.requestedRole.value, role_status: "Pending" }; await supabase.from("users").update(updates).eq("id", currentUser.id); await loadData(); showToast("פרופיל עודכן בהצלחה"); }); };
-    }
-    
-    if(activePage === "ROLE_APPROVAL") {
-        const pending = users.filter(u => u.roleStatus === "Pending");
-        main.innerHTML = `<header class="header"><div class="page-title">אישור תפקידים</div></header><div class="card">${pending.length===0 ? 'אין בקשות ממתינות' : pending.map(u => `<div class="list-item"><div><b>${escapeHtml(u.fullName)}</b> מבקש לעבור ל-<b>${roleLabel(u.requestedRole)}</b></div><button class="btn btn-primary" onclick="approveRole('${u.id}', '${u.requestedRole}')">אשר</button></div>`).join('')}</div>`;
-    }
-  }
+            await withLoader(document.body, async () => { await supabase.from("tickets").update({ assigned_user_id: currentUser.id, status: "IN_PROGRESS" }).eq("id", tid); await supabase.from("audits").insert({ ticket_id: tid, field: "ASSIGN", new_value: currentUser.fullName, changed_by_name: currentUser.fullName, changed_by_user_id: currentUser.id }); await loadData(); render(); showToast("התקלה שויכה אליך והועברה לטיפול"); });
+        };
+        window.requestManager = async () => { await supabase.from('users').update({ requested_manager: true }).eq('id', currentUser.id); const owners = users.filter(u => u.role === 'OWNER').map(u => u.id); if (owners.length > 0) pushTicketShort({ userIds: owners, ticketId: 0, title: "👮 בקשת מנהל חדשה", message: `${currentUser.fullName} ביקש לקבל הרשאות ניהול.` }); await loadData(); render(); showToast("הבקשה נשלחה לבעלים"); };
+        window.toggleFreeze = async (uid, state) => { await supabase.from("users").update({ is_frozen: state }).eq("id", uid); await loadData(); showToast(state ? "משתמש הוקפא" : "משתמש הופשר"); };
+        window.toggleManager = async (uid, state) => { await supabase.from("users").update({ is_manager: state, requested_manager: false }).eq("id", uid); await loadData(); showToast("הרשאות עודכנו"); };
+        window.approveRole = async (uid, role) => { await supabase.from("users").update({ role: role, role_status: "Approved", requested_role: null }).eq("id", uid); pushTicketShort({ userIds: [uid], ticketId: 0, title: "🎉 התפקיד אושר!", message: `הבקשה שלך לתפקיד ${roleLabel(role)} אושרה בהצלחה.` }); await loadData(); render(); showToast("המשתמש אושר ונשלחה לו התראה"); };
+        window.updateTicket = async (tid) => {
+            // SECURITY GUARD
+            const t = tickets.find(x => x.id == tid);
+            if (!t) return;
+            const isAllowed = currentUser.role === 'OWNER' || currentUser.isManager || t.assignedRole === currentUser.role;
+            if (!isAllowed) {
+                alert("Security Alert: Unauthorized update attempt.");
+                return;
+            }
 
-  // --- ACTIONS ---
-  window.nav = (p, id=null) => { activePage=p; if(id) selectedTicketId=id; render(); };
-  window.toggleClosed = () => { showClosed=!showClosed; render(); };
-  window.takeTicket = async (tid) => { await withLoader(document.body, async () => { await supabase.from("tickets").update({ assigned_user_id: currentUser.id, status: "IN_PROGRESS" }).eq("id", tid); await supabase.from("audits").insert({ ticket_id: tid, field: "ASSIGN", new_value: currentUser.fullName, changed_by_name: currentUser.fullName, changed_by_user_id: currentUser.id }); await loadData(); render(); showToast("התקלה שויכה אליך והועברה לטיפול"); }); };
-  window.requestManager = async () => { await supabase.from('users').update({ requested_manager: true }).eq('id', currentUser.id); const owners = users.filter(u => u.role === 'OWNER').map(u => u.id); if(owners.length > 0) pushTicketShort({ userIds: owners, ticketId: 0, title: "👮 בקשת מנהל חדשה", message: `${currentUser.fullName} ביקש לקבל הרשאות ניהול.` }); await loadData(); render(); showToast("הבקשה נשלחה לבעלים"); };
-  window.toggleFreeze = async (uid, state) => { await supabase.from("users").update({ is_frozen: state }).eq("id", uid); await loadData(); showToast(state ? "משתמש הוקפא" : "משתמש הופשר"); };
-  window.toggleManager = async (uid, state) => { await supabase.from("users").update({ is_manager: state, requested_manager: false }).eq("id", uid); await loadData(); showToast("הרשאות עודכנו"); };
-  window.approveRole = async (uid, role) => { await supabase.from("users").update({ role: role, role_status: "Approved", requested_role: null }).eq("id", uid); pushTicketShort({ userIds: [uid], ticketId: 0, title: "🎉 התפקיד אושר!", message: `הבקשה שלך לתפקיד ${roleLabel(role)} אושרה בהצלחה.` }); await loadData(); render(); showToast("המשתמש אושר ונשלחה לו התראה"); };
-  window.updateTicket = async (tid) => { const st = document.getElementById("upd-status").value; await supabase.from("tickets").update({ status:st, is_closed:(st==='RESOLVED') }).eq("id", tid); await loadData(); render(); };
-  window.postComment = async (e, tid) => { e.preventDefault(); await supabase.from("ticket_comments").insert({ ticket_id: tid, content: e.target.txt.value, author_user_id: currentUser.id, author_name: currentUser.fullName, author_role: currentUser.role }); e.target.reset(); await loadData(); render(); };
-  window.doLogout = async () => { localStorage.clear(); sessionStorage.clear(); try { if ("serviceWorker" in navigator) navigator.serviceWorker.ready.then(reg => reg.pushManager.getSubscription().then(sub => sub && sub.unsubscribe())); } catch(e){} try { await supabase.auth.signOut(); } catch(e){} window.location.reload(); };
-  window.enableNotificationsManual = async () => { try { if (!("serviceWorker" in navigator)) { alert("❌ שגיאה: הדפדפן לא תומך ב-Service Worker"); return; } if (!("PushManager" in window)) { alert("❌ שגיאה: האייפון לא מזהה תמיכה ב-Push. האם פתחת דרך מסך הבית?"); return; } const permission = await Notification.requestPermission(); if (permission !== 'granted') { alert("⚠️ המשתמש לא אישר או שההגדרות חוסמות."); return; } const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const res = await fetch(`${PUSH_WORKER_BASE}/publicKey`); if(!res.ok) throw new Error("לא הצלחתי להביא מפתח ציבורי מהשרת"); const { publicKey } = await res.json(); const convertedKey = urlBase64ToUint8Array(publicKey); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey }); } const saveRes = await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(currentUser.id), subscription: sub }) }); if (saveRes.ok) alert("🎉 הצלחה! המכשיר רשום"); else alert("❌ השרת החזיר שגיאה בשמירה: " + saveRes.status); } catch (err) { alert("💀 קרסה הפונקציה: " + err.message); console.error(err); } };
+            const st = document.getElementById("upd-status").value;
+            await supabase.from("tickets").update({ status: st, is_closed: (st === 'RESOLVED') }).eq("id", tid);
+            await loadData();
+            render();
+        };
+        window.postComment = async (e, tid) => {
+            e.preventDefault();
+            await supabase.from("ticket_comments").insert({ ticket_id: tid, content: e.target.txt.value, author_user_id: currentUser.id, author_name: currentUser.fullName, author_role: currentUser.role });
+            e.target.reset();
+            // רענון רק של התגובות
+            const { data } = await supabase.from("ticket_comments").select("*").eq("ticket_id", tid).order("created_at");
+            if (data) {
+                comments = data.map(c => ({
+                    id: c.id,
+                    ticketId: c.ticket_id,
+                    content: c.content,
+                    authorName: c.author_name,
+                    authorRole: c.author_role,
+                    createdAt: c.created_at
+                }));
+            }
+            render();
+        };
+        window.doLogout = async () => { localStorage.clear(); sessionStorage.clear(); try { if ("serviceWorker" in navigator) navigator.serviceWorker.ready.then(reg => reg.pushManager.getSubscription().then(sub => sub && sub.unsubscribe())); } catch (e) { } try { await supabase.auth.signOut(); } catch (e) { } window.location.reload(); };
+        window.enableNotificationsManual = async () => { try { if (!("serviceWorker" in navigator)) { alert("❌ שגיאה: הדפדפן לא תומך ב-Service Worker"); return; } if (!("PushManager" in window)) { alert("❌ שגיאה: האייפון לא מזהה תמיכה ב-Push. האם פתחת דרך מסך הבית?"); return; } const permission = await Notification.requestPermission(); if (permission !== 'granted') { alert("⚠️ המשתמש לא אישר או שההגדרות חוסמות."); return; } const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const res = await fetch(`${PUSH_WORKER_BASE}/publicKey`); if (!res.ok) throw new Error("לא הצלחתי להביא מפתח ציבורי מהשרת"); const { publicKey } = await res.json(); const convertedKey = urlBase64ToUint8Array(publicKey); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey }); } const saveRes = await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(currentUser.id), subscription: sub }) }); if (saveRes.ok) alert("🎉 הצלחה! המכשיר רשום"); else alert("❌ השרת החזיר שגיאה בשמירה: " + saveRes.status); } catch (err) { alert("💀 קרסה הפונקציה: " + err.message); console.error(err); } };
 
-  async function getNextNum() { const {data} = await supabase.from("counters").select("value").eq("name","ticketNumber").single(); const next = (data?.value || 1000) + 1; await supabase.from("counters").upsert({name:"ticketNumber", value:next}); return next; }
-  function urlBase64ToUint8Array(base64String) { const padding = "=".repeat((4 - (base64String.length % 4)) % 4); const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/"); const rawData = atob(base64); return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0))); }
-  async function ensurePushAutoForUser(userId) { if(!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
-  async function pushTicketShort({ userIds, ticketId, title, message }) { const cleanIds = [...new Set(userIds.map(String).filter(Boolean))]; if (cleanIds.length === 0) return; await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: title, body: message, url: `/?ticket=${ticketId}`, icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" }) }); }
-  function getNotifyUserIdsForTicket(ticket, actingUserId) {
-    const notifyIds = new Set();
-    const isHamal = ticket.is_hamal_down || false;
+        async function getNextNum() { const { data } = await supabase.from("counters").select("value").eq("name", "ticketNumber").single(); const next = (data?.value || 1000) + 1; await supabase.from("counters").upsert({ name: "ticketNumber", value: next }); return next; }
+        function urlBase64ToUint8Array(base64String) { const padding = "=".repeat((4 - (base64String.length % 4)) % 4); const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/"); const rawData = atob(base64); return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0))); }
+        async function ensurePushAutoForUser(userId) { if (!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
+        async function pushTicketShort({ userIds, ticketId, title, message }) { const cleanIds = [...new Set(userIds.map(String).filter(Boolean))]; if (cleanIds.length === 0) return; await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: title, body: message, url: `/?ticket=${ticketId}`, icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" }) }); }
+        function getNotifyUserIdsForTicket(ticket, actingUserId) {
+            const notifyIds = new Set();
+            const isHamal = ticket.is_hamal_down || false;
 
-    // 'users' הוא המשתנה הגלובלי שטענו ב-loadData
-    users.forEach(u => {
-        // לא שולחים למי שביצע את הפעולה או למי שחשבונו קפוא
-        if (u.id === actingUserId || u.isFrozen) return;
+            // 'users' הוא המשתנה הגלובלי שטענו ב-loadData
+            users.forEach(u => {
+                // לא שולחים למי שביצע את הפעולה או למי שחשבונו קפוא
+                if (u.id === actingUserId || u.isFrozen) return;
 
-        // 1. בעלים (OWNER) תמיד מקבלים הכל
-        if (u.role === 'OWNER') notifyIds.add(u.id);
+                // 1. בעלים (OWNER) תמיד מקבלים הכל
+                if (u.role === 'OWNER') notifyIds.add(u.id);
 
-        // 2. אם חמ"ל מושבת - כולם מקבלים התראה דחופה
-        if (isHamal) notifyIds.add(u.id);
+                // 2. אם חמ"ל מושבת - כולם מקבלים התראה דחופה
+                if (isHamal) notifyIds.add(u.id);
 
-        // 3. מש"א (MASHA) מקבלים הכל לצורך ניתוב ראשוני
-        if (u.role === 'MASHA' || u.role === 'HR') notifyIds.add(u.id);
+                // 3. מש"א (HR) מקבלים הכל לצורך ניתוב ראשוני
+                if (u.role === 'HR') notifyIds.add(u.id);
 
-        // 4. אנשים בתפקיד הספציפי שאליו שויכה התקלה (למשל 'MAMRAM')
-        if (u.role === ticket.assigned_role) notifyIds.add(u.id);
-    });
+                // 4. אנשים בתפקיד הספציפי שאליו שויכה התקלה (למשל 'MAMRAM')
+                if (u.role === ticket.assigned_role) notifyIds.add(u.id);
+            });
 
-    console.log("Users to notify:", Array.from(notifyIds)); // הדפסה לבדיקה בקונסול
-    return Array.from(notifyIds);
-}
-
-    async function bumpExistingTicket(ticketId, userComment) {
-    // 1. שליפת פרטי התקלה המקורית כדי לבדוק זמן פתיחה ומי התפקיד המטפל
-    const { data: ticket, error: ticketErr } = await supabase
-        .from("tickets")
-        .select("created_at, assigned_role, title, ticket_number")
-        .eq("id", ticketId)
-        .single();
-
-    if (ticketErr) return;
-
-    const bumpNote = `⚠️ המשתמש דיווח שוב על התקלה: "${userComment}" (הוקפץ מהטופס)`;
-    
-    // 2. עדכון זמן העדכון של התקלה
-    await supabase.from("tickets").update({ 
-        updated_at: new Date().toISOString() 
-    }).eq("id", ticketId);
-    
-    // 3. הוספת הערה ליומן הטיפול
-    await supabase.from("ticket_comments").insert({
-        ticket_id: ticketId,
-        content: bumpNote,
-        author_user_id: currentUser.id,
-        author_name: currentUser.fullName,
-        author_role: "SYSTEM"
-    });
-
-    // 4. בדיקת 24 שעות והתראות למנהלים
-    const createdAt = new Date(ticket.created_at);
-    const now = new Date();
-    const diffHours = (now - createdAt) / (1000 * 60 * 60);
-
-    if (diffHours >= 24) {
-        await sendManagerAlerts(ticket);
-    }
-}
-
-  async function sendManagerAlerts(ticket) {
-    const currentRoleAtTicket = ticket.assigned_role; // התפקיד שאצלו התקלה כרגע (למשל: 'MAMRAM')
-    
-    // 1. שליפת המשתמשים הרלוונטיים:
-    // א. בעלים (OWNER)
-    // ב. כל מי שהוא מנהל של מש"א (role = 'MASHA' וגם is_manager = true)
-    // ג. כל מי שהוא מנהל של התפקיד הנוכחי (role = currentRoleAtTicket וגם is_manager = true)
-    
-    const { data: managers, error } = await supabase
-        .from("users")
-        .select("id, role, is_manager")
-        .or(`role.eq.OWNER,and(role.eq.MASHA,is_manager.eq.true),and(role.eq.${currentRoleAtTicket},is_manager.eq.true)`);
-
-    if (error || !managers) {
-        console.error("Error fetching managers for alert:", error);
-        return;
-    }
-
-    // 2. איסוף ה-IDs למניעת כפילויות (למשל אם בעלים הוא גם מנהל מש"א)
-    const notifyUserIds = new Set();
-    
-    managers.forEach(m => {
-        // תנאי הבעלים
-        if (m.role === 'OWNER') {
-            notifyUserIds.add(m.id);
+            console.log("Users to notify:", Array.from(notifyIds)); // הדפסה לבדיקה בקונסול
+            return Array.from(notifyIds);
         }
-        // תנאי מנהל מש"א
-        else if (m.role === 'MASHA' && m.is_manager) {
-            notifyUserIds.add(m.id);
-        }
-        // תנאי מנהל התפקיד המוקצה (בתנאי שזה לא משא - כי כבר טיפלנו בו למעלה)
-        else if (m.role === currentRoleAtTicket && m.is_manager && currentRoleAtTicket !== 'MASHA') {
-            notifyUserIds.add(m.id);
-        }
-    });
 
-    // 3. שליחת ההתראה בפועל
-    if (notifyUserIds.size > 0) {
-        const alertTitle = `⏰ חריגת זמן: תקלה #${ticket.ticket_number}`;
-        const alertMsg = `תקלה חוזרת שפתוחה מעל 24 שעות: "${ticket.title}" נמצאת כעת בטיפול ${currentRoleAtTicket}.`;
+        async function bumpExistingTicket(ticketId, userComment) {
+            // 1. שליפת פרטי התקלה המקורית כדי לבדוק זמן פתיחה ומי התפקיד המטפל
+            const { data: ticket, error: ticketErr } = await supabase
+                .from("tickets")
+                .select("created_at, assigned_role, title, ticket_number")
+                .eq("id", ticketId)
+                .single();
 
-        pushTicketShort({ 
-            userIds: Array.from(notifyUserIds), 
-            ticketId: ticket.ticket_number, 
-            title: alertTitle, 
-            message: alertMsg 
-        });
-    }
-}
-</script>
+            if (ticketErr) return;
+
+            const bumpNote = `⚠️ המשתמש דיווח שוב על התקלה: "${userComment}" (הוקפץ מהטופס)`;
+
+            // 2. עדכון זמן העדכון של התקלה
+            await supabase.from("tickets").update({
+                updated_at: new Date().toISOString()
+            }).eq("id", ticketId);
+
+            // 3. הוספת הערה ליומן הטיפול
+            await supabase.from("ticket_comments").insert({
+                ticket_id: ticketId,
+                content: bumpNote,
+                author_user_id: currentUser.id,
+                author_name: currentUser.fullName,
+                author_role: "SYSTEM"
+            });
+
+            // 4. בדיקת 24 שעות והתראות למנהלים
+            const createdAt = new Date(ticket.created_at);
+            const now = new Date();
+            const diffHours = (now - createdAt) / (1000 * 60 * 60);
+
+            if (diffHours >= 24) {
+                await sendManagerAlerts(ticket);
+            }
+        }
+
+        async function sendManagerAlerts(ticket) {
+            const currentRoleAtTicket = ticket.assigned_role; // התפקיד שאצלו התקלה כרגע (למשל: 'MAMRAM')
+
+            // 1. שליפת המשתמשים הרלוונטיים:
+            // א. בעלים (OWNER)
+            // ב. כל מי שהוא מנהל של מש"א (role = 'HR' וגם is_manager = true)
+            // ג. כל מי שהוא מנהל של התפקיד הנוכחי (role = currentRoleAtTicket וגם is_manager = true)
+
+            const { data: managers, error } = await supabase
+                .from("users")
+                .select("id, role, is_manager")
+                .or(`role.eq.OWNER,and(role.eq.HR,is_manager.eq.true),and(role.eq.${currentRoleAtTicket},is_manager.eq.true)`);
+
+            if (error || !managers) {
+                console.error("Error fetching managers for alert:", error);
+                return;
+            }
+
+            // 2. איסוף ה-IDs למניעת כפילויות (למשל אם בעלים הוא גם מנהל מש"א)
+            const notifyUserIds = new Set();
+
+            managers.forEach(m => {
+                // תנאי הבעלים
+                if (m.role === 'OWNER') {
+                    notifyUserIds.add(m.id);
+                }
+                // תנאי מנהל מש"א
+                else if (m.role === 'HR' && m.is_manager) {
+                    notifyUserIds.add(m.id);
+                }
+                // תנאי מנהל התפקיד המוקצה (בתנאי שזה לא משא - כי כבר טיפלנו בו למעלה)
+                else if (m.role === currentRoleAtTicket && m.is_manager && currentRoleAtTicket !== 'HR') {
+                    notifyUserIds.add(m.id);
+                }
+            });
+
+            // 3. שליחת ההתראה בפועל
+            if (notifyUserIds.size > 0) {
+                const alertTitle = `⏰ חריגת זמן: תקלה #${ticket.ticket_number}`;
+                const alertMsg = `תקלה חוזרת שפתוחה מעל 24 שעות: "${ticket.title}" נמצאת כעת בטיפול ${currentRoleAtTicket}.`;
+
+                pushTicketShort({
+                    userIds: Array.from(notifyUserIds),
+                    ticketId: ticket.ticket_number,
+                    title: alertTitle,
+                    message: alertMsg
+                });
+            }
+        }
+    </script>
 </body>
+
 </html>
