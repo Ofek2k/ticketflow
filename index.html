@@ -763,11 +763,33 @@ document.getElementById("create-form").onsubmit = async (e) => {
   function urlBase64ToUint8Array(base64String) { const padding = "=".repeat((4 - (base64String.length % 4)) % 4); const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/"); const rawData = atob(base64); return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0))); }
   async function ensurePushAutoForUser(userId) { if(!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
   async function pushTicketShort({ userIds, ticketId, title, message }) { const cleanIds = [...new Set(userIds.map(String).filter(Boolean))]; if (cleanIds.length === 0) return; await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: title, body: message, url: `/?ticket=${ticketId}`, icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" }) }); }
-  function getNotifyUserIdsForTicket(ticket, actingUserId) { const ids = new Set(); if(ticket.createdByUserId && ticket.createdByUserId !== actingUserId) ids.add(ticket.createdByUserId); users.forEach(u => { if(u.role === ticket.assignedRole && !u.isFrozen && u.id !== actingUserId) ids.add(u.id); }); return [...ids]; }
-  async function bumpExistingTicket(ticketId, userComment) {
-    const bumpNote = `המשתמש דיווח שוב על התקלה: "${userComment}" (הוקפץ מהטופס)`;
-    
-async function bumpExistingTicket(ticketId, userComment) {
+  function getNotifyUserIdsForTicket(ticket, actingUserId) {
+    const notifyIds = new Set();
+    const isHamal = ticket.is_hamal_down || false;
+
+    // 'users' הוא המשתנה הגלובלי שטענו ב-loadData
+    users.forEach(u => {
+        // לא שולחים למי שביצע את הפעולה או למי שחשבונו קפוא
+        if (u.id === actingUserId || u.isFrozen) return;
+
+        // 1. בעלים (OWNER) תמיד מקבלים הכל
+        if (u.role === 'OWNER') notifyIds.add(u.id);
+
+        // 2. אם חמ"ל מושבת - כולם מקבלים התראה דחופה
+        if (isHamal) notifyIds.add(u.id);
+
+        // 3. מש"א (MASHA) מקבלים הכל לצורך ניתוב ראשוני
+        if (u.role === 'MASHA' || u.role === 'HR') notifyIds.add(u.id);
+
+        // 4. אנשים בתפקיד הספציפי שאליו שויכה התקלה (למשל 'MAMRAM')
+        if (u.role === ticket.assigned_role) notifyIds.add(u.id);
+    });
+
+    console.log("Users to notify:", Array.from(notifyIds)); // הדפסה לבדיקה בקונסול
+    return Array.from(notifyIds);
+}
+
+    async function bumpExistingTicket(ticketId, userComment) {
     // 1. שליפת פרטי התקלה המקורית כדי לבדוק זמן פתיחה ומי התפקיד המטפל
     const { data: ticket, error: ticketErr } = await supabase
         .from("tickets")
@@ -802,7 +824,7 @@ async function bumpExistingTicket(ticketId, userComment) {
         await sendManagerAlerts(ticket);
     }
 }
-  }
+
   async function sendManagerAlerts(ticket) {
     const currentRoleAtTicket = ticket.assigned_role; // התפקיד שאצלו התקלה כרגע (למשל: 'MAMRAM')
     
