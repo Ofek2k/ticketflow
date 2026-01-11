@@ -1807,7 +1807,38 @@
             }
             render();
         };
-        window.doLogout = async () => { localStorage.clear(); sessionStorage.clear(); try { if ("serviceWorker" in navigator) navigator.serviceWorker.ready.then(reg => reg.pushManager.getSubscription().then(sub => sub && sub.unsubscribe())); } catch (e) { } try { await supabase.auth.signOut(); } catch (e) { } window.location.reload(); };
+        window.doLogout = async () => {
+    try {
+        // 1. ננסה להביא את הרישום הקיים כדי לדעת מה למחוק מהשרת
+        if ("serviceWorker" in navigator) {
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.getSubscription();
+            
+            if (sub && currentUser) {
+                // 2. קריאה ל-Worker למחיקת המשתמש מה-KV
+                await fetch(`${PUSH_WORKER_BASE}/unsubscribe`, {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ 
+                        userId: String(currentUser.id)
+                    })
+                });
+                
+                // 3. ביטול הרישום בדפדפן עצמו
+                await sub.unsubscribe();
+            }
+        }
+    } catch (e) {
+        console.error("Error during unsubscribe:", e);
+    }
+
+    // ניקוי זיכרון מקומי והתנתקות מ-Supabase
+    localStorage.clear();
+    sessionStorage.clear();
+    await supabase.auth.signOut();
+    window.location.reload();
+};
+
         window.enableNotificationsManual = async () => { try { if (!("serviceWorker" in navigator)) { alert("❌ שגיאה: הדפדפן לא תומך ב-Service Worker"); return; } if (!("PushManager" in window)) { alert("❌ שגיאה: האייפון לא מזהה תמיכה ב-Push. האם פתחת דרך מסך הבית?"); return; } const permission = await Notification.requestPermission(); if (permission !== 'granted') { alert("⚠️ המשתמש לא אישר או שההגדרות חוסמות."); return; } const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const res = await fetch(`${PUSH_WORKER_BASE}/publicKey`); if (!res.ok) throw new Error("לא הצלחתי להביא מפתח ציבורי מהשרת"); const { publicKey } = await res.json(); const convertedKey = urlBase64ToUint8Array(publicKey); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey }); } const saveRes = await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(currentUser.id), subscription: sub }) }); if (saveRes.ok) alert("🎉 הצלחה! המכשיר רשום"); else alert("❌ השרת החזיר שגיאה בשמירה: " + saveRes.status); } catch (err) { alert("💀 קרסה הפונקציה: " + err.message); console.error(err); } };
 
         async function getNextNum() { const { data } = await supabase.from("counters").select("value").eq("name", "ticketNumber").single(); const next = (data?.value || 1000) + 1; await supabase.from("counters").upsert({ name: "ticketNumber", value: next }); return next; }
