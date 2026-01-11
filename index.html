@@ -1081,7 +1081,7 @@
         let debounceTimer = null;
 
         // FIXED: Initialize global state variables to prevent ReferenceError crashes
-        let users = [], tickets = [], units = [], currentUser = null, activePage = 'HOME';
+        let users = [], tickets = [], units = [], comments = [], currentUser = null, activePage = 'HOME';
 
 
         // --- Helpers ---
@@ -1766,21 +1766,30 @@
         window.toggleManager = async (uid, state) => { await supabase.from("users").update({ is_manager: state, requested_manager: false }).eq("id", uid); await loadData(); showToast("הרשאות עודכנו"); };
         window.approveRole = async (uid, role) => { await supabase.from("users").update({ role: role, role_status: "Approved", requested_role: null }).eq("id", uid); pushTicketShort({ userIds: [uid], ticketId: 0, title: "🎉 התפקיד אושר!", message: `הבקשה שלך לתפקיד ${roleLabel(role)} אושרה בהצלחה.` }); await loadData(); render(); showToast("המשתמש אושר ונשלחה לו התראה"); };
         window.updateTicket = async (tid) => {
-            // SECURITY GUARD
-            const t = tickets.find(x => x.id == tid);
-            if (!t) return;
-            const isAllowed = currentUser.role === 'OWNER' || currentUser.isManager || t.assignedRole === currentUser.role;
-            if (!isAllowed) {
-                alert("Security Alert: Unauthorized update attempt.");
-                return;
-            }
+    const t = tickets.find(x => x.id == tid);
+    if (!t) return;
+    
+    const isAllowed = currentUser.role === 'OWNER' || currentUser.isManager || t.assignedRole === currentUser.role;
+    if (!isAllowed) {
+        alert("אין לך הרשאה לעדכן תקלה זו");
+        return;
+    }
 
-            const st = document.getElementById("upd-status").value;
-            await supabase.from("tickets").update({ status: st, is_closed: (st === 'RESOLVED') }).eq("id", tid);
-            await loadData();
-            render();
-        };
-        window.postComment = async (e, tid) => {
+    const st = document.getElementById("upd-status").value;
+    const isClosed = (st === 'RESOLVED' || st === 'CLOSED'); // תוקן כדי לכלול גם מצב סגור
+
+    await withLoader(document.querySelector(".main"), async () => {
+        await supabase.from("tickets").update({ 
+            status: st, 
+            is_closed: isClosed,
+            updated_at: new Date().toISOString() // חשוב להקפצות!
+        }).eq("id", tid);
+        
+        await loadData();
+        render();
+        showToast("הסטטוס עודכן בהצלחה");
+    });
+}; window.postComment = async (e, tid) => {
             e.preventDefault();
             await supabase.from("ticket_comments").insert({ ticket_id: tid, content: e.target.txt.value, author_user_id: currentUser.id, author_name: currentUser.fullName, author_role: currentUser.role });
             e.target.reset();
@@ -1806,31 +1815,44 @@
         async function ensurePushAutoForUser(userId) { if (!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
         async function pushTicketShort({ userIds, ticketId, title, message }) { const cleanIds = [...new Set(userIds.map(String).filter(Boolean))]; if (cleanIds.length === 0) return; await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: title, body: message, url: `/?ticket=${ticketId}`, icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" }) }); }
         function getNotifyUserIdsForTicket(ticket, actingUserId) {
-            const notifyIds = new Set();
-            const isHamal = ticket.is_hamal_down || false;
+    const notifyIds = new Set();
+    const isHamal = ticket.is_hamal_down || false;
 
-            // 'users' הוא המשתנה הגלובלי שטענו ב-loadData
-            users.forEach(u => {
-                // לא שולחים למי שביצע את הפעולה או למי שחשבונו קפוא
-                if (u.id === actingUserId || u.isFrozen) return;
+    users.forEach(u => {
+        // סינון בסיסי: לא שולחים למי שביצע את הפעולה ולא למשתמשים קפואים
+        if (u.id === actingUserId || u.isFrozen) return;
 
-                // 1. בעלים (OWNER) תמיד מקבלים הכל
-                if (u.role === 'OWNER') notifyIds.add(u.id);
+        // בדיקת הגדרות: ברירת המחדל היא TRUE (לקבל), אלא אם המשתמש סימן אחרת
+        const s = u.settings || {};
+        const wantsNew = s.notifyNew !== false; 
 
-                // 2. אם חמ"ל מושבת - כולם מקבלים התראה דחופה
-                if (isHamal) notifyIds.add(u.id);
-
-                // 3. מש"א (HR) מקבלים הכל לצורך ניתוב ראשוני
-                if (u.role === 'HR') notifyIds.add(u.id);
-
-                // 4. אנשים בתפקיד הספציפי שאליו שויכה התקלה (למשל 'MAMRAM')
-                if (u.role === ticket.assigned_role) notifyIds.add(u.id);
-            });
-
-            console.log("Users to notify:", Array.from(notifyIds)); // הדפסה לבדיקה בקונסול
-            return Array.from(notifyIds);
+        // 1. חמ"ל מושבת: שובר שוויון - כולם מקבלים תמיד
+        if (isHamal) {
+            notifyIds.add(u.id);
+            return; 
         }
 
+        // אם המשתמש ביקש לא לקבל התראות רגילות - מדלגים עליו (אלא אם זה חמ"ל, שטופל למעלה)
+        if (!wantsNew) return;
+
+        // 2. בעלים (OWNER) - מקבל הכל
+        if (u.role === 'OWNER') {
+            notifyIds.add(u.id);
+        }
+
+        // 3. מנהל מש"א (HR) - מקבל הכל (כמו בעלים)
+        else if (u.role === 'HR') {
+            notifyIds.add(u.id);
+        }
+
+        // 4. מנהל/עובד בתפקיד הרלוונטי - מקבל רק מה ששייך לתפקיד שלו
+        else if (u.role === ticket.assigned_role) {
+            notifyIds.add(u.id);
+        }
+    });
+
+    return Array.from(notifyIds);
+}
         async function bumpExistingTicket(ticketId, userComment) {
             // 1. שליפת פרטי התקלה המקורית כדי לבדוק זמן פתיחה ומי התפקיד המטפל
             const { data: ticket, error: ticketErr } = await supabase
@@ -1868,54 +1890,49 @@
         }
 
         async function sendManagerAlerts(ticket) {
-            const currentRoleAtTicket = ticket.assigned_role; // התפקיד שאצלו התקלה כרגע (למשל: 'MAMRAM')
+    const currentRoleAtTicket = ticket.assigned_role;
 
-            // 1. שליפת המשתמשים הרלוונטיים:
-            // א. בעלים (OWNER)
-            // ב. כל מי שהוא מנהל של מש"א (role = 'HR' וגם is_manager = true)
-            // ג. כל מי שהוא מנהל של התפקיד הנוכחי (role = currentRoleAtTicket וגם is_manager = true)
+    // שליפת המנהלים הרלוונטיים + ההגדרות שלהם
+    const { data: managers, error } = await supabase
+        .from("users")
+        .select("id, role, is_manager, settings") 
+        .or(`role.eq.OWNER,and(role.eq.HR,is_manager.eq.true),and(role.eq.${currentRoleAtTicket},is_manager.eq.true)`);
 
-            const { data: managers, error } = await supabase
-                .from("users")
-                .select("id, role, is_manager")
-                .or(`role.eq.OWNER,and(role.eq.HR,is_manager.eq.true),and(role.eq.${currentRoleAtTicket},is_manager.eq.true)`);
+    if (error || !managers) return;
 
-            if (error || !managers) {
-                console.error("Error fetching managers for alert:", error);
-                return;
-            }
+    const notifyUserIds = new Set();
 
-            // 2. איסוף ה-IDs למניעת כפילויות (למשל אם בעלים הוא גם מנהל מש"א)
-            const notifyUserIds = new Set();
+    managers.forEach(m => {
+        // בדיקת הגדרות: האם המשתמש כיבה את התראות החריגה?
+        // ברירת המחדל כאן תלויה במה שתרצה. 
+        // לפי הבקשה שלך ("אלא אם החליט שלא"), נגדיר שברירת המחדל היא לקבל:
+        const s = m.settings || {};
+        const wantsOverdue = s.notifyOverdue !== false; 
 
-            managers.forEach(m => {
-                // תנאי הבעלים
-                if (m.role === 'OWNER') {
-                    notifyUserIds.add(m.id);
-                }
-                // תנאי מנהל מש"א
-                else if (m.role === 'HR' && m.is_manager) {
-                    notifyUserIds.add(m.id);
-                }
-                // תנאי מנהל התפקיד המוקצה (בתנאי שזה לא משא - כי כבר טיפלנו בו למעלה)
-                else if (m.role === currentRoleAtTicket && m.is_manager && currentRoleAtTicket !== 'HR') {
-                    notifyUserIds.add(m.id);
-                }
-            });
+        // אם המשתמש ביטל אקטיבית - דלג עליו
+        if (!wantsOverdue) return;
 
-            // 3. שליחת ההתראה בפועל
-            if (notifyUserIds.size > 0) {
-                const alertTitle = `⏰ חריגת זמן: תקלה #${ticket.ticket_number}`;
-                const alertMsg = `תקלה חוזרת שפתוחה מעל 24 שעות: "${ticket.title}" נמצאת כעת בטיפול ${currentRoleAtTicket}.`;
+        // הלוגיקה זהה לתקלות חדשות, רק מסוננת למנהלים בלבד (בגלל השאילתה למעלה)
+        
+        // 1. בעלים
+        if (m.role === 'OWNER') notifyUserIds.add(m.id);
+        
+        // 2. מנהל מש"א
+        else if (m.role === 'HR') notifyUserIds.add(m.id);
+        
+        // 3. מנהל התפקיד הנוכחי
+        else if (m.role === currentRoleAtTicket) notifyUserIds.add(m.id);
+    });
 
-                pushTicketShort({
-                    userIds: Array.from(notifyUserIds),
-                    ticketId: ticket.ticket_number,
-                    title: alertTitle,
-                    message: alertMsg
-                });
-            }
-        }
+    if (notifyUserIds.size > 0) {
+        pushTicketShort({
+            userIds: Array.from(notifyUserIds),
+            ticketId: ticket.ticket_number,
+            title: `⏰ חריגת זמן: תקלה #${ticket.ticket_number}`,
+            message: `תקלה בסטטוס ${currentRoleAtTicket} פתוחה זמן רב. לטיפולך.`
+        });
+    }
+}
     </script>
 </body>
 
