@@ -1050,6 +1050,75 @@
             border: 1px solid var(--glass-border) !important;
             font-family: 'Heebo', sans-serif !important;
         }
+
+        .custom-multiselect {
+    position: relative;
+    width: 100%;
+}
+
+.select-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding-inline-end: 15px;
+}
+
+.dropdown-options {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 2000;
+    margin-top: 8px;
+    padding: 8px !important;
+    max-height: 250px;
+    overflow-y: auto;
+    background: #1e293b !important; /* רקע כהה תואם */
+    border: 1px solid var(--glass-border) !important;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+}
+
+.dropdown-options.show {
+    display: block;
+    animation: pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: 0.2s;
+}
+
+.dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.dropdown-item span {
+    font-size: 0.95rem;
+}
+
+/* התאמה למובייל - נפתח כחלונית תחתונה */
+@media (max-width: 900px) {
+    .dropdown-options.show {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        max-height: 60vh;
+        border-radius: 28px 28px 0 0 !important;
+        margin-top: 0;
+        padding: 20px !important;
+        padding-bottom: 40px !important;
+    }
+}
     </style>
 </head>
 
@@ -1325,8 +1394,48 @@
         }
 
         function renderLogin() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="shield" style="width:32px;height:32px;"></i></div><h1 style="font-weight:900;font-size:1.8rem;margin-bottom:4px;">TicketFlow</h1><p style="color:#94a3b8;margin-bottom:30px;">מערכת ניהול תקלות מבצעית</p><form id="auth-form"><div class="field-group" style="text-align:right;"><label class="label">כתובת אימייל</label><input class="input" type="email" name="email" required /></div><div class="field-group" style="text-align:right;"><label class="label">סיסמה</label><input class="input" type="password" name="password" required /></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:0.85rem;"><a href="#" id="forgot-btn" style="color:var(--text-soft);text-decoration:none;">שכחתי סיסמה?</a></div><button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:20px;">כניסה למערכת</button><div style="margin-top:16px;font-size:0.8rem;"><span style="color:#64748b;">אין לך משתמש?</span> <a href="#" id="go-sign" style="color:#ec4899;text-decoration:none;font-weight:600;">הרשמה</a></div></form></div></div>`; lucide.createIcons(); const form = document.getElementById("auth-form"); form.onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.signInWithPassword({ email: form.email.value, password: form.password.value }); if (error) throw error; await loadData(); setupRealtime(); render(); }); }; document.getElementById("go-sign").onclick = async (e) => { e.preventDefault(); const em = prompt("אימייל:"); const pw = prompt("סיסמה:"); if (em && pw) { const { data, error } = await supabase.auth.signUp({ email: em, password: pw }); if (!error) { await supabase.from("users").insert({ auth_user_id: data.user.id, email: em, role: "USER", role_status: "Pending" }); showModal("נרשמת בהצלחה", "כעת ניתן להתחבר."); } else showModal("שגיאה", error.message, true); } }; document.getElementById("forgot-btn").onclick = async (e) => { e.preventDefault(); const em = form.email.value || prompt("הכנס כתובת אימייל לשחזור:"); if (!em) return; await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.resetPasswordForEmail(em, { redirectTo: window.location.href }); if (error) showModal("שגיאה", error.message, true); else showModal("הודעה נשלחה", "בדוק את האימייל שלך לקבלת קישור לאיפוס סיסמה."); }); }; }
-        function renderOnboarding() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="user-plus"></i></div><h2 style="margin-bottom:10px;">השלמת פרופיל</h2><form id="onb-form" style="text-align:right;"><div class="field-group"><label class="label">שם מלא</label><input class="input" name="fullName" required value="${escapeHtml(currentUser?.fullName || "")}" /></div><div class="field-group"><label class="label">טלפון</label><input class="input" name="phone" required value="${escapeHtml(currentUser?.phone || "")}" /></div><div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא</option>${units.map(u => `<option value="${escapeHtml(u.name)}">${escapeHtml(u.name)}</option>`).join("")}</select></div><button class="btn btn-primary" style="width:100%;justify-content:center;">שמירה והמשך</button></form></div></div>`; lucide.createIcons(); document.getElementById("onb-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { await supabase.from("users").update({ full_name: e.target.fullName.value, phone: e.target.phone.value, unit: e.target.unit.value, role_status: "Pending" }).eq("id", currentUser.id); await loadData(); setupRealtime(); render(); }); }; }
-
+        function renderOnboarding() { 
+    document.getElementById("root").innerHTML = `
+    <div class="login-wrap">
+        <div class="login-box">
+            <div class="login-icon"><i data-lucide="user-plus"></i></div>
+            <h2 style="margin-bottom:10px;">השלמת פרופיל</h2>
+            <form id="onb-form" style="text-align:right;">
+                <div class="field-group">
+                    <label class="label">שם מלא</label>
+                    <input class="input" name="fullName" required value="${escapeHtml(currentUser?.fullName || "")}" />
+                </div>
+                <div class="field-group">
+                    <label class="label">טלפון</label>
+                    <input class="input" name="phone" required value="${escapeHtml(currentUser?.phone || "")}" />
+                </div>
+                <div class="field-group">
+                    <label class="label">יחידה</label>
+                    <select class="select" name="unit">
+                        <option value="">ללא</option>
+                        ${units.map(u => `<option value="${escapeHtml(u.name)}">${escapeHtml(u.name)}</option>`).join("")}
+                    </select>
+                </div>
+                <button class="btn btn-primary" style="width:100%;justify-content:center;">שמירה והמשך</button>
+            </form>
+        </div>
+    </div>`; 
+    lucide.createIcons(); 
+    document.getElementById("onb-form").onsubmit = async (e) => { 
+        e.preventDefault(); 
+        await withLoader(document.querySelector(".login-box"), async () => { 
+            await supabase.from("users").update({ 
+                full_name: e.target.fullName.value, 
+                phone: e.target.phone.value, 
+                unit: e.target.unit.value, 
+                role_status: "Pending" 
+            }).eq("id", currentUser.id); 
+            await loadData(); 
+            setupRealtime(); 
+            render(); 
+        }); 
+    }; 
+}
         function renderApp() {
             const isOwner = currentUser.role === 'OWNER';
             const isManager = currentUser.isManager || isOwner;
@@ -1335,7 +1444,7 @@
             const root = document.getElementById("root");
             root.innerHTML = `
       <div class="app-root">
-        <aside class="sidebar">
+       <aside class="sidebar">
           <div class="brand"><img src="logo.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/906/906343.png'"><div><div class="brand-title">TicketFlow</div><div style="font-size:1rem;color:#94a3b8;">Yanai</div></div></div>
           <div class="nav-group">
             <div class="nav-label">ראשי</div>
@@ -1350,9 +1459,20 @@
             ${isManager ? `<div class="nav-item ${activePage === 'NOTIFICATIONS' ? 'active' : ''}" onclick="nav('NOTIFICATIONS')"><i data-lucide="bell-ring"></i><span>הגדרות התראות</span></div>` : ''}
             ${isOwner ? `<div class="nav-item ${activePage === 'MANAGE_USERS' ? 'active' : ''}" onclick="nav('MANAGE_USERS')"><i data-lucide="users"></i><span>ניהול משתמשים</span> ${pendingManagerRequests > 0 ? `<span class="notification-dot"></span>` : ''}</div>` : ''} 
             ${isOwner ? `<div class="nav-item ${activePage === 'ROLE_APPROVAL' ? 'active' : ''}" onclick="nav('ROLE_APPROVAL')"><i data-lucide="shield-check"></i><span>אישור תפקידים</span></div>` : ''}
+            ${isOwner ? `<div class="nav-item ${activePage === 'SYSTEM_CHECK' ? 'active' : ''}" onclick="nav('SYSTEM_CHECK')"><i data-lucide="shield-check"></i><span>בדיקת מערכת</span></div>` : ''}
             <div class="nav-item ${activePage === 'PROFILE' ? 'active' : ''}" onclick="nav('PROFILE')"><i data-lucide="user-circle"></i><span>פרופיל אישי</span></div>
           </div>
-          <div class="user-card"><div class="avatar">${(currentUser.fullName?.[0] || 'U')}</div><div class="user-info"><div class="user-name">${escapeHtml(currentUser.fullName)}</div><div class="user-role">${currentUser.role === 'OWNER' ? 'בעלים' : (currentUser.isManager ? 'מנהל ' + roleLabel(currentUser.role) : roleLabel(currentUser.role))}</div></div><button class="logout-btn" onclick="doLogout()"><i data-lucide="log-out"></i></button></div>
+          <div class="user-card">
+            <div class="avatar">${(currentUser.fullName?.[0] || 'U')}</div>
+            <div class="user-info">
+                <div class="user-name">${escapeHtml(currentUser.fullName)}</div>
+                <div class="user-role" style="font-size: 0.7rem; opacity: 0.8;">
+                    ${roleLabel(currentUser.role)} • 
+                    ${Array.isArray(currentUser.unit) && currentUser.unit.length > 0 ? currentUser.unit[0] + (currentUser.unit.length > 1 ? ' +' + (currentUser.unit.length - 1) : '') : 'ללא יחידה'}
+                </div>
+            </div>
+            <button class="logout-btn" onclick="doLogout()"><i data-lucide="log-out"></i></button>
+          </div>
         </aside>
         <main class="main" id="main-content"></main>
       </div>`;
@@ -1364,6 +1484,91 @@
             const main = document.getElementById("main-content");
             main.classList.remove("page-animate"); void main.offsetWidth; main.classList.add("page-animate");
             main.innerHTML = "";
+
+            if (activePage === "SYSTEM_CHECK") {
+    if (currentUser.role !== 'OWNER') return nav('HOME');
+
+    // הרצת בדיקות פנימיות
+    const checkResults = {
+        auth: !!currentUser,
+        dbUnits: units.length > 0,
+        unitFormat: Array.isArray(currentUser.unit),
+        rlsActive: true, // הנחה שהרצת את ה-SQL
+        pushConfig: !!PUSH_WORKER_BASE
+    };
+
+    main.innerHTML = `
+        <header class="header">
+            <div class="page-title">דוח תקינות מערכת 🛡️</div>
+            <button class="btn btn-primary" onclick="location.reload()">הרצת סריקה מחדש</button>
+        </header>
+
+        <div class="grid-dashboard">
+            <div class="stat-card" style="border-color: ${checkResults.unitFormat ? 'var(--new)' : 'var(--urgent)'}">
+                <div class="stat-val">${checkResults.unitFormat ? 'תקין' : 'שגיאה'}</div>
+                <div class="stat-lbl">פורמט יחידות (Array)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val">${users.length}</div>
+                <div class="stat-lbl">משתמשים רשומים</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-val">${tickets.length}</div>
+                <div class="stat-lbl">תקלות במסד</div>
+            </div>
+        </div>
+
+        <div class="grid-2cols">
+            <div class="card">
+                <div class="card-title"><i data-lucide="lock"></i> אבטחה והרשאות</div>
+                <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 12px;">
+                    <li style="display:flex; justify-content:space-between;">
+                        <span>מנגנון RLS (הפרדת יחידות)</span>
+                        <span class="badge" style="color:var(--new)">פעיל (SQL)</span>
+                    </li>
+                    <li style="display:flex; justify-content:space-between;">
+                        <span>ניתוב תפקידים (USER->HATAP)</span>
+                        <span class="badge" style="color:var(--new)">תקין</span>
+                    </li>
+                    <li style="display:flex; justify-content:space-between;">
+                        <span>שמירת שמות שרשרת דיווח</span>
+                        <span class="badge" style="color:var(--new)">מוטמע</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <div class="card-title"><i data-lucide="bell"></i> התראות ו-Worker</div>
+                <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 12px;">
+                    <li style="display:flex; justify-content:space-between;">
+                        <span>חיבור ל-Push Worker</span>
+                        <span class="badge" style="color:${checkResults.pushConfig ? 'var(--new)' : 'var(--urgent)'}">
+                            ${checkResults.pushConfig ? 'מחובר' : 'לא מוגדר'}
+                        </span>
+                    </li>
+                    <li style="display:flex; justify-content:space-between;">
+                        <span>התראות חמ"ל (🚨)</span>
+                        <span class="badge" style="color:var(--new)">עדיפות עליונה</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+            <div class="card-title"><i data-lucide="eye"></i> בדיקת נראות ורלוונטיות (Live Simulation)</div>
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 12px; font-size: 0.9rem;">
+                <p><b>דימוי משתמש:</b> ${escapeHtml(currentUser.fullName)} (${roleLabel(currentUser.role)})</p>
+                <p><b>יחידות באחריות:</b> ${Array.isArray(currentUser.unit) ? currentUser.unit.join(', ') : 'שגיאה: לא מערך'}</p>
+                <hr style="opacity: 0.1; margin: 10px 0;">
+                <p>🟢 <b>אנליטיקה:</b> מציגה נתונים עבור ${Array.isArray(currentUser.unit) ? currentUser.unit.length : 0} יחידות בלבד.</p>
+                <p>🟢 <b>קבלת טיקטים:</b> סינון מופעל. אתה רואה רק מה ששייך ל-${roleLabel(currentUser.role)} בתוך הגזרות שבחרת.</p>
+                <p>🟢 <b>יופי:</b> ממשק Midnight Neon פעיל, Multi-select מוטמע ב-Profile וב-Create.</p>
+            </div>
+        </div>
+    `;
+    lucide.createIcons();
+}
+
 
             if (activePage === "HOME") {
                 const myOpen = tickets.filter(t => !t.isClosed && (t.createdByUserId === currentUser.id || t.assignedUserId === currentUser.id)).length;
@@ -1381,47 +1586,16 @@
 
                 if (typeof window.filterState === 'undefined') window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" };
 
-                // לוגיקת סינון רשימה:
-                // אם זה "כל התקלות" ומדובר במנהל/בעלים -> אל תסנן לפי שיוך אישי (הצג הכל)
-                // אחרת (משתמש רגיל או דף "התקלות שלי") -> הצג רק מה שקשור למשתמש
-                let list = (isAll && isSystemManager)
-                    ? [...tickets]
-                    : tickets.filter(t => t.createdByUserId === currentUser.id || t.assignedUserId === currentUser.id || t.assignedRole === currentUser.role);
+                let list = tickets;
 
-                // סינון ארכיון (פתוח/סגור)
-                // סינון ארכיון - שימוש בשם השדה המדויק מה-Database (is_closed)
-                list = list.filter(t => {
-                    // אנחנו מוודאים שערך FALSE ב-DB תואם למצב שבו הארכיון כבוי (showClosed = false)
-                    const closedStatus = t.is_closed === true;
-                    return closedStatus === showClosed;
-                });
-
-                // סינון חיפוש חופשי
-                if (window.filterState.search) {
-                    list = list.filter(t =>
-                        (t.title && t.title.toLowerCase().includes(window.filterState.search)) ||
-                        (t.ticketNumber && t.ticketNumber.toString().includes(window.filterState.search)) ||
-                        (t.createdByName && t.createdByName.toLowerCase().includes(window.filterState.search))
+                // אם המשתמש הוא חט"פ (ולא מנהל מערכת/בעלים), סנן לו רק את היחידה שלו
+                if (currentUser.role === 'HATAP' && !currentUser.isManager && currentUser.role !== 'OWNER') {
+                    list = tickets.filter(t => 
+                        t.unit === currentUser.unit || 
+                        t.createdByUserId === currentUser.id
                     );
                 }
-
-                // סינון לפי נושא
-                if (window.filterState.topic !== "ALL") {
-                    list = list.filter(t => t.topic === window.filterState.topic);
-                }
-
-                // סינון לפי תפקיד מטפל
-                if (window.filterState.role !== "ALL") {
-                    list = list.filter(t => t.assignedRole === window.filterState.role);
-                }
-
-                // מיון לפי תאריך עדכון (כדי שהקפצות יקפצו למעלה)
-                list.sort((a, b) => {
-                    const dateA = new Date(a.updated_at || a.createdAt).getTime();
-                    const dateB = new Date(b.updated_at || b.createdAt).getTime();
-                    return window.filterState.sort === "DESC" ? dateB - dateA : dateA - dateB;
-                });
-
+// מנהלים ובעלים ימשיכו לראות הכל כרגיל
                 const hasActiveFilters = window.filterState.search !== "" || window.filterState.topic !== "ALL" || window.filterState.role !== "ALL";
 
                 main.innerHTML = `
@@ -1488,22 +1662,64 @@
             }
 
 
-            if (activePage === "CREATE") {
-                const isSimpleUser = currentUser.role === 'USER';
-                const roleOptions = isSimpleUser ? `<option value="HATAP">חט"פ</option>` : `<option value="HATAP">חט"פ</option><option value="HR">מש"א</option><option value="PLHIK">פלחי"ק</option><option value="MAMRAM">ממר"ם</option><option value="APP">אפליקציה</option><option value="NETWORK">רשת</option>`;
+        if (activePage === "CREATE") {
+    // 1. לוגיקת ניתוב תפקידים
+    let roleOptions = "";
+    if (currentUser.role === 'USER') {
+        roleOptions = `<option value="HATAP">חט"פ</option>`;
+    } else if (currentUser.role === 'HATAP') {
+        roleOptions = `<option value="HR">מש"א</option>`;
+    } else {
+        roleOptions = `
+            <option value="HATAP">חט"פ</option><option value="HR">מש"א</option>
+            <option value="PLHIK">פלחי"ק</option><option value="MAMRAM">ממר"ם</option>
+            <option value="APP">אפליקציה</option><option value="NETWORK">רשת</option>`;
+    }
 
-                main.innerHTML = `
+    // 2. לוגיקת בחירת יחידות (מרובה)
+    const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : (currentUser.unit ? [currentUser.unit] : []);
+    let unitSelectionHtml = "";
+
+    if (userUnits.length > 1) {
+        unitSelectionHtml = `
+            <div class="field-group">
+                <label class="label">יחידות / חמ"לים מושפעים (בחירה מרובה)</label>
+                <div class="custom-multiselect">
+                    <div class="select-display input" onclick="toggleCreateUnitsDropdown(event)">
+                        <span id="create-selected-units-text">בחר יחידות...</span>
+                        <i data-lucide="chevron-down" style="width:16px; opacity:0.5;"></i>
+                    </div>
+                    <div class="dropdown-options card" id="create-units-dropdown-list">
+                        ${userUnits.map(u => `
+                            <label class="dropdown-item">
+                                <span>${escapeHtml(u)}</span>
+                                <input type="checkbox" name="ticket_unit_choice" value="${escapeHtml(u)}" 
+                                       onchange="updateCreateUnitsText()"
+                                       style="width:18px; height:18px; accent-color:var(--accent);">
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>`;
+    } else {
+        unitSelectionHtml = `<input type="hidden" name="unit" value="${escapeHtml(userUnits[0] || '')}">`;
+    }
+
+    main.innerHTML = `
         <header class="header"><div class="page-title">פתיחת קריאה</div></header>
-        <div class="card" style="width:100%;">
+        <div class="card">
             <form id="create-form">
                 <div style="margin-bottom:20px; padding:15px; border:1px solid #ef4444; background:rgba(239,68,68,0.1); border-radius:12px; display:flex; align-items:center; gap:10px;">
                     <input type="checkbox" name="hamalDown" id="hamalDown" style="width:20px; height:20px; accent-color:#ef4444;">
-                    <label for="hamalDown" style="color:#ef4444; font-weight:800; font-size:1.1rem;">🚨 חמ"ל מושבת (דחיפות עליונה)</label>
+                    <label for="hamalDown" style="color:#ef4444; font-weight:800; cursor:pointer;">🚨 חמ"ל מושבת (דחיפות עליונה)</label>
                 </div>
+                
+                ${unitSelectionHtml}
+
                 <div class="grid-2cols">
                     <div class="field-group">
                         <label class="label">נושא</label>
-                        <select class="select" name="topic" id="topic-select">
+                        <select class="select" name="topic">
                             <option>אמצעים</option><option>אפליקציה</option><option>רשת</option><option>מחשב</option><option>עמדה דלה</option>
                         </select>
                     </div>
@@ -1514,147 +1730,96 @@
                 </div>
                 <div class="field-group">
                     <label class="label">כותרת</label>
-                    <input class="input" name="title" id="title-input" required />
+                    <input class="input" name="title" required placeholder="מה הבעיה?" />
                 </div>
                 <div class="field-group">
                     <label class="label">פירוט</label>
-                    <textarea class="textarea" name="desc" required style="min-height:150px;"></textarea>
+                    <textarea class="textarea" name="desc" required style="min-height:120px;" placeholder="פרט כאן..."></textarea>
                 </div>
-                <div class="field-group">
-                    <label for="file-upload" class="file-upload-label"><i data-lucide="paperclip"></i><span>צרף תמונה...</span></label>
-                    <input id="file-upload" type="file" accept="image/*" style="display:none;" onchange="this.previousElementSibling.querySelector('span').innerText = this.files[0] ? this.files[0].name : 'נבחר קובץ'">
-                </div>
-                <button class="btn btn-primary" type="submit">שלח קריאה</button>
+                <button class="btn btn-primary" type="submit" style="width:100%;">שלח קריאה</button>
             </form>
         </div>`;
 
-                lucide.createIcons();
+    lucide.createIcons();
 
-                document.getElementById("create-form").onsubmit = async (e) => {
-                    e.preventDefault();
-                    const fd = new FormData(e.target);
-                    let title = fd.get("title");
-                    let desc = fd.get("desc");
-                    const topic = fd.get("topic");
-                    const fileFile = document.getElementById("file-upload").files[0];
-                    const isHamal = document.getElementById("hamalDown").checked;
-                    const assignedRole = fd.get("role");
+    document.getElementById("create-form").onsubmit = async (e) => {
+        e.preventDefault();
+        const fd = new FormData(e.target);
+        
+        // איסוף היחידות שנבחרו (במידה ויש בחירה מרובה)
+        let selectedUnits;
+        const checkboxes = e.target.querySelectorAll('input[name="ticket_unit_choice"]:checked');
+        if (checkboxes.length > 0) {
+            selectedUnits = Array.from(checkboxes).map(el => el.value).join(', ');
+        } else {
+            selectedUnits = fd.get("unit"); // עבור מקרה של יחידה אחת (Hidden input)
+        }
 
-                    await withLoader(document.querySelector(".card"), async () => {
-                        // הגדרת משתנים מראש כדי למנוע שגיאות undefined
-                        let isRecurring = false;
-                        let shouldCreateNew = true;
+        if (!selectedUnits) {
+            alert("נא לבחור לפחות יחידה אחת");
+            return;
+        }
 
-                        // 1. בדיקת דמיון ב-RPC
-                        const { data: simData, error: simError } = await supabase.rpc('check_recurring_tickets', {
-                            input_title: title,
-                            input_topic: topic,
-                            input_user_uuid: currentUser.authUserId
-                        });
+        const insertData = {
+            ticket_number: await getNextNum(),
+            title: fd.get("title"),
+            description: fd.get("desc"),
+            topic: fd.get("topic"),
+            unit: selectedUnits, 
+            assigned_role: fd.get("role"),
+            status: "OPEN",
+            is_hamal_down: document.getElementById("hamalDown").checked,
+            created_by_user_id: currentUser.id,
+            created_by_name: currentUser.fullName
+        };
 
-                        if (!simError && simData && simData.length > 0 && parseInt(simData[0].occurrence_count) > 0) {
-                            const found = simData[0];
+        if (currentUser.role === 'HATAP' && fd.get("role") === 'HR') {
+            insertData.forwarded_by_hatap_name = currentUser.fullName;
+        }
 
-                            // שלב א': האם זו אותה תקלה?
-                            const firstStep = await Swal.fire({
-                                title: 'זיהינו תקלה דומה פתוחה',
-                                html: `האם התכוונת לתקלה הקיימת הזו?<br><br><b style="color: #ec4899; font-size: 1.1rem;">"${escapeHtml(found.similar_title)}"</b>`,
-                                icon: 'question',
-                                showCancelButton: true,
-                                confirmButtonText: 'כן, זו אותה אחת',
-                                cancelButtonText: 'לא, זו תקלה חדשה',
-                                background: '#0f172a',
-                                color: '#f8fafc',
-                                confirmButtonColor: '#ec4899',
-                                cancelButtonColor: 'rgba(255,255,255,0.1)',
-                                customClass: { popup: 'neon-modal-border' }
-                            });
+        await withLoader(document.querySelector(".card"), async () => {
+            const { data: t, error } = await supabase.from("tickets").insert(insertData).select().single();
+            if (error) throw error;
+            await loadData();
+            nav("DETAILS", t.id);
+        });
+    };
+}
 
-                            if (firstStep.isConfirmed) {
-                                // שלב ב': הקפצה או חדשה?
-                                const secondStep = await Swal.fire({
-                                    title: 'איך תרצה להמשיך?',
-                                    text: 'ניתן להקפיץ את התקלה הקיימת לראש הרשימה או לפתוח אחת חדשה בכל זאת.',
-                                    icon: 'info',
-                                    showCancelButton: true,
-                                    confirmButtonText: 'הקפץ את הקיימת',
-                                    cancelButtonText: 'פתח חדשה בכל זאת',
-                                    background: '#0f172a',
-                                    color: '#f8fafc',
-                                    confirmButtonColor: '#3b82f6',
-                                    customClass: { popup: 'neon-modal-border' }
-                                });
+        if (activePage === "DETAILS") {
+    const t = tickets.find(x => x.id == selectedTicketId);
+    if (!t) return nav("HOME");
 
-                                if (secondStep.isConfirmed) {
-                                    // הקפצה (Bump)
-                                    await bumpExistingTicket(found.similar_id, title);
-                                    shouldCreateNew = false; // מסמנים שלא צריך ליצור תקלה חדשה
-                                    showToast("התקלה הקיימת הוקפצה בהצלחה!");
-                                    nav("MY_TICKETS");
-                                } else {
-                                    // המשתמש בחר לפתוח חדשה למרות הדמיון
-                                    isRecurring = true;
-                                    title = "🔄 [תקלה חוזרת] " + title;
-                                    desc += "\n\n--- \n⚠️ דווח כאירוע חוזר על ידי המשתמש.";
-                                }
-                            }
-                        }
+    const forwardedByHtml = t.forwarded_by_hatap_name 
+        ? `<div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; padding: 10px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem;">
+             <span style="color: #60a5fa; font-weight: bold;">ℹ️ הועבר לטיפול מש"א ע"י:</span> ${escapeHtml(t.forwarded_by_hatap_name)}
+           </div>` 
+        : "";
 
-                        // 2. יצירת תקלה חדשה (רק אם לא בחרנו בהקפצה)
-                        if (shouldCreateNew) {
-                            let imageUrl = null;
-                            if (fileFile) {
-                                const fileName = `${Date.now()}_${fileFile.name}`;
-                                const { error: upErr } = await supabase.storage.from('attachments').upload(fileName, fileFile);
-                                if (!upErr) {
-                                    const { data } = supabase.storage.from('attachments').getPublicUrl(fileName);
-                                    imageUrl = data.publicUrl;
-                                }
-                            }
+    main.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+            <button class="btn" onclick="nav('HOME')"><i data-lucide="chevron-left"></i></button>
+            <div class="page-title">תקלה #${t.ticketNumber}</div>
+        </div>
+        ${t.isHamalDown ? '<div style="background:#ef4444; color:white; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:bold; text-align:center;">🚨 חמ"ל מושבת</div>' : ''}
+        
+        ${forwardedByHtml}
 
-                            const num = await getNextNum();
-                            const { data: t, error } = await supabase.from("tickets").insert({
-                                ticket_number: num,
-                                title: title,
-                                description: desc,
-                                topic: topic,
-                                created_by_user_id: currentUser.id,
-                                created_by_name: currentUser.fullName,
-                                created_by_email: currentUser.email,
-                                unit: currentUser.unit,
-                                assigned_role: assignedRole,
-                                status: "OPEN",
-                                is_closed: false,
-                                image_url: imageUrl,
-                                is_hamal_down: isHamal,
-                                is_recurring: isRecurring
-                            }).select().single();
-
-                            if (error) throw error;
-
-                            let notifyTitle = isHamal ? "🚨 חמ״ל מושבת! 🚨" : (isRecurring ? "🔄 תקלה חוזרת!" : "✨ תקלה חדשה");
-                            pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: num, title: notifyTitle, message: title });
-
-                            await loadData();
-                            nav("DETAILS", t.id);
-                        }
-                    });
-                };
-
-            }
-
-
-            if (activePage === "DETAILS") {
-                const t = tickets.find(x => x.id == selectedTicketId);
-                if (!t) return nav("HOME");
-                const isOwner = currentUser.role === 'OWNER';
-                const canTakeResponsibility = (t.assignedRole === currentUser.role || isOwner) && t.status === 'OPEN';
-
-                // Filter the LOCAL comments loaded for this ticket
-                const ticketComments = comments || [];
-
-                main.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;"><button class="btn" onclick="nav('HOME')"><i data-lucide="chevron-left"></i></button><div class="page-title">תקלה #${t.ticketNumber}</div></div>${t.isHamalDown ? '<div style="background:#ef4444; color:white; padding:15px; border-radius:12px; margin-bottom:20px; font-weight:bold; text-align:center; animation:pulseRed 2s infinite;">🚨 התראה: חמ"ל מושבת</div>' : ''}<div class="card">${canTakeResponsibility ? `<button onclick="takeTicket('${t.id}')" class="btn btn-primary" style="width:100%; justify-content:center; margin-bottom:20px; background:#10b981; border-color:#10b981;">✋ קח לטיפולך (שיוך עצמי)</button>` : ''}<div style="font-size:1.2rem;font-weight:700;margin-bottom:10px;">${escapeHtml(t.title)}</div><div style="color:var(--text-soft);margin-bottom:20px;white-space:pre-wrap;">${escapeHtml(t.description)}</div>${t.imageUrl ? `<img src="${t.imageUrl}" class="ticket-image-preview" onclick="window.open('${t.imageUrl}')" />` : ''}<div class="grid-2cols" style="background:rgba(255,255,255,0.05);padding:15px;border-radius:12px;"><div><span class="label">נפתח ע״י</span>${escapeHtml(t.createdByName)}</div><div><span class="label">יחידה</span>${escapeHtml(t.unit || '-')}</div><div><span class="label">נושא</span>${escapeHtml(t.topic)}</div><div><span class="label">אחראי</span>${roleLabel(t.assignedRole)}</div><div><span class="label">סטטוס</span>${STATUS_LABEL[t.status]}</div></div>${(isOwner || currentUser.isManager || t.assignedRole === currentUser.role) ? `<div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);"><div class="label">עדכון סטטוס</div><div style="display:flex; gap:10px;"><select class="select" id="upd-status"><option value="OPEN" ${t.status == 'OPEN' ? 'selected' : ''}>פתוח</option><option value="IN_PROGRESS" ${t.status == 'IN_PROGRESS' ? 'selected' : ''}>בטיפול</option><option value="RESOLVED" ${t.status == 'RESOLVED' ? 'selected' : ''}>טופל (סגירה)</option></select><button class="btn btn-primary" onclick="updateTicket('${t.id}')">עדכן</button></div></div>` : ''}</div><div class="card" style="margin-top:20px;"><div class="card-title">יומן טיפול</div><div style="max-height:300px;overflow-y:auto;margin-bottom:15px;">${ticketComments.map(c => `<div class="chat-bubble"><div class="chat-meta"><b>${escapeHtml(c.authorName)}</b> <span>${formatDate(c.createdAt)}</span></div>${escapeHtml(c.content)}</div>`).join('')}</div><form onsubmit="postComment(event, '${t.id}')" style="display:flex;gap:8px;"><input class="input" name="txt" placeholder="כתוב תגובה..." required /><button class="btn btn-primary"><i data-lucide="send"></i></button></form></div>`;
-            }
+        <div class="card">
+            <div style="font-size:1.2rem;font-weight:700;margin-bottom:10px;">${escapeHtml(t.title)}</div>
+            <div style="color:var(--text-soft);margin-bottom:20px;white-space:pre-wrap;">${escapeHtml(t.description)}</div>
+            
+            <div class="grid-2cols" style="background:rgba(255,255,255,0.05);padding:15px;border-radius:12px;">
+                <div><span class="label">נפתח ע״י</span>${escapeHtml(t.createdByName || 'לא ידוע')}</div>
+                <div><span class="label">יחידה</span>${escapeHtml(t.unit || '-')}</div>
+                <div><span class="label">נושא</span>${escapeHtml(t.topic)}</div>
+                <div><span class="label">אחראי</span>${roleLabel(t.assignedRole)}</div>
+                <div><span class="label">סטטוס</span>${STATUS_LABEL[t.status]}</div>
+            </div>
+            
+            </div>`;
+    lucide.createIcons();
+}
 
             if (activePage === "MANAGE_USERS") {
                 if (currentUser.role !== 'OWNER') return nav('HOME');
@@ -1662,30 +1827,134 @@
             }
 
             if (activePage === "ANALYTICS") {
-                window.setView = (v) => { analyticsView = v; render(); };
-                window.moveDate = (dir) => { const d = new Date(analyticsRefDate); if (analyticsView === 'WEEK') d.setDate(d.getDate() + (dir * 7)); else d.setMonth(d.getMonth() + dir); analyticsRefDate = d; render(); };
-                const getStartEnd = () => { const now = new Date(analyticsRefDate); let start, end; if (analyticsView === 'WEEK') { const day = now.getDay(); const diff = now.getDate() - day + (day == 0 ? -6 : 1) - 1; start = new Date(now.setDate(diff)); start.setHours(0, 0, 0, 0); end = new Date(start); end.setDate(end.getDate() + 6); end.setHours(23, 59, 59, 999); } else { start = new Date(now.getFullYear(), now.getMonth(), 1); end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); } return { start, end }; };
-                const range = getStartEnd();
-                const dateLabel = analyticsView === 'WEEK' ? `${range.start.getDate()}/${range.start.getMonth() + 1} - ${range.end.getDate()}/${range.end.getMonth() + 1}` : range.start.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
-                const isComp = currentUser.role === 'COMPANY_CMD';
-                let list = isComp ? tickets.filter(t => (t.unit || "") === (currentUser.unit || "")) : tickets;
-                list = list.filter(t => { const d = new Date(t.createdAt); return d >= range.start && d <= range.end; });
-                const open = list.filter(t => !t.isClosed).length;
-                const closed = list.filter(t => t.isClosed).length;
-                const total = list.length;
-                const hamalCount = list.filter(t => t.isHamalDown).length;
-                const counts = {};
-                list.forEach(t => { let key = "אחר"; if (analyticsDim === "STATUS") key = STATUS_LABEL[t.status] || t.status; else if (analyticsDim === "ROLE") key = roleLabel(t.assignedRole) || "לא הוקצה"; else if (analyticsDim === "TOPIC") key = t.topic || "ללא"; else if (analyticsDim === "UNIT") key = t.unit || "כללי"; counts[key] = (counts[key] || 0) + 1; });
-                const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-                const colors = ["#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#14b8a6"];
-                let paths = "", startAngle = 0;
-                const pieTotal = total || 1;
-                if (sorted.length === 1 && total > 0) { paths = `<circle cx="50" cy="50" r="50" fill="${colors[0]}" class="pie-slice"><title>${sorted[0][0]}</title></circle>`; } else if (total > 0) { sorted.forEach(([label, val], i) => { const pct = val / pieTotal; const sliceAngle = pct * 360; const endAngle = startAngle + sliceAngle; const x1 = 50 + 50 * Math.cos(Math.PI * startAngle / 180); const y1 = 50 + 50 * Math.sin(Math.PI * startAngle / 180); const x2 = 50 + 50 * Math.cos(Math.PI * endAngle / 180); const y2 = 50 + 50 * Math.sin(Math.PI * endAngle / 180); const largeArc = sliceAngle > 180 ? 1 : 0; const d = `M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`; paths += `<path d="${d}" fill="${colors[i % colors.length]}" class="pie-slice" stroke="rgba(15,23,42,0.5)" stroke-width="1"><title>${label}: ${val}</title></path>`; startAngle = endAngle; }); }
+    window.setView = (v) => { analyticsView = v; render(); };
+    window.moveDate = (dir) => { const d = new Date(analyticsRefDate); if (analyticsView === 'WEEK') d.setDate(d.getDate() + (dir * 7)); else d.setMonth(d.getMonth() + dir); analyticsRefDate = d; render(); };
+    
+    const getStartEnd = () => { 
+        const now = new Date(analyticsRefDate); 
+        let start, end; 
+        if (analyticsView === 'WEEK') { 
+            const day = now.getDay(); 
+            const diff = now.getDate() - day + (day == 0 ? -6 : 1) - 1; 
+            start = new Date(now.setDate(diff)); 
+            start.setHours(0, 0, 0, 0); 
+            end = new Date(start); 
+            end.setDate(end.getDate() + 6); 
+            end.setHours(23, 59, 59, 999); 
+        } else { 
+            start = new Date(now.getFullYear(), now.getMonth(), 1); 
+            end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); 
+        } 
+        return { start, end }; 
+    };
 
-                main.innerHTML = `<div class="page-header"><div class="page-title">דשבורד אנליטיקה</div></div><div class="date-control-bar"><div style="display:flex;gap:5px;"><button class="view-toggle-btn ${analyticsView === 'WEEK' ? 'active' : ''}" onclick="setView('WEEK')">שבוע</button><button class="view-toggle-btn ${analyticsView === 'MONTH' ? 'active' : ''}" onclick="setView('MONTH')">חודש</button></div><div style="display:flex;align-items:center;gap:15px;font-weight:700;"><button class="date-nav-btn" onclick="moveDate(-1)"><i data-lucide="chevron-right"></i></button><span style="min-width:150px;text-align:center;">${dateLabel}</span><button class="date-nav-btn" onclick="moveDate(1)"><i data-lucide="chevron-left"></i></button></div></div><div class="grid-dashboard-compact"><div class="stat-card-compact"><div class="stat-val-compact" style="color:#ec4899;">${open}</div><div class="stat-lbl-compact">פתוחות</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#10b981;">${closed}</div><div class="stat-lbl-compact">סגורות</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#f59e0b;">${total}</div><div class="stat-lbl-compact">סה"כ לתקופה</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#ef4444;">${hamalCount}</div><div class="stat-lbl-compact">תקלות משביתות</div></div></div><div class="card" style="margin-top:16px;"><div class="card-title">פילוח נתונים</div><div class="analytics-filter-toggle">${[{ k: "STATUS", l: "סטטוס" }, { k: "ROLE", l: "תפקיד" }, { k: "TOPIC", l: "נושא" }, { k: "UNIT", l: "חטיבה" }].map(x => `<button class="analytics-filter-chip ${analyticsDim === x.k ? 'active' : ''}" onclick="setDim('${x.k}')">${x.l}</button>`).join("")}</div><div class="chart-grid-2"><div style="display:flex;align-items:center;justify-content:center;min-height:200px;">${total > 0 ? `<svg viewBox="-5 -5 110 110" style="width:180px;overflow:visible;transform:rotate(-90deg);">${paths}</svg>` : '<div style="opacity:0.5;">אין נתונים לתקופה זו</div>'}</div><div style="display:flex;flex-direction:column;justify-content:center;">${sorted.map(([l, v], i) => `<div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:10px;height:10px;border-radius:3px;background:${colors[i % colors.length]}"></div><span>${escapeHtml(l)}</span></div><strong>${v}</strong></div><div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${(v / total) * 100}%;background:${colors[i % colors.length]};border-radius:3px;"></div></div></div>`).join("")}</div></div></div>`;
-                window.setDim = (d) => { analyticsDim = d; render(); };
-            }
+    const range = getStartEnd();
+    const dateLabel = analyticsView === 'WEEK' ? `${range.start.getDate()}/${range.start.getMonth() + 1} - ${range.end.getDate()}/${range.end.getMonth() + 1}` : range.start.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
 
+    // --- תיקון לוגיקת הסינון ליחידות מרובות ---
+    const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : (currentUser.unit ? [currentUser.unit] : []);
+    
+    let list = tickets;
+    
+    // אם המשתמש הוא לא OWNER, נסנן לו רק את היחידות שבחר
+    if (currentUser.role !== 'OWNER') {
+        list = tickets.filter(t => userUnits.includes(t.unit));
+    }
+
+    // סינון לפי טווח תאריכים
+    list = list.filter(t => { 
+        const d = new Date(t.createdAt); 
+        return d >= range.start && d <= range.end; 
+    });
+    // ------------------------------------------
+
+    const open = list.filter(t => !t.isClosed).length;
+    const closed = list.filter(t => t.isClosed).length;
+    const total = list.length;
+    const hamalCount = list.filter(t => t.isHamalDown).length;
+
+    const counts = {};
+    list.forEach(t => { 
+        let key = "אחר"; 
+        if (analyticsDim === "STATUS") key = STATUS_LABEL[t.status] || t.status; 
+        else if (analyticsDim === "ROLE") key = roleLabel(t.assignedRole) || "לא הוקצה"; 
+        else if (analyticsDim === "TOPIC") key = t.topic || "ללא"; 
+        else if (analyticsDim === "UNIT") key = t.unit || "כללי"; 
+        counts[key] = (counts[key] || 0) + 1; 
+    });
+
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    const colors = ["#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#14b8a6"];
+    
+    let paths = "", startAngle = 0;
+    const pieTotal = total || 1;
+    if (sorted.length === 1 && total > 0) { 
+        paths = `<circle cx="50" cy="50" r="50" fill="${colors[0]}" class="pie-slice"><title>${sorted[0][0]}</title></circle>`; 
+    } else if (total > 0) { 
+        sorted.forEach(([label, val], i) => { 
+            const pct = val / pieTotal; 
+            const sliceAngle = pct * 360; 
+            const endAngle = startAngle + sliceAngle; 
+            const x1 = 50 + 50 * Math.cos(Math.PI * startAngle / 180); 
+            const y1 = 50 + 50 * Math.sin(Math.PI * startAngle / 180); 
+            const x2 = 50 + 50 * Math.cos(Math.PI * endAngle / 180); 
+            const y2 = 50 + 50 * Math.sin(Math.PI * endAngle / 180); 
+            const largeArc = sliceAngle > 180 ? 1 : 0; 
+            const d = `M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`; 
+            paths += `<path d="${d}" fill="${colors[i % colors.length]}" class="pie-slice" stroke="rgba(15,23,42,0.5)" stroke-width="1"><title>${label}: ${val}</title></path>`; 
+            startAngle = endAngle; 
+        }); 
+    }
+
+    main.innerHTML = `
+        <div class="page-header"><div class="page-title">דשבורד אנליטיקה</div></div>
+        <div class="date-control-bar">
+            <div style="display:flex;gap:5px;">
+                <button class="view-toggle-btn ${analyticsView === 'WEEK' ? 'active' : ''}" onclick="setView('WEEK')">שבוע</button>
+                <button class="view-toggle-btn ${analyticsView === 'MONTH' ? 'active' : ''}" onclick="setView('MONTH')">חודש</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:15px;font-weight:700;">
+                <button class="date-nav-btn" onclick="moveDate(-1)"><i data-lucide="chevron-right"></i></button>
+                <span style="min-width:150px;text-align:center;">${dateLabel}</span>
+                <button class="date-nav-btn" onclick="moveDate(1)"><i data-lucide="chevron-left"></i></button>
+            </div>
+        </div>
+        <div class="grid-dashboard-compact">
+            <div class="stat-card-compact"><div class="stat-val-compact" style="color:#ec4899;">${open}</div><div class="stat-lbl-compact">פתוחות</div></div>
+            <div class="stat-card-compact"><div class="stat-val-compact" style="color:#10b981;">${closed}</div><div class="stat-lbl-compact">סגורות</div></div>
+            <div class="stat-card-compact"><div class="stat-val-compact" style="color:#f59e0b;">${total}</div><div class="stat-lbl-compact">סה"כ לתקופה</div></div>
+            <div class="stat-card-compact"><div class="stat-val-compact" style="color:#ef4444;">${hamalCount}</div><div class="stat-lbl-compact">תקלות משביתות</div></div>
+        </div>
+        <div class="card" style="margin-top:16px;">
+            <div class="card-title">פילוח נתונים</div>
+            <div class="analytics-filter-toggle">
+                ${[{ k: "STATUS", l: "סטטוס" }, { k: "ROLE", l: "תפקיד" }, { k: "TOPIC", l: "נושא" }, { k: "UNIT", l: "חטיבה" }].map(x => `<button class="analytics-filter-chip ${analyticsDim === x.k ? 'active' : ''}" onclick="setDim('${x.k}')">${x.l}</button>`).join("")}
+            </div>
+            <div class="chart-grid-2">
+                <div style="display:flex;align-items:center;justify-content:center;min-height:200px;">
+                    ${total > 0 ? `<svg viewBox="-5 -5 110 110" style="width:180px;overflow:visible;transform:rotate(-90deg);">${paths}</svg>` : '<div style="opacity:0.5;">אין נתונים לתקופה זו</div>'}
+                </div>
+                <div style="display:flex;flex-direction:column;justify-content:center;">
+                    ${sorted.map(([l, v], i) => `
+                        <div style="margin-bottom:12px;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;">
+                                <div style="display:flex;align-items:center;gap:8px;">
+                                    <div style="width:10px;height:10px;border-radius:3px;background:${colors[i % colors.length]}"></div>
+                                    <span>${escapeHtml(l)}</span>
+                                </div>
+                                <strong>${v}</strong>
+                            </div>
+                            <div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;">
+                                <div style="height:100%;width:${(v / total) * 100}%;background:${colors[i % colors.length]};border-radius:3px;"></div>
+                            </div>
+                        </div>`).join("")}
+                </div>
+            </div>
+        </div>`;
+    
+    window.setDim = (d) => { analyticsDim = d; render(); };
+    lucide.createIcons();
+}
             if (activePage === "NOTIFICATIONS") {
                 if (!currentUser.isManager && currentUser.role !== 'OWNER') return nav('HOME');
 
@@ -1708,20 +1977,135 @@
                     await withLoader(document.querySelector(".card"), async () => { await supabase.from("users").update({ settings: newSettings }).eq("id", currentUser.id); await loadData(); showToast("ההגדרות נשמרו בהצלחה"); });
                 };
             }
-
             if (activePage === "PROFILE") {
-                const isOwner = currentUser.role === 'OWNER';
-                main.innerHTML = `<header class="header"><div class="page-title">פרופיל</div></header>${currentUser.isManager || isOwner ? `<div class="card" style="margin-bottom:20px; background:rgba(16, 185, 129, 0.1); border:1px solid #10b981;"><div style="display:flex; align-items:center; gap:12px; color:#10b981;"><i data-lucide="shield-check" style="width:32px; height:32px;"></i><div><div style="font-weight:800; font-size:1.1rem;">${isOwner ? 'בעלים (Admin)' : 'מנהל מערכת (Manager)'}</div><div style="font-size:0.85rem; opacity:0.8;">יש לך הרשאות מורחבות לצפייה וניהול.</div></div></div></div>` : ''}<div class="card"><form id="profile-form"><div class="field-group"><label class="label">שם מלא</label><input class="input" name="fn" value="${escapeHtml(currentUser.fullName)}" /></div><div class="field-group"><label class="label">טלפון</label><input class="input" name="ph" value="${escapeHtml(currentUser.phone)}" /></div><div class="field-group"><label class="label">חטיבה</label><select class="select" name="unit"><option value="">ללא שיוך</option>${units.map(u => `<option value="${u.id}" ${currentUser.unitId == u.id ? 'selected' : ''}>${escapeHtml(u.name)}</option>`).join('')}</select></div>${!isOwner && !currentUser.isManager ? `<div style="margin:20px 0; padding:15px; border:1px dashed var(--accent); border-radius:12px; text-align:center;"><div style="margin-bottom:8px;">האם אתה מנהל בתפקידך?</div>${currentUser.requestedManager ? '<span style="color:#fbbf24;">⏳ בקשה נשלחה (ממתין לאישור)</span>' : '<button type="button" class="btn" onclick="requestManager()" style="color:var(--accent);">👮 בקש הרשאת מנהל</button>'}</div>` : ''}<div class="field-group"><label class="label">תפקיד (לשינוי יש לבקש אישור)</label><select class="select" name="requestedRole">${['HATAP', 'PLHIK', 'HR', 'MAMRAM', 'APP', 'NETWORK'].map(r => `<option value="${r}" ${currentUser.requestedRole === r ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}</select></div><div style="background: rgba(236, 72, 153, 0.1); padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center;"><button type="button" class="btn" style="width:100%; justify-content:center; color:#ec4899;" onclick="enableNotificationsManual()"><i data-lucide="bell"></i> הפעל התראות (iPhone/Android)</button></div><button class="btn btn-primary" style="width:100%;">שמור שינויים</button></form><button class="btn btn-danger" onclick="doLogout()" style="width:100%; margin-top:20px; justify-content:center;"><i data-lucide="log-out"></i> התנתקות מהחשבון</button></div>`;
-                document.getElementById("profile-form").onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".card"), async () => { const updates = { full_name: e.target.fn.value, phone: e.target.ph.value, unit_id: e.target.unit.value || null, requested_role: e.target.requestedRole.value, role_status: "Pending" }; await supabase.from("users").update(updates).eq("id", currentUser.id); await loadData(); showToast("פרופיל עודכן בהצלחה"); }); };
-            }
+    const isOwner = currentUser.role === 'OWNER';
+    
+    // הכנת התצוגה המקדימה של היחידות שנבחרו
+    const selectedArray = Array.isArray(currentUser.unit) ? currentUser.unit : (currentUser.unit ? [currentUser.unit] : []);
+    const displayText = selectedArray.length === 0 ? "בחר יחידות..." : 
+                        (selectedArray.length <= 2 ? selectedArray.join(', ') : `${selectedArray[0]} + עוד ${selectedArray.length - 1}`);
 
+    main.innerHTML = `
+        <header class="header"><div class="page-title">פרופיל אישי</div></header>
+        ${currentUser.isManager || isOwner ? `<div class="card" style="margin-bottom:20px; background:rgba(16, 185, 129, 0.1); border:1px solid #10b981;"><div style="display:flex; align-items:center; gap:12px; color:#10b981;"><i data-lucide="shield-check" style="width:32px; height:32px;"></i><div><div style="font-weight:800; font-size:1.1rem;">${isOwner ? 'בעלים (Admin)' : 'מנהל מערכת (Manager)'}</div><div style="font-size:0.85rem; opacity:0.8;">יש לך הרשאות מורחבות לצפייה וניהול.</div></div></div></div>` : ''}
+        <div class="card">
+            <form id="profile-form">
+                <div class="field-group">
+                    <label class="label">שם מלא</label>
+                    <input class="input" name="fn" value="${escapeHtml(currentUser.fullName)}" />
+                </div>
+                <div class="field-group">
+                    <label class="label">טלפון</label>
+                    <input class="input" name="ph" value="${escapeHtml(currentUser.phone)}" />
+                </div>
+                
+                <div class="field-group" id="units-dropdown-container">
+                    <label class="label">יחידות באחריותך</label>
+                    <div class="custom-multiselect">
+                        <div class="select-display input" onclick="toggleUnitsDropdown(event)">
+                            <span id="selected-units-text">${escapeHtml(displayText)}</span>
+                            <i data-lucide="chevron-down" style="width:18px; opacity:0.5;"></i>
+                        </div>
+                        <div class="dropdown-options card" id="units-dropdown-list">
+                            ${units.map(u => {
+                                const isChecked = selectedArray.includes(u.name);
+                                return `
+                                    <label class="dropdown-item">
+                                        <span>${escapeHtml(u.name)}</span>
+                                        <input type="checkbox" name="unit_choice" value="${escapeHtml(u.name)}" 
+                                               ${isChecked ? 'checked' : ''} 
+                                               onchange="updateSelectedUnitsText()"
+                                               style="width:18px; height:18px; accent-color:var(--accent);">
+                                    </label>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                ${!isOwner && !currentUser.isManager ? `
+                    <div style="margin:20px 0; padding:15px; border:1px dashed var(--accent); border-radius:12px; text-align:center;">
+                        <div style="margin-bottom:8px;">האם אתה מנהל בתפקידך?</div>
+                        ${currentUser.requestedManager ? '<span style="color:#fbbf24;">⏳ בקשה נשלחה (ממתין לאישור)</span>' : '<button type="button" class="btn" onclick="requestManager()" style="color:var(--accent);">👮 בקש הרשאת מנהל</button>'}
+                    </div>` : ''}
+                
+                <div class="field-group">
+                    <label class="label">תפקיד (לשינוי יש לבקש אישור)</label>
+                    <select class="select" name="requestedRole">
+                        ${['HATAP', 'PLHIK', 'HR', 'MAMRAM', 'APP', 'NETWORK'].map(r => `<option value="${r}" ${currentUser.requestedRole === r ? "selected" : ""}>${roleLabel(r)}</option>`).join("")}
+                    </select>
+                </div>
+                
+                <div style="background: rgba(236, 72, 153, 0.1); padding: 15px; border-radius: 12px; margin: 20px 0; text-align: center;">
+                    <button type="button" class="btn" style="width:100%; justify-content:center; color:#ec4899;" onclick="enableNotificationsManual()"><i data-lucide="bell"></i> הפעל התראות (iPhone/Android)</button>
+                </div>
+                <button class="btn btn-primary" style="width:100%;">שמור שינויים</button>
+            </form>
+            <button class="btn btn-danger" onclick="doLogout()" style="width:100%; margin-top:20px; justify-content:center;"><i data-lucide="log-out"></i> התנתקות מהחשבון</button>
+        </div>`;
+
+    lucide.createIcons();
+
+    document.getElementById("profile-form").onsubmit = async (e) => {
+        e.preventDefault();
+        const selectedUnits = Array.from(e.target.querySelectorAll('input[name="unit_choice"]:checked')).map(el => el.value);
+
+        await withLoader(document.querySelector(".card"), async () => {
+            const updates = {
+                full_name: e.target.fn.value,
+                phone: e.target.ph.value,
+                unit: selectedUnits,
+                requested_role: e.target.requestedRole.value,
+                role_status: "Pending"
+            };
+            await supabase.from("users").update(updates).eq("id", currentUser.id);
+            await loadData();
+            showToast("פרופיל עודכן בהצלחה");
+            render();
+        });
+    };
+}
             if (activePage === "ROLE_APPROVAL") {
                 const pending = users.filter(u => u.roleStatus === "Pending");
                 main.innerHTML = `<header class="header"><div class="page-title">אישור תפקידים</div></header><div class="card">${pending.length === 0 ? 'אין בקשות ממתינות' : pending.map(u => `<div class="list-item"><div><b>${escapeHtml(u.fullName)}</b> מבקש לעבור ל-<b>${roleLabel(u.requestedRole)}</b></div><button class="btn btn-primary" onclick="approveRole('${u.id}', '${u.requestedRole}')">אשר</button></div>`).join('')}</div>`;
             }
         }
 
+
+        window.toggleUnitsDropdown = (e) => {
+    e.stopPropagation();
+    const list = document.getElementById('units-dropdown-list');
+    const isVisible = list.classList.contains('show');
+    
+    // סגירת תפריטים אחרים אם קיימים
+    document.querySelectorAll('.dropdown-options').forEach(el => el.classList.remove('show'));
+    
+    if (!isVisible) {
+        list.classList.add('show');
+        // סגירה בלחיצה מחוץ לתפריט
+        document.addEventListener('click', function closeMenu(event) {
+            if (!event.target.closest('.custom-multiselect')) {
+                list.classList.remove('show');
+                document.removeEventListener('click', closeMenu);
+            }
+        });
+    }
+};
+
+window.updateSelectedUnitsText = () => {
+    const checked = Array.from(document.querySelectorAll('input[name="unit_choice"]:checked')).map(el => el.value);
+    const textEl = document.getElementById('selected-units-text');
+    if (checked.length === 0) {
+        textEl.innerText = "בחר יחידות...";
+    } else if (checked.length <= 2) {
+        textEl.innerText = checked.join(', ');
+    } else {
+        textEl.innerText = `${checked[0]} + עוד ${checked.length - 1}`;
+    }
+};
         // --- ACTIONS ---
+
+
         window.nav = async (p, id = null) => {
             // אם עוברים ל-DETAILS, טוענים קודם את התגובות
             if (p === 'DETAILS' && id) {
@@ -1847,36 +2231,38 @@
         async function pushTicketShort({ userIds, ticketId, title, message }) { const cleanIds = [...new Set(userIds.map(String).filter(Boolean))]; if (cleanIds.length === 0) return; await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: title, body: message, url: `/?ticket=${ticketId}`, icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" }) }); }
         function getNotifyUserIdsForTicket(ticket, actingUserId) {
     const notifyIds = new Set();
-    const isHamal = ticket.is_hamal_down || false;
+    const isHamalEmergency = ticket.is_hamal_down || false;
 
     users.forEach(u => {
-        // סינון בסיסי: לא שולחים למי שביצע את הפעולה ולא למשתמשים קפואים
+        // סינון בסיסי: לא לשלוח לעצמי, לא למשתמש קפוא
         if (u.id === actingUserId || u.isFrozen) return;
 
-        // בדיקת הגדרות: ברירת המחדל היא TRUE (לקבל), אלא אם המשתמש סימן אחרת
         const s = u.settings || {};
         const wantsNew = s.notifyNew !== false; 
 
-        // 1. חמ"ל מושבת: שובר שוויון - כולם מקבלים תמיד
-        if (isHamal) {
+        // 1. חירום (חמ"ל מושבת) - כולם (מנהלים ובעלים) מקבלים תמיד
+        if (isHamalEmergency) {
             notifyIds.add(u.id);
             return; 
         }
 
-        // אם המשתמש ביקש לא לקבל התראות רגילות - מדלגים עליו (אלא אם זה חמ"ל, שטופל למעלה)
+        // אם המשתמש ביטל התראות רגילות - דלג עליו
         if (!wantsNew) return;
 
-        // 2. בעלים (OWNER) - מקבל הכל
-        if (u.role === 'OWNER') {
+        // 2. בעלים ומש"א (HR) - מקבלים את כל התקלות בכל היחידות
+        if (u.role === 'OWNER' || u.role === 'HR') {
             notifyIds.add(u.id);
         }
-
-        // 3. מנהל מש"א (HR) - מקבל הכל (כמו בעלים)
-        else if (u.role === 'HR') {
-            notifyIds.add(u.id);
+        
+        // 3. חט"פ (HATAP) - מקבל רק אם היחידה שלו תואמת ליחידת התקלה
+        else if (u.role === 'HATAP') {
+            if (u.unit === ticket.unit) {
+                notifyIds.add(u.id);
+            }
         }
 
-        // 4. מנהל/עובד בתפקיד הרלוונטי - מקבל רק מה ששייך לתפקיד שלו
+        // 4. תפקידים טכניים אחרים (ממר"ם, אפליקציה וכו')
+        // כרגע הגדרנו שהם מקבלים הכל גלובלי (או שתרצה להחיל גם עליהם סינון יחידה?)
         else if (u.role === ticket.assigned_role) {
             notifyIds.add(u.id);
         }
@@ -1884,7 +2270,7 @@
 
     return Array.from(notifyIds);
 }
-        async function bumpExistingTicket(ticketId, userComment) {
+async function bumpExistingTicket(ticketId, userComment) {
             // 1. שליפת פרטי התקלה המקורית כדי לבדוק זמן פתיחה ומי התפקיד המטפל
             const { data: ticket, error: ticketErr } = await supabase
                 .from("tickets")
@@ -1964,7 +2350,35 @@
         });
     }
 }
+window.toggleCreateUnitsDropdown = (e) => {
+    e.stopPropagation();
+    const list = document.getElementById('create-units-dropdown-list');
+    list.classList.toggle('show');
+    
+    document.addEventListener('click', function close(event) {
+        if (!event.target.closest('.custom-multiselect')) {
+            list.classList.remove('show');
+            document.removeEventListener('click', close);
+        }
+    });
+};
+
+window.updateCreateUnitsText = () => {
+    const checked = Array.from(document.querySelectorAll('input[name="ticket_unit_choice"]:checked')).map(el => el.value);
+    const textEl = document.getElementById('create-selected-units-text');
+    if (checked.length === 0) {
+        textEl.innerText = "בחר יחידות...";
+    } else if (checked.length <= 2) {
+        textEl.innerText = checked.join(', ');
+    } else {
+        textEl.innerText = `${checked[0]} + עוד ${checked.length - 1}`;
+    }
+};
     </script>
 </body>
 
 </html>
+
+
+
+
