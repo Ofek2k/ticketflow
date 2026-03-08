@@ -1286,37 +1286,34 @@
         if (uRes.error) throw uRes.error;
 
         // מיפוי משתמשים עם הגנה מפני נתונים פגומים
-        // בתוך loadData, החלף את המיפוי של המשתמשים והתקלות:
+        users = (uRes.data || []).map(u => {
+            let parsedSettings = {};
+            try {
+                parsedSettings = typeof u.settings === 'string' ? JSON.parse(u.settings) : (u.settings || {});
+            } catch (e) { console.error("Settings parse error for user", u.id); }
 
-    users = (uRes.data || []).map(u => {
-    // וידוא שהיחידות הן תמיד מערך של מחרוזות (Strings)
-    let cleanUnits = [];
-    if (Array.isArray(u.unit)) {
-        cleanUnits = u.unit.map(un => String(un).trim());
-    } else if (u.unit) {
-        cleanUnits = [String(u.unit).trim()];
-    }
+            return {
+                id: u.id,
+                authUserId: u.auth_user_id,
+                fullName: u.full_name,
+                email: u.email,
+                phone: u.phone,
+                role: u.role,
+                isManager: u.is_manager,
+                requestedManager: u.requested_manager,
+                // התיקון הקריטי: מוודא שתמיד חוזר מערך, גם אם ב-DB יש null או טקסט
+              // בתוך loadData, במיפוי של users:
+                unit: Array.isArray(u.unit) 
+                ? u.unit.map(unit => String(unit).trim()) 
+                : (u.unit ? [String(u.unit).trim()] : []),
+                unitId: u.unit_id,
+                requestedRole: u.requested_role,
+                roleStatus: u.role_status,
+                isFrozen: u.is_frozen,
+                settings: parsedSettings
+            };
+        });
 
-    return {
-        id: u.id,
-        authUserId: u.auth_user_id,
-        fullName: u.full_name,
-        role: u.role,
-        isManager: u.is_manager,
-        unit: cleanUnits, // עכשיו זה בוודאות מערך נקי
-        settings: typeof u.settings === 'string' ? JSON.parse(u.settings) : (u.settings || {})
-    };
-});
-
-tickets = (tRes.data || []).map(t => ({
-    ...t,
-    id: t.id,
-    ticketNumber: t.ticket_number,
-    // חשוב: לוודא שיחידת התקלה היא מחרוזת נקייה להשוואה
-    unit: String(t.unit || "").trim(), 
-    isClosed: !!t.is_closed,
-    isHamalDown: !!t.is_hamal_down
-}));
         // מיפוי תקלות
         tickets = (tRes.data || []).map(t => ({
             id: t.id,
