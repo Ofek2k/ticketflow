@@ -1593,9 +1593,12 @@
                 let list = tickets;
 
                 // לוגיקה לחט"פ: הצג רק מה ששייך ליחידות שבאחריותו
+                // בתוך renderPage, תחת הסינון של החט"פ:
                 if (currentUser.role === 'HATAP' && currentUser.role !== 'OWNER') {
-                    const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : [currentUser.unit];
+                    const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : (currentUser.unit ? [currentUser.unit] : []);
+                    
                     list = tickets.filter(t => 
+                        // בדיקה אם היחידה של התקלה היא אחת מהיחידות שהחט"פ אחראי עליהן
                         userUnits.includes(t.unit) || t.createdByUserId === currentUser.id
                     );
                 }
