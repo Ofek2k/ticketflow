@@ -1274,12 +1274,8 @@
 
        async function loadData() {
     try {
-        console.log("--- תחילת טעינת נתונים ---");
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            console.log("לא נמצא משתמש מחובר");
-            return null;
-        }
+        if (!user) return null;
 
         const [uRes, tRes, unRes] = await Promise.all([
             supabase.from("users").select("*"),
@@ -1291,11 +1287,22 @@
 
         users = (uRes.data || []).map(u => {
             let parsedSettings = {};
-            try {
-                parsedSettings = typeof u.settings === 'string' ? JSON.parse(u.settings) : (u.settings || {});
-            } catch (e) { console.error("Settings parse error", e); }
+            try { parsedSettings = typeof u.settings === 'string' ? JSON.parse(u.settings) : (u.settings || {}); } catch (e) {}
 
-            // כאן היה ה-Crash: שימוש ב-u.unit_id במקום במשתנה לא מוגדר
+            let cleanUnits = [];
+            if (Array.isArray(u.unit)) {
+                cleanUnits = u.unit.map(un => String(un).trim());
+            } else if (typeof u.unit === 'string') {
+                if (u.unit.startsWith('[') && u.unit.endsWith(']')) {
+                    try { cleanUnits = JSON.parse(u.unit).map(un => String(un).trim()); } 
+                    catch(e) { cleanUnits = [u.unit.trim()]; }
+                } else {
+                    cleanUnits = [u.unit.trim()];
+                }
+            } else if (u.unit) {
+                cleanUnits = [String(u.unit).trim()];
+            }
+
             return {
                 id: u.id,
                 authUserId: u.auth_user_id,
@@ -1305,8 +1312,7 @@
                 role: u.role,
                 isManager: u.is_manager,
                 requestedManager: u.requested_manager,
-                // הפיכה בטוחה למערך
-                unit: Array.isArray(u.unit) ? u.unit : (u.unit ? [String(u.unit)] : []),
+                unit: cleanUnits,
                 unitId: u.unit_id || null, 
                 requestedRole: u.requested_role,
                 roleStatus: u.role_status,
@@ -1315,29 +1321,36 @@
             };
         });
 
-        // הדפסה לאיתור התקלה שביקשת
-        console.log("דגימת נתוני יחידות של משתמשים:", users.map(u => ({ name: u.fullName, units: u.unit })));
-
+        // התיקון הקריטי כאן - מיפוי מדוייק של שמות השדות מאנגלית לקאמל קייס!
         tickets = (tRes.data || []).map(t => ({
-            ...t,
             id: t.id,
             ticketNumber: t.ticket_number,
+            title: t.title,
+            description: t.description,
+            topic: t.topic,
             unit: String(t.unit || "").trim(), 
+            status: t.status,
+            assignedRole: t.assigned_role,
+            createdByUserId: t.created_by_user_id,
+            createdByName: t.created_by_name,
+            forwardedByHatapName: t.forwarded_by_hatap_name,
+            createdAt: t.created_at,
             isClosed: !!t.is_closed,
-            isHamalDown: !!t.is_hamal_down
+            isHamalDown: !!t.is_hamal_down,
+            isBumped: !!t.is_bumped,
+            bumpCount: t.bump_count
         }));
 
         units = unRes.data || [];
         currentUser = users.find(u => u.authUserId === user.id);
         
-        console.log("משתמש נוכחי נטען:", currentUser);
         return currentUser;
     } catch (err) {
         console.error("Critical Load Error:", err);
         return null; 
     }
 }
-        function startOverdueCheck() {
+function startOverdueCheck() {
             setInterval(() => {
                 if (!currentUser || (!currentUser.isManager && currentUser.role !== 'OWNER')) return;
                 const settings = currentUser.settings || {};
@@ -1598,49 +1611,60 @@
                 main.innerHTML = `<header class="header"><div><div class="page-title">שלום , ${escapeHtml(currentUser.fullName?.split(' ')[0] || 'חבר')} 👋</div><div class="page-subtitle">סטטוס מבצעי עדכני</div></div><button class="btn btn-primary" onclick="nav('CREATE')"><i data-lucide="plus"></i>תקלה חדשה</button></header><div class="grid-dashboard"><div class="stat-card"><div class="stat-val" style="color:#ec4899;">${myOpen}</div><div class="stat-lbl">תקלות שלי</div></div><div class="stat-card"><div class="stat-val" style="color:#8b5cf6;">${totalOpen}</div><div class="stat-lbl">סה״כ פתוחות</div></div><div class="stat-card"><div class="stat-val" style="color:#10b981;">${totalClosed}</div><div class="stat-lbl">תקלות שטופלו</div></div><div class="stat-card" style="border-color:${hamalOpen > 0 ? 'var(--urgent)' : 'var(--border)'}"><div class="stat-val" style="color:#ef4444;">${hamalOpen}</div><div class="stat-lbl">מושבת (חמ"ל)</div></div></div><div class="card"><div class="card-title"><i data-lucide="clock"></i> עדכונים אחרונים</div>${tickets.slice(0, 5).map((t, i) => { const isLate = !t.isClosed && isOverHour(t.createdAt); return `<div class="list-item ${isLate ? 'ticket-urgent' : ''}" style="animation-delay:${i * 0.05}s" onclick="nav('DETAILS', '${t.id}')"><div style="display:flex;align-items:center;gap:12px;"><div class="badge badge-${t.status}" style="width:8px;height:8px;padding:0;border-radius:50%;"></div><div><div style="font-weight:600;font-size:0.9rem;">${t.isHamalDown ? '🚨 ' : ''}${escapeHtml(t.title)}</div><div style="font-size:0.75rem;color:var(--text-soft);">${timeAgo(t.createdAt)} • ${escapeHtml(t.createdByName)}</div></div></div><div class="badge badge-${t.status}">${t.status === 'RESOLVED' ? 'טופל' : (STATUS_LABEL[t.status] || t.status)}</div></div>`; }).join('')}</div>`;
             }
             if (activePage === "MY_TICKETS" || activePage === "ALL_TICKETS") {
-                const isAll = activePage === "ALL_TICKETS";
+    const isAll = activePage === "ALL_TICKETS";
 
-                // הגדרת הרשאות ניהול
-                const isOwner = currentUser.role === 'OWNER';
-                const isSystemManager = currentUser.isManager || isOwner;
+    if (typeof window.filterState === 'undefined') window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" };
 
-                if (typeof window.filterState === 'undefined') window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" };
+    let list = tickets;
 
-               // בתוך renderPage, תחת התנאי if (activePage === "MY_TICKETS" || activePage === "ALL_TICKETS")
-// החלף את לוגיקת הסינון בזו:
+    // 1. העלמת תקלות סגורות אם הארכיון לא פעיל
+    if (!showClosed) {
+        list = list.filter(t => !t.isClosed);
+    }
 
-               // בתוך renderPage תחת המקרה של רשימת תקלות
-               // בתוך renderPage, תחת הצגת רשימת תקלות
-                let list = tickets;
+    // 2. סינון "התקלות שלי"
+    if (!isAll) {
+        const userUnits = currentUser.unit || [];
+        list = list.filter(t => {
+            // הופך את "שומרון, אפרים" למערך של ["שומרון", "אפרים"]
+            const ticketUnitsArray = t.unit.split(',').map(s => s.trim());
+            const isMyTicket = t.createdByUserId === currentUser.id;
+            const isAssignedToMe = t.assignedRole === currentUser.role;
+            
+            // בודק אם לפחות יחידה אחת מהתקלה נמצאת ביחידות שלי
+            const isAssignedToMyUnit = userUnits.some(un => ticketUnitsArray.includes(un));
 
-                // אם המשתמש הוא חט"פ, נראה לו רק מה ששייך ליחידות שלו
-                if (currentUser.role === 'HATAP' && currentUser.role !== 'OWNER') {
-                    // וידוא שיש לנו מערך של יחידות (מגיע מתוקן מ-loadData)
-                    const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : [];
-                    
-                    list = tickets.filter(t => {
-                        // ניקוי יחידת התקלה מרווחים
-                        const ticketUnit = String(t.unit || "").trim();
-                        
-                        // 1. האם יחידת התקלה קיימת במערך היחידות של החט"פ?
-                        const isAssignedToMyUnit = userUnits.some(un => String(un).trim() === ticketUnit);
-                        
-                        // 2. האם אני יצרתי את התקלה?
-                        const isMyTicket = t.createdByUserId === currentUser.id;
-                        
-                        return isAssignedToMyUnit || isMyTicket;
-                    });
-                }
+            // אם אני חט"פ - תראה לי את מה שביחידות שלי
+            if (currentUser.role === 'HATAP' && currentUser.role !== 'OWNER') {
+                return isAssignedToMyUnit || isMyTicket;
+            }
+            
+            // לשאר התפקידים
+            return isAssignedToMe || isMyTicket;
+        });
+    }
 
-                // המשך הסינון לפי חיפוש/נושא (נשאר כפי שהיה)
-                if (window.filterState.search) {
-                    const s = window.filterState.search.toLowerCase();
-                    list = list.filter(t => t.title.toLowerCase().includes(s) || t.ticketNumber.toString().includes(s));
-                }
-                // מנהלים ובעלים ימשיכו לראות הכל כרגיל
-                const hasActiveFilters = window.filterState.search !== "" || window.filterState.topic !== "ALL" || window.filterState.role !== "ALL";
+    // 3. סינוני חיפוש עליונים
+    if (window.filterState.search) {
+        const s = window.filterState.search.toLowerCase();
+        list = list.filter(t => (t.title && t.title.toLowerCase().includes(s)) || (t.ticketNumber && t.ticketNumber.toString().includes(s)));
+    }
+    if (window.filterState.topic && window.filterState.topic !== "ALL") {
+        list = list.filter(t => t.topic === window.filterState.topic);
+    }
+    if (window.filterState.role && window.filterState.role !== "ALL") {
+        list = list.filter(t => t.assignedRole === window.filterState.role);
+    }
 
-                main.innerHTML = `
+    // פונקציות לתפריט הסינון
+    window.setFilterTopic = (v) => { window.filterState.topic = v; render(); };
+    window.setFilterRole = (v) => { window.filterState.role = v; render(); };
+    window.clearFilters = () => { window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" }; render(); };
+    window.setSearch = (v) => { window.filterState.search = v; render(); };
+
+    const hasActiveFilters = window.filterState.search !== "" || window.filterState.topic !== "ALL" || window.filterState.role !== "ALL";
+
+    main.innerHTML = `
         <header class="header">
             <div class="page-title">${isAll ? 'כל התקלות' : 'התקלות שלי'} <span style="font-size:1rem;opacity:0.5;">(${list.length})</span></div>
             <div><button class="btn ${showClosed ? 'btn-primary' : 'btn-ghost'}" onclick="toggleClosed()"><i data-lucide="archive"></i> ${showClosed ? 'חזרה לפתוחות' : 'ארכיון'}</button></div>
@@ -1671,38 +1695,36 @@
 
         <div class="card" style="padding:0; background:transparent; border:none;">
             ${list.map(t => {
-                    const isOver1Hour = !t.isClosed && isOverHour(t.createdAt);
-                    const isBumped = t.is_bumped === true;
-                    let itemClass = '';
-                    if (t.isHamalDown) itemClass = 'ticket-hamal';
-                    else if (isBumped) itemClass = 'bumped-ticket';
-                    else if (isOver1Hour) itemClass = 'ticket-urgent';
+                const isOver1Hour = !t.isClosed && isOverHour(t.createdAt);
+                const isBumped = t.isBumped === true;
+                let itemClass = '';
+                if (t.isHamalDown) itemClass = 'ticket-hamal';
+                else if (isBumped) itemClass = 'bumped-ticket';
+                else if (isOver1Hour) itemClass = 'ticket-urgent';
 
-                    return `
-                <div class="list-item ${itemClass}" onclick="nav('DETAILS', '${t.id}')">
-                    <div style="display:flex; gap:16px; align-items:center;">
-                        <div style="font-family:monospace; opacity:0.5; font-size:0.8rem;">#${t.ticketNumber}</div>
-                        <div>
-                            <div style="font-weight:700;">
-                                ${t.isHamalDown ? '🚨 ' : ''}
-                                ${isBumped ? '🔥 ' : ''}
-                                ${escapeHtml(t.title)}
-                            </div>
-                            <div style="font-size:0.75rem; color:var(--text-soft);">
-                                ${timeAgo(t.createdAt)} • ${roleLabel(t.assignedRole)} 
-                                ${isBumped ? `<span style="color:#ef4444; font-weight:bold;">(הוקפץ ${t.bump_count || 1} פעמים)</span>` : ''}
-                            </div>
+                return `
+            <div class="list-item ${itemClass}" onclick="nav('DETAILS', '${t.id}')">
+                <div style="display:flex; gap:16px; align-items:center;">
+                    <div style="font-family:monospace; opacity:0.5; font-size:0.8rem;">#${t.ticketNumber}</div>
+                    <div>
+                        <div style="font-weight:700;">
+                            ${t.isHamalDown ? '🚨 ' : ''}
+                            ${isBumped ? '🔥 ' : ''}
+                            ${escapeHtml(t.title)}
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--text-soft);">
+                            ${timeAgo(t.createdAt)} • ${roleLabel(t.assignedRole)} 
+                            ${isBumped ? `<span style="color:#ef4444; font-weight:bold;">(הוקפץ)</span>` : ''}
                         </div>
                     </div>
-                    <div class="badge badge-${t.status}">${STATUS_LABEL[t.status]}</div>
-                </div>`;
-                }).join('')}
+                </div>
+                <div class="badge badge-${t.status}">${STATUS_LABEL[t.status]}</div>
+            </div>`;
+            }).join('')}
             ${list.length === 0 ? '<div style="text-align:center;padding:40px;opacity:0.5;">לא נמצאו תקלות התואמות לסינון</div>' : ''}
         </div>`;
-
-                lucide.createIcons();
-            }
-
+    lucide.createIcons();
+}
 
         if (activePage === "CREATE") {
     // 1. לוגיקת ניתוב תפקידים
@@ -2277,16 +2299,16 @@ window.updateSelectedUnitsText = () => {
         async function pushTicketShort({ userIds, ticketId, title, message }) { const cleanIds = [...new Set(userIds.map(String).filter(Boolean))]; if (cleanIds.length === 0) return; await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: title, body: message, url: `/?ticket=${ticketId}`, icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" }) }); }
         function getNotifyUserIdsForTicket(ticket, actingUserId) {
     const notifyIds = new Set();
-    // יחידת התקלה (טקסט בודד מה-DB, למשל: "חטיבת שומרון")
-    const ticketUnit = ticket.unit; 
+    
+    // מפרק את התקלה (למשל "שומרון, אפרים") למערך שניתן לבדוק
+    const ticketUnitsArray = String(ticket.unit || "").split(',').map(s => s.trim()); 
 
     users.forEach(u => {
         if (u.id === actingUserId || u.isFrozen) return;
 
-        // הפיכה בטוחה למערך (גם אם זה טקסט בודד וגם אם זה Array)
-        const userUnits = Array.isArray(u.unit) ? u.unit : (u.unit ? [u.unit] : []);
-        
+        const userUnits = Array.isArray(u.unit) ? u.unit : [];
         const s = u.settings || {};
+        
         if (ticket.is_hamal_down) {
             notifyIds.add(u.id);
             return;
@@ -2296,25 +2318,19 @@ window.updateSelectedUnitsText = () => {
 
         if (u.role === 'OWNER' || u.role === 'HR') {
             notifyIds.add(u.id);
-        } 
-        // התיקון הקריטי כאן:
-        else if (u.role === 'HATAP') {
-            const userUnits = Array.isArray(u.unit) ? u.unit : [];
-            const ticketUnit = String(ticket.unit || "").trim();
-            
-            // אם אחת מהיחידות של החט"פ תואמת ליחידה של התקלה - שלח התראה
-            if (userUnits.some(un => un === ticketUnit)) {
+        } else if (u.role === 'HATAP') {
+            // התראה תשלח רק אם יש חפיפה כלשהי בין יחידות המשתמש ליחידות התקלה
+            if (userUnits.some(un => ticketUnitsArray.includes(un))) {
                 notifyIds.add(u.id);
             }
-        }
-        else if (u.role === ticket.assigned_role) {
+        } else if (u.role === ticket.assigned_role) {
             notifyIds.add(u.id);
         }
     });
 
     return Array.from(notifyIds);
 }
-async function bumpExistingTicket(ticketId, userComment) {
+        async function bumpExistingTicket(ticketId, userComment) {
             // 1. שליפת פרטי התקלה המקורית כדי לבדוק זמן פתיחה ומי התפקיד המטפל
             const { data: ticket, error: ticketErr } = await supabase
                 .from("tickets")
