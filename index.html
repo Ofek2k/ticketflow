@@ -2301,11 +2301,14 @@ window.updateSelectedUnitsText = () => {
         } 
         // התיקון הקריטי כאן:
         else if (u.role === 'HATAP') {
-            // בודק אם היחידה הספציפית של התקלה נמצאת בתוך רשימת היחידות של המשתמש
-            if (userUnits.includes(ticketUnit)) {
+            const userUnits = Array.isArray(u.unit) ? u.unit : [];
+            const ticketUnit = String(ticket.unit || "").trim();
+            
+            // אם אחת מהיחידות של החט"פ תואמת ליחידה של התקלה - שלח התראה
+            if (userUnits.some(un => un === ticketUnit)) {
                 notifyIds.add(u.id);
             }
-        } 
+        }
         else if (u.role === ticket.assigned_role) {
             notifyIds.add(u.id);
         }
