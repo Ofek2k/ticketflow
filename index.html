@@ -1274,8 +1274,12 @@
 
         async function loadData() {
     try {
+        console.log("--- תחילת טעינת נתונים ---");
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return null;
+        if (!user) {
+            console.log("לא נמצא משתמש מחובר");
+            return null;
+        }
 
         const [uRes, tRes, unRes] = await Promise.all([
             supabase.from("users").select("*"),
@@ -1285,12 +1289,36 @@
 
         if (uRes.error) throw uRes.error;
 
-        // מיפוי משתמשים עם הגנה מפני נתונים פגומים
+        // הדפסת המשתמש הראשון לבדיקת סוג הנתונים של ה-unit
+        if (uRes.data && uRes.data.length > 0) {
+            const sampleUser = uRes.data.find(u => u.auth_user_id === user.id) || uRes.data[0];
+            console.log("בדיקת סוג נתון ל-Unit של משתמש:", {
+                value: sampleUser.unit,
+                type: typeof sampleUser.unit,
+                isArray: Array.isArray(sampleUser.unit)
+            });
+        }
+
         users = (uRes.data || []).map(u => {
-            let parsedSettings = {};
+            // טיפול בטוח ביחידות - הפיכה למערך בכל מחיר
+            let finalUnits = [];
             try {
-                parsedSettings = typeof u.settings === 'string' ? JSON.parse(u.settings) : (u.settings || {});
-            } catch (e) { console.error("Settings parse error for user", u.id); }
+                if (Array.isArray(u.unit)) {
+                    finalUnits = u.unit;
+                } else if (typeof u.unit === 'string') {
+                    // אם זה נשמר כטקסט של מערך "[...] "
+                    if (u.unit.startsWith('[') && u.unit.endsWith(']')) {
+                        finalUnits = JSON.parse(u.unit);
+                    } else {
+                        finalUnits = [u.unit];
+                    }
+                } else if (u.unit) {
+                    finalUnits = [u.unit];
+                }
+            } catch (e) {
+                console.error("שגיאה בעיבוד יחידות למשתמש " + u.id, e);
+                finalUnits = [];
+            }
 
             return {
                 id: u.id,
@@ -1301,55 +1329,38 @@
                 role: u.role,
                 isManager: u.is_manager,
                 requestedManager: u.requested_manager,
-                // התיקון הקריטי: מוודא שתמיד חוזר מערך, גם אם ב-DB יש null או טקסט
-              // בתוך loadData, במיפוי של users:
-                unit: Array.isArray(u.unit) 
-                ? u.unit.map(unit => String(unit).trim()) 
-                : (u.unit ? [String(u.unit).trim()] : []),
+                unit: finalUnits, // תמיד חוזר כמערך
                 unitId: u.unit_id,
-
                 requestedRole: u.requested_role,
                 roleStatus: u.role_status,
                 isFrozen: u.is_frozen,
-                settings: parsedSettings
-                
+                settings: typeof u.settings === 'string' ? JSON.parse(u.settings) : (u.settings || {})
             };
         });
-        console.log(unitId);
-        // מיפוי תקלות
+
         tickets = (tRes.data || []).map(t => ({
+            ...t,
             id: t.id,
             ticketNumber: t.ticket_number,
-            title: t.title,
-            description: t.description,
-            topic: t.topic,
-            unit: t.unit, // יחידת התקלה היא תמיד טקסט בודד מה-DB
-            status: t.status,
-            assignedRole: t.assigned_role,
-            createdByUserId: t.created_by_user_id,
-            createdByName: t.created_by_name,
-            forwardedByHatapName: t.forwarded_by_hatap_name,
-            createdAt: t.created_at,
+            unit: String(t.unit || "").trim(), // יחידת התקלה תמיד מחרוזת
             isClosed: !!t.is_closed,
             isHamalDown: !!t.is_hamal_down
         }));
 
         units = unRes.data || [];
         currentUser = users.find(u => u.authUserId === user.id);
-
-        if (currentUser && currentUser.isFrozen) {
-            await supabase.auth.signOut();
-            alert("החשבון הוקפא. פנה למנהל המערכת.");
-            return null;
-        }
+        
+        console.log("משתמש נוכחי נטען:", currentUser);
+        console.log("--- טעינה הושלמה בהצלחה ---");
 
         return currentUser;
     } catch (err) {
-        console.error("Critical Load Error:", err);
-        // במקרה של שגיאה קריטית, ננסה להמשיך עם מה שיש כדי לא לתקוע את המשתמש
-        return currentUser;
+        console.error("!!! שגיאת טעינה קריטית !!!", err);
+        // החזרת אובייקט ריק כדי למנוע קריסה של ה-UI
+        return null; 
     }
 }
+
         function startOverdueCheck() {
             setInterval(() => {
                 if (!currentUser || (!currentUser.isManager && currentUser.role !== 'OWNER')) return;
