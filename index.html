@@ -1052,73 +1052,74 @@
         }
 
         .custom-multiselect {
-    position: relative;
-    width: 100%;
-}
+            position: relative;
+            width: 100%;
+        }
 
-.select-display {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    cursor: pointer;
-    padding-inline-end: 15px;
-}
+        .select-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding-inline-end: 15px;
+        }
 
-.dropdown-options {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    z-index: 2000;
-    margin-top: 8px;
-    padding: 8px !important;
-    max-height: 250px;
-    overflow-y: auto;
-    background: #1e293b !important; /* רקע כהה תואם */
-    border: 1px solid var(--glass-border) !important;
-    box-shadow: 0 15px 30px rgba(0,0,0,0.5);
-}
+        .dropdown-options {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 2000;
+            margin-top: 8px;
+            padding: 8px !important;
+            max-height: 250px;
+            overflow-y: auto;
+            background: #1e293b !important;
+            /* רקע כהה תואם */
+            border: 1px solid var(--glass-border) !important;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.5);
+        }
 
-.dropdown-options.show {
-    display: block;
-    animation: pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-}
+        .dropdown-options.show {
+            display: block;
+            animation: pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
 
-.dropdown-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 14px;
-    cursor: pointer;
-    border-radius: 10px;
-    transition: 0.2s;
-}
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: 0.2s;
+        }
 
-.dropdown-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
+        .dropdown-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
 
-.dropdown-item span {
-    font-size: 0.95rem;
-}
+        .dropdown-item span {
+            font-size: 0.95rem;
+        }
 
-/* התאמה למובייל - נפתח כחלונית תחתונה */
-@media (max-width: 900px) {
-    .dropdown-options.show {
-        position: fixed;
-        top: auto;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        width: 100%;
-        max-height: 60vh;
-        border-radius: 28px 28px 0 0 !important;
-        margin-top: 0;
-        padding: 20px !important;
-        padding-bottom: 40px !important;
-    }
-}
+        /* התאמה למובייל - נפתח כחלונית תחתונה */
+        @media (max-width: 900px) {
+            .dropdown-options.show {
+                position: fixed;
+                top: auto;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                max-height: 60vh;
+                border-radius: 28px 28px 0 0 !important;
+                margin-top: 0;
+                padding: 20px !important;
+                padding-bottom: 40px !important;
+            }
+        }
     </style>
 </head>
 
@@ -1251,6 +1252,9 @@
                         loadData().then(() => {
                             render();
                             initPullToRefresh(); // הפעלת ה-Pull to Refresh אחרי טעינה
+                        }).catch(e => {
+                            showModal("התנתקות מערכת", e.message, true);
+                            render();
                         });
                     }
                 } else if (event === 'SIGNED_OUT') {
@@ -1262,7 +1266,11 @@
             if (!window.location.hash.includes('type=recovery')) {
                 const { data: { session } } = await supabase.auth.getSession();
                 if (session) {
-                    await loadData();
+                    try {
+                        await loadData();
+                    } catch (e) {
+                        showModal("התנתקות מערכת", e.message, true);
+                    }
                 }
             } else {
                 isRecoveryMode = true;
@@ -1272,85 +1280,100 @@
             render();
         });
 
-       async function loadData() {
-    try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return null;
+        async function loadData() {
+            try {
+                const { data: { user } } = await supabase.auth.getUser();
+                if (!user) return null;
 
-        const [uRes, tRes, unRes] = await Promise.all([
-            supabase.from("users").select("*"),
-            supabase.from("tickets").select("*").order("created_at", { ascending: false }).limit(fetchLimit),
-            supabase.from("units").select("*")
-        ]);
+                const [uRes, tRes, unRes] = await Promise.all([
+                    supabase.from("users").select("*"),
+                    supabase.from("tickets").select("*").order("created_at", { ascending: false }).limit(fetchLimit),
+                    supabase.from("units").select("*")
+                ]);
 
-        if (uRes.error) throw uRes.error;
+                if (uRes.error) throw uRes.error;
 
-        users = (uRes.data || []).map(u => {
-            let parsedSettings = {};
-            try { parsedSettings = typeof u.settings === 'string' ? JSON.parse(u.settings) : (u.settings || {}); } catch (e) {}
+                users = (uRes.data || []).map(u => {
+                    let parsedSettings = {};
+                    try { parsedSettings = typeof u.settings === 'string' ? JSON.parse(u.settings) : (u.settings || {}); } catch (e) { }
 
-            let cleanUnits = [];
-            if (Array.isArray(u.unit)) {
-                cleanUnits = u.unit.map(un => String(un).trim());
-            } else if (typeof u.unit === 'string') {
-                if (u.unit.startsWith('[') && u.unit.endsWith(']')) {
-                    try { cleanUnits = JSON.parse(u.unit).map(un => String(un).trim()); } 
-                    catch(e) { cleanUnits = [u.unit.trim()]; }
-                } else {
-                    cleanUnits = [u.unit.trim()];
-                }
-            } else if (u.unit) {
-                cleanUnits = [String(u.unit).trim()];
-            }
+                    let cleanUnits = [];
+                    if (Array.isArray(u.unit)) {
+                        cleanUnits = u.unit.map(un => String(un).trim());
+                    } else if (typeof u.unit === 'string') {
+                        if (u.unit.startsWith('[') && u.unit.endsWith(']')) {
+                            try { cleanUnits = JSON.parse(u.unit).map(un => String(un).trim()); }
+                            catch (e) { cleanUnits = [u.unit.trim()]; }
+                        } else {
+                            cleanUnits = [u.unit.trim()];
+                        }
+                    } else if (u.unit) {
+                        cleanUnits = [String(u.unit).trim()];
+                    }
 
-            return {
-                id: u.id,
-                authUserId: u.auth_user_id,
-                fullName: u.full_name,
-                email: u.email,
-                phone: u.phone,
-                role: u.role,
-                isManager: u.is_manager,
-                requestedManager: u.requested_manager,
-                unit: cleanUnits,
-                unitId: u.unit_id || null, 
-                requestedRole: u.requested_role,
-                roleStatus: u.role_status,
-                isFrozen: u.is_frozen,
-                settings: parsedSettings
-            };
-        });
+                    return {
+                        id: u.id,
+                        authUserId: u.auth_user_id,
+                        fullName: u.full_name,
+                        email: u.email,
+                        phone: u.phone,
+                        role: u.role,
+                        isManager: u.is_manager,
+                        requestedManager: u.requested_manager,
+                        unit: cleanUnits,
+                        unitId: u.unit_id || null,
+                        requestedRole: u.requested_role,
+                        roleStatus: u.role_status,
+                        isFrozen: u.is_frozen,
+                        settings: parsedSettings
+                    };
+                });
 
-        // התיקון הקריטי כאן - מיפוי מדוייק של שמות השדות מאנגלית לקאמל קייס!
-        tickets = (tRes.data || []).map(t => ({
-            id: t.id,
-            ticketNumber: t.ticket_number,
-            title: t.title,
-            description: t.description,
-            topic: t.topic,
-            unit: String(t.unit || "").trim(), 
-            status: t.status,
-            assignedRole: t.assigned_role,
-            createdByUserId: t.created_by_user_id,
-            createdByName: t.created_by_name,
-            forwardedByHatapName: t.forwarded_by_hatap_name,
-            createdAt: t.created_at,
-            isClosed: !!t.is_closed,
-            isHamalDown: !!t.is_hamal_down,
-            isBumped: !!t.is_bumped,
-            bumpCount: t.bump_count
-        }));
+                // התיקון הקריטי כאן - מיפוי מדוייק של שמות השדות מאנגלית לקאמל קייס!
+                tickets = (tRes.data || []).map(t => ({
+                    id: t.id,
+                    ticketNumber: t.ticket_number,
+                    title: t.title,
+                    description: t.description,
+                    topic: t.topic,
+                    unit: String(t.unit || "").trim(),
+                    status: t.status,
+                    assignedRole: t.assigned_role,
+                    createdByUserId: t.created_by_user_id,
+                    createdByName: t.created_by_name,
+                    forwardedByHatapName: t.forwarded_by_hatap_name,
+                    createdAt: t.created_at,
+                    isClosed: !!t.is_closed,
+                    isHamalDown: !!t.is_hamal_down,
+                    isBumped: !!t.is_bumped,
+                    bumpCount: t.bump_count
+                }));
 
-        units = unRes.data || [];
+                units = unRes.data || [];
+                currentUser = users.find(u => u.authUserId === user.id);
+
+                units = unRes.data || [];
         currentUser = users.find(u => u.authUserId === user.id);
         
+        // --- 🛡️ חומת מגן: חסימת משתמשים מוקפאים ---
+        if (currentUser && currentUser.isFrozen) {
+            console.warn("נחסמה גישה: משתמש מוקפא ניסה להתחבר", currentUser.email);
+            await supabase.auth.signOut(); // ניתוק מיידי מול השרת
+            alert("החשבון שלך הוקפא על ידי הנהלת המערכת. הגישה נדחתה.");
+            window.location.reload(); // ריענון זורק אותו חזרה למסך ההתחברות
+            return null; // עצירת תהליך הטעינה
+        }
+        // ------------------------------------------
+
+        console.log("משתמש נוכחי נטען:", currentUser);
         return currentUser;
-    } catch (err) {
-        console.error("Critical Load Error:", err);
-        return null; 
-    }
-}
-function startOverdueCheck() {
+
+            } catch (err) {
+                console.error("Critical Load Error:", err);
+                return null;
+            }
+        }
+        function startOverdueCheck() {
             setInterval(() => {
                 if (!currentUser || (!currentUser.isManager && currentUser.role !== 'OWNER')) return;
                 const settings = currentUser.settings || {};
@@ -1427,8 +1450,8 @@ function startOverdueCheck() {
         }
 
         function renderLogin() { document.getElementById("root").innerHTML = `<div class="login-wrap"><div class="login-box"><div class="login-icon"><i data-lucide="shield" style="width:32px;height:32px;"></i></div><h1 style="font-weight:900;font-size:1.8rem;margin-bottom:4px;">TicketFlow</h1><p style="color:#94a3b8;margin-bottom:30px;">מערכת ניהול תקלות מבצעית</p><form id="auth-form"><div class="field-group" style="text-align:right;"><label class="label">כתובת אימייל</label><input class="input" type="email" name="email" required /></div><div class="field-group" style="text-align:right;"><label class="label">סיסמה</label><input class="input" type="password" name="password" required /></div><div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:0.85rem;"><a href="#" id="forgot-btn" style="color:var(--text-soft);text-decoration:none;">שכחתי סיסמה?</a></div><button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;margin-top:20px;">כניסה למערכת</button><div style="margin-top:16px;font-size:0.8rem;"><span style="color:#64748b;">אין לך משתמש?</span> <a href="#" id="go-sign" style="color:#ec4899;text-decoration:none;font-weight:600;">הרשמה</a></div></form></div></div>`; lucide.createIcons(); const form = document.getElementById("auth-form"); form.onsubmit = async (e) => { e.preventDefault(); await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.signInWithPassword({ email: form.email.value, password: form.password.value }); if (error) throw error; await loadData(); setupRealtime(); render(); }); }; document.getElementById("go-sign").onclick = async (e) => { e.preventDefault(); const em = prompt("אימייל:"); const pw = prompt("סיסמה:"); if (em && pw) { const { data, error } = await supabase.auth.signUp({ email: em, password: pw }); if (!error) { await supabase.from("users").insert({ auth_user_id: data.user.id, email: em, role: "USER", role_status: "Pending" }); showModal("נרשמת בהצלחה", "כעת ניתן להתחבר."); } else showModal("שגיאה", error.message, true); } }; document.getElementById("forgot-btn").onclick = async (e) => { e.preventDefault(); const em = form.email.value || prompt("הכנס כתובת אימייל לשחזור:"); if (!em) return; await withLoader(document.querySelector(".login-box"), async () => { const { error } = await supabase.auth.resetPasswordForEmail(em, { redirectTo: window.location.href }); if (error) showModal("שגיאה", error.message, true); else showModal("הודעה נשלחה", "בדוק את האימייל שלך לקבלת קישור לאיפוס סיסמה."); }); }; }
-        function renderOnboarding() { 
-    document.getElementById("root").innerHTML = `
+        function renderOnboarding() {
+            document.getElementById("root").innerHTML = `
     <div class="login-wrap">
         <div class="login-box">
             <div class="login-icon"><i data-lucide="user-plus"></i></div>
@@ -1452,23 +1475,23 @@ function startOverdueCheck() {
                 <button class="btn btn-primary" style="width:100%;justify-content:center;">שמירה והמשך</button>
             </form>
         </div>
-    </div>`; 
-    lucide.createIcons(); 
-    document.getElementById("onb-form").onsubmit = async (e) => { 
-        e.preventDefault(); 
-        await withLoader(document.querySelector(".login-box"), async () => { 
-            await supabase.from("users").update({ 
-                full_name: e.target.fullName.value, 
-                phone: e.target.phone.value, 
-                unit: e.target.unit.value, 
-                role_status: "Pending" 
-            }).eq("id", currentUser.id); 
-            await loadData(); 
-            setupRealtime(); 
-            render(); 
-        }); 
-    }; 
-}
+    </div>`;
+            lucide.createIcons();
+            document.getElementById("onb-form").onsubmit = async (e) => {
+                e.preventDefault();
+                await withLoader(document.querySelector(".login-box"), async () => {
+                    await supabase.from("users").update({
+                        full_name: e.target.fullName.value,
+                        phone: e.target.phone.value,
+                        unit: e.target.unit.value,
+                        role_status: "Pending"
+                    }).eq("id", currentUser.id);
+                    await loadData();
+                    setupRealtime();
+                    render();
+                });
+            };
+        }
         function renderApp() {
             const isOwner = currentUser.role === 'OWNER';
             const isManager = currentUser.isManager || isOwner;
@@ -1519,18 +1542,18 @@ function startOverdueCheck() {
             main.innerHTML = "";
 
             if (activePage === "SYSTEM_CHECK") {
-    if (currentUser.role !== 'OWNER') return nav('HOME');
+                if (currentUser.role !== 'OWNER') return nav('HOME');
 
-    // הרצת בדיקות פנימיות
-    const checkResults = {
-        auth: !!currentUser,
-        dbUnits: units.length > 0,
-        unitFormat: Array.isArray(currentUser.unit),
-        rlsActive: true, // הנחה שהרצת את ה-SQL
-        pushConfig: !!PUSH_WORKER_BASE
-    };
+                // הרצת בדיקות פנימיות
+                const checkResults = {
+                    auth: !!currentUser,
+                    dbUnits: units.length > 0,
+                    unitFormat: Array.isArray(currentUser.unit),
+                    rlsActive: true, // הנחה שהרצת את ה-SQL
+                    pushConfig: !!PUSH_WORKER_BASE
+                };
 
-    main.innerHTML = `
+                main.innerHTML = `
         <header class="header">
             <div class="page-title">דוח תקינות מערכת 🛡️</div>
             <button class="btn btn-primary" onclick="location.reload()">הרצת סריקה מחדש</button>
@@ -1599,8 +1622,8 @@ function startOverdueCheck() {
             </div>
         </div>
     `;
-    lucide.createIcons();
-}
+                lucide.createIcons();
+            }
 
 
             if (activePage === "HOME") {
@@ -1611,60 +1634,60 @@ function startOverdueCheck() {
                 main.innerHTML = `<header class="header"><div><div class="page-title">שלום , ${escapeHtml(currentUser.fullName?.split(' ')[0] || 'חבר')} 👋</div><div class="page-subtitle">סטטוס מבצעי עדכני</div></div><button class="btn btn-primary" onclick="nav('CREATE')"><i data-lucide="plus"></i>תקלה חדשה</button></header><div class="grid-dashboard"><div class="stat-card"><div class="stat-val" style="color:#ec4899;">${myOpen}</div><div class="stat-lbl">תקלות שלי</div></div><div class="stat-card"><div class="stat-val" style="color:#8b5cf6;">${totalOpen}</div><div class="stat-lbl">סה״כ פתוחות</div></div><div class="stat-card"><div class="stat-val" style="color:#10b981;">${totalClosed}</div><div class="stat-lbl">תקלות שטופלו</div></div><div class="stat-card" style="border-color:${hamalOpen > 0 ? 'var(--urgent)' : 'var(--border)'}"><div class="stat-val" style="color:#ef4444;">${hamalOpen}</div><div class="stat-lbl">מושבת (חמ"ל)</div></div></div><div class="card"><div class="card-title"><i data-lucide="clock"></i> עדכונים אחרונים</div>${tickets.slice(0, 5).map((t, i) => { const isLate = !t.isClosed && isOverHour(t.createdAt); return `<div class="list-item ${isLate ? 'ticket-urgent' : ''}" style="animation-delay:${i * 0.05}s" onclick="nav('DETAILS', '${t.id}')"><div style="display:flex;align-items:center;gap:12px;"><div class="badge badge-${t.status}" style="width:8px;height:8px;padding:0;border-radius:50%;"></div><div><div style="font-weight:600;font-size:0.9rem;">${t.isHamalDown ? '🚨 ' : ''}${escapeHtml(t.title)}</div><div style="font-size:0.75rem;color:var(--text-soft);">${timeAgo(t.createdAt)} • ${escapeHtml(t.createdByName)}</div></div></div><div class="badge badge-${t.status}">${t.status === 'RESOLVED' ? 'טופל' : (STATUS_LABEL[t.status] || t.status)}</div></div>`; }).join('')}</div>`;
             }
             if (activePage === "MY_TICKETS" || activePage === "ALL_TICKETS") {
-    const isAll = activePage === "ALL_TICKETS";
+                const isAll = activePage === "ALL_TICKETS";
 
-    if (typeof window.filterState === 'undefined') window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" };
+                if (typeof window.filterState === 'undefined') window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" };
 
-    let list = tickets;
+                let list = tickets;
 
-    // 1. העלמת תקלות סגורות אם הארכיון לא פעיל
-    if (!showClosed) {
-        list = list.filter(t => !t.isClosed);
-    }
+                // 1. העלמת תקלות סגורות אם הארכיון לא פעיל
+                if (!showClosed) {
+                    list = list.filter(t => !t.isClosed);
+                }
 
-    // 2. סינון "התקלות שלי"
-    if (!isAll) {
-        const userUnits = currentUser.unit || [];
-        list = list.filter(t => {
-            // הופך את "שומרון, אפרים" למערך של ["שומרון", "אפרים"]
-            const ticketUnitsArray = t.unit.split(',').map(s => s.trim());
-            const isMyTicket = t.createdByUserId === currentUser.id;
-            const isAssignedToMe = t.assignedRole === currentUser.role;
-            
-            // בודק אם לפחות יחידה אחת מהתקלה נמצאת ביחידות שלי
-            const isAssignedToMyUnit = userUnits.some(un => ticketUnitsArray.includes(un));
+                // 2. סינון "התקלות שלי"
+                if (!isAll) {
+                    const userUnits = currentUser.unit || [];
+                    list = list.filter(t => {
+                        // הופך את "שומרון, אפרים" למערך של ["שומרון", "אפרים"]
+                        const ticketUnitsArray = t.unit.split(',').map(s => s.trim());
+                        const isMyTicket = t.createdByUserId === currentUser.id;
+                        const isAssignedToMe = t.assignedRole === currentUser.role;
 
-            // אם אני חט"פ - תראה לי את מה שביחידות שלי
-            if (currentUser.role === 'HATAP' && currentUser.role !== 'OWNER') {
-                return isAssignedToMyUnit || isMyTicket;
-            }
-            
-            // לשאר התפקידים
-            return isAssignedToMe || isMyTicket;
-        });
-    }
+                        // בודק אם לפחות יחידה אחת מהתקלה נמצאת ביחידות שלי
+                        const isAssignedToMyUnit = userUnits.some(un => ticketUnitsArray.includes(un));
 
-    // 3. סינוני חיפוש עליונים
-    if (window.filterState.search) {
-        const s = window.filterState.search.toLowerCase();
-        list = list.filter(t => (t.title && t.title.toLowerCase().includes(s)) || (t.ticketNumber && t.ticketNumber.toString().includes(s)));
-    }
-    if (window.filterState.topic && window.filterState.topic !== "ALL") {
-        list = list.filter(t => t.topic === window.filterState.topic);
-    }
-    if (window.filterState.role && window.filterState.role !== "ALL") {
-        list = list.filter(t => t.assignedRole === window.filterState.role);
-    }
+                        // אם אני חט"פ - תראה לי את מה שביחידות שלי
+                        if (currentUser.role === 'HATAP' && currentUser.role !== 'OWNER') {
+                            return isAssignedToMyUnit || isMyTicket;
+                        }
 
-    // פונקציות לתפריט הסינון
-    window.setFilterTopic = (v) => { window.filterState.topic = v; render(); };
-    window.setFilterRole = (v) => { window.filterState.role = v; render(); };
-    window.clearFilters = () => { window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" }; render(); };
-    window.setSearch = (v) => { window.filterState.search = v; render(); };
+                        // לשאר התפקידים
+                        return isAssignedToMe || isMyTicket;
+                    });
+                }
 
-    const hasActiveFilters = window.filterState.search !== "" || window.filterState.topic !== "ALL" || window.filterState.role !== "ALL";
+                // 3. סינוני חיפוש עליונים
+                if (window.filterState.search) {
+                    const s = window.filterState.search.toLowerCase();
+                    list = list.filter(t => (t.title && t.title.toLowerCase().includes(s)) || (t.ticketNumber && t.ticketNumber.toString().includes(s)));
+                }
+                if (window.filterState.topic && window.filterState.topic !== "ALL") {
+                    list = list.filter(t => t.topic === window.filterState.topic);
+                }
+                if (window.filterState.role && window.filterState.role !== "ALL") {
+                    list = list.filter(t => t.assignedRole === window.filterState.role);
+                }
 
-    main.innerHTML = `
+                // פונקציות לתפריט הסינון
+                window.setFilterTopic = (v) => { window.filterState.topic = v; render(); };
+                window.setFilterRole = (v) => { window.filterState.role = v; render(); };
+                window.clearFilters = () => { window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" }; render(); };
+                window.setSearch = (v) => { window.filterState.search = v; render(); };
+
+                const hasActiveFilters = window.filterState.search !== "" || window.filterState.topic !== "ALL" || window.filterState.role !== "ALL";
+
+                main.innerHTML = `
         <header class="header">
             <div class="page-title">${isAll ? 'כל התקלות' : 'התקלות שלי'} <span style="font-size:1rem;opacity:0.5;">(${list.length})</span></div>
             <div><button class="btn ${showClosed ? 'btn-primary' : 'btn-ghost'}" onclick="toggleClosed()"><i data-lucide="archive"></i> ${showClosed ? 'חזרה לפתוחות' : 'ארכיון'}</button></div>
@@ -1695,14 +1718,14 @@ function startOverdueCheck() {
 
         <div class="card" style="padding:0; background:transparent; border:none;">
             ${list.map(t => {
-                const isOver1Hour = !t.isClosed && isOverHour(t.createdAt);
-                const isBumped = t.isBumped === true;
-                let itemClass = '';
-                if (t.isHamalDown) itemClass = 'ticket-hamal';
-                else if (isBumped) itemClass = 'bumped-ticket';
-                else if (isOver1Hour) itemClass = 'ticket-urgent';
+                    const isOver1Hour = !t.isClosed && isOverHour(t.createdAt);
+                    const isBumped = t.isBumped === true;
+                    let itemClass = '';
+                    if (t.isHamalDown) itemClass = 'ticket-hamal';
+                    else if (isBumped) itemClass = 'bumped-ticket';
+                    else if (isOver1Hour) itemClass = 'ticket-urgent';
 
-                return `
+                    return `
             <div class="list-item ${itemClass}" onclick="nav('DETAILS', '${t.id}')">
                 <div style="display:flex; gap:16px; align-items:center;">
                     <div style="font-family:monospace; opacity:0.5; font-size:0.8rem;">#${t.ticketNumber}</div>
@@ -1720,32 +1743,32 @@ function startOverdueCheck() {
                 </div>
                 <div class="badge badge-${t.status}">${STATUS_LABEL[t.status]}</div>
             </div>`;
-            }).join('')}
+                }).join('')}
             ${list.length === 0 ? '<div style="text-align:center;padding:40px;opacity:0.5;">לא נמצאו תקלות התואמות לסינון</div>' : ''}
         </div>`;
-    lucide.createIcons();
-}
+                lucide.createIcons();
+            }
 
-        if (activePage === "CREATE") {
-    // 1. לוגיקת ניתוב תפקידים
-    let roleOptions = "";
-    if (currentUser.role === 'USER') {
-        roleOptions = `<option value="HATAP">חט"פ</option>`;
-    } else if (currentUser.role === 'HATAP') {
-        roleOptions = `<option value="HR">מש"א</option>`;
-    } else {
-        roleOptions = `
+            if (activePage === "CREATE") {
+                // 1. לוגיקת ניתוב תפקידים
+                let roleOptions = "";
+                if (currentUser.role === 'USER') {
+                    roleOptions = `<option value="HATAP">חט"פ</option>`;
+                } else if (currentUser.role === 'HATAP') {
+                    roleOptions = `<option value="HR">מש"א</option>`;
+                } else {
+                    roleOptions = `
             <option value="HATAP">חט"פ</option><option value="HR">מש"א</option>
             <option value="PLHIK">פלחי"ק</option><option value="MAMRAM">ממר"ם</option>
             <option value="APP">אפליקציה</option><option value="NETWORK">רשת</option>`;
-    }
+                }
 
-    // 2. לוגיקת בחירת יחידות (מרובה)
-    const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : (currentUser.unit ? [currentUser.unit] : []);
-    let unitSelectionHtml = "";
+                // 2. לוגיקת בחירת יחידות (מרובה)
+                const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : (currentUser.unit ? [currentUser.unit] : []);
+                let unitSelectionHtml = "";
 
-    if (userUnits.length > 1) {
-        unitSelectionHtml = `
+                if (userUnits.length > 1) {
+                    unitSelectionHtml = `
             <div class="field-group">
                 <label class="label">יחידות / חמ"לים מושפעים (בחירה מרובה)</label>
                 <div class="custom-multiselect">
@@ -1765,11 +1788,11 @@ function startOverdueCheck() {
                     </div>
                 </div>
             </div>`;
-    } else {
-        unitSelectionHtml = `<input type="hidden" name="unit" value="${escapeHtml(userUnits[0] || '')}">`;
-    }
+                } else {
+                    unitSelectionHtml = `<input type="hidden" name="unit" value="${escapeHtml(userUnits[0] || '')}">`;
+                }
 
-    main.innerHTML = `
+                main.innerHTML = `
         <header class="header"><div class="page-title">פתיחת קריאה</div></header>
         <div class="card">
             <form id="create-form">
@@ -1804,67 +1827,67 @@ function startOverdueCheck() {
             </form>
         </div>`;
 
-    lucide.createIcons();
+                lucide.createIcons();
 
-    document.getElementById("create-form").onsubmit = async (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    
-    // שליפת היחידה שנבחרה מהטופס
-    // אם יש בחירה מרובה (Checkbox), ניקח את הראשונה או נשלב אותן למחרוזת אחת עבור שדה היחידה של התקלה
-    const selectedUnit = fd.get("unit") || Array.from(e.target.querySelectorAll('input[name="ticket_unit_choice"]:checked')).map(el => el.value).join(', ');
+                document.getElementById("create-form").onsubmit = async (e) => {
+                    e.preventDefault();
+                    const fd = new FormData(e.target);
 
-    if (!selectedUnit) {
-        showToast("נא לבחור יחידה רלוונטית", "alert-circle");
-        return;
-    }
+                    // שליפת היחידה שנבחרה מהטופס
+                    // אם יש בחירה מרובה (Checkbox), ניקח את הראשונה או נשלב אותן למחרוזת אחת עבור שדה היחידה של התקלה
+                    const selectedUnit = fd.get("unit") || Array.from(e.target.querySelectorAll('input[name="ticket_unit_choice"]:checked')).map(el => el.value).join(', ');
 
-    const insertData = {
-        ticket_number: await getNextNum(),
-        title: fd.get("title"),
-        description: fd.get("desc"),
-        topic: fd.get("topic"),
-        unit: selectedUnit, // כאן התיקון הקריטי - מוודא שהערך נשמר!
-        assigned_role: fd.get("role"),
-        status: "OPEN",
-        is_hamal_down: document.getElementById("hamalDown").checked,
-        created_by_user_id: currentUser.id,
-        created_by_name: currentUser.fullName
-    };
+                    if (!selectedUnit) {
+                        showToast("נא לבחור יחידה רלוונטית", "alert-circle");
+                        return;
+                    }
 
-    if (currentUser.role === 'HATAP' && fd.get("role") === 'HR') {
-        insertData.forwarded_by_hatap_name = currentUser.fullName;
-    }
+                    const insertData = {
+                        ticket_number: await getNextNum(),
+                        title: fd.get("title"),
+                        description: fd.get("desc"),
+                        topic: fd.get("topic"),
+                        unit: selectedUnit, // כאן התיקון הקריטי - מוודא שהערך נשמר!
+                        assigned_role: fd.get("role"),
+                        status: "OPEN",
+                        is_hamal_down: document.getElementById("hamalDown").checked,
+                        created_by_user_id: currentUser.id,
+                        created_by_name: currentUser.fullName
+                    };
 
-    await withLoader(document.querySelector(".card"), async () => {
-        const { data: t, error } = await supabase.from("tickets").insert(insertData).select().single();
-        if (error) throw error;
-        
-        // שליחת התראה לאחר שווידאנו שיש יחידה לתקלה
-        await loadData();
-        pushTicketShort({ 
-            userIds: getNotifyUserIdsForTicket(t, currentUser.id), 
-            ticketId: t.ticket_number, 
-            title: t.is_hamal_down ? "🚨 חמ״ל מושבת!" : "✨ תקלה חדשה", 
-            message: t.title 
-        });
+                    if (currentUser.role === 'HATAP' && fd.get("role") === 'HR') {
+                        insertData.forwarded_by_hatap_name = currentUser.fullName;
+                    }
 
-        nav("DETAILS", t.id);
-    });
-};
-}
+                    await withLoader(document.querySelector(".card"), async () => {
+                        const { data: t, error } = await supabase.from("tickets").insert(insertData).select().single();
+                        if (error) throw error;
 
-        if (activePage === "DETAILS") {
-    const t = tickets.find(x => x.id == selectedTicketId);
-    if (!t) return nav("HOME");
+                        // שליחת התראה לאחר שווידאנו שיש יחידה לתקלה
+                        await loadData();
+                        pushTicketShort({
+                            userIds: getNotifyUserIdsForTicket(t, currentUser.id),
+                            ticketId: t.ticket_number,
+                            title: t.is_hamal_down ? "🚨 חמ״ל מושבת!" : "✨ תקלה חדשה",
+                            message: t.title
+                        });
 
-    const forwardedByHtml = t.forwarded_by_hatap_name 
-        ? `<div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; padding: 10px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem;">
+                        nav("DETAILS", t.id);
+                    });
+                };
+            }
+
+            if (activePage === "DETAILS") {
+                const t = tickets.find(x => x.id == selectedTicketId);
+                if (!t) return nav("HOME");
+
+                const forwardedByHtml = t.forwarded_by_hatap_name
+                    ? `<div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; padding: 10px; border-radius: 10px; margin-bottom: 15px; font-size: 0.9rem;">
              <span style="color: #60a5fa; font-weight: bold;">ℹ️ הועבר לטיפול מש"א ע"י:</span> ${escapeHtml(t.forwarded_by_hatap_name)}
-           </div>` 
-        : "";
+           </div>`
+                    : "";
 
-    main.innerHTML = `
+                main.innerHTML = `
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
             <button class="btn" onclick="nav('HOME')"><i data-lucide="chevron-left"></i></button>
             <div class="page-title">תקלה #${t.ticketNumber}</div>
@@ -1886,8 +1909,8 @@ function startOverdueCheck() {
             </div>
             
             </div>`;
-    lucide.createIcons();
-}
+                lucide.createIcons();
+            }
 
             if (activePage === "MANAGE_USERS") {
                 if (currentUser.role !== 'OWNER') return nav('HOME');
@@ -1895,86 +1918,89 @@ function startOverdueCheck() {
             }
 
             if (activePage === "ANALYTICS") {
-    window.setView = (v) => { analyticsView = v; render(); };
-    window.moveDate = (dir) => { const d = new Date(analyticsRefDate); if (analyticsView === 'WEEK') d.setDate(d.getDate() + (dir * 7)); else d.setMonth(d.getMonth() + dir); analyticsRefDate = d; render(); };
-    
-    const getStartEnd = () => { 
-        const now = new Date(analyticsRefDate); 
-        let start, end; 
-        if (analyticsView === 'WEEK') { 
-            const day = now.getDay(); 
-            const diff = now.getDate() - day + (day == 0 ? -6 : 1) - 1; 
-            start = new Date(now.setDate(diff)); 
-            start.setHours(0, 0, 0, 0); 
-            end = new Date(start); 
-            end.setDate(end.getDate() + 6); 
-            end.setHours(23, 59, 59, 999); 
-        } else { 
-            start = new Date(now.getFullYear(), now.getMonth(), 1); 
-            end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); 
-        } 
-        return { start, end }; 
-    };
+                window.setView = (v) => { analyticsView = v; render(); };
+                window.moveDate = (dir) => { const d = new Date(analyticsRefDate); if (analyticsView === 'WEEK') d.setDate(d.getDate() + (dir * 7)); else d.setMonth(d.getMonth() + dir); analyticsRefDate = d; render(); };
 
-    const range = getStartEnd();
-    const dateLabel = analyticsView === 'WEEK' ? `${range.start.getDate()}/${range.start.getMonth() + 1} - ${range.end.getDate()}/${range.end.getMonth() + 1}` : range.start.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
+                const getStartEnd = () => {
+                    const now = new Date(analyticsRefDate);
+                    let start, end;
+                    if (analyticsView === 'WEEK') {
+                        const day = now.getDay();
+                        const diff = now.getDate() - day + (day == 0 ? -6 : 1) - 1;
+                        start = new Date(now.setDate(diff));
+                        start.setHours(0, 0, 0, 0);
+                        end = new Date(start);
+                        end.setDate(end.getDate() + 6);
+                        end.setHours(23, 59, 59, 999);
+                    } else {
+                        start = new Date(now.getFullYear(), now.getMonth(), 1);
+                        end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+                    }
+                    return { start, end };
+                };
 
-    // --- תיקון לוגיקת הסינון ליחידות מרובות ---
-    const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : (currentUser.unit ? [currentUser.unit] : []);
-    
-    let list = tickets;
-    
-    // אם המשתמש הוא לא OWNER, נסנן לו רק את היחידות שבחר
-    if (currentUser.role !== 'OWNER') {
-        list = tickets.filter(t => userUnits.includes(t.unit));
-    }
+                const range = getStartEnd();
+                const dateLabel = analyticsView === 'WEEK' ? `${range.start.getDate()}/${range.start.getMonth() + 1} - ${range.end.getDate()}/${range.end.getMonth() + 1}` : range.start.toLocaleString('he-IL', { month: 'long', year: 'numeric' });
 
-    // סינון לפי טווח תאריכים
-    list = list.filter(t => { 
-        const d = new Date(t.createdAt); 
-        return d >= range.start && d <= range.end; 
-    });
-    // ------------------------------------------
+                // --- תיקון לוגיקת הסינון ליחידות מרובות ---
+                const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : (currentUser.unit ? [currentUser.unit] : []);
 
-    const open = list.filter(t => !t.isClosed).length;
-    const closed = list.filter(t => t.isClosed).length;
-    const total = list.length;
-    const hamalCount = list.filter(t => t.isHamalDown).length;
+                let list = tickets;
 
-    const counts = {};
-    list.forEach(t => { 
-        let key = "אחר"; 
-        if (analyticsDim === "STATUS") key = STATUS_LABEL[t.status] || t.status; 
-        else if (analyticsDim === "ROLE") key = roleLabel(t.assignedRole) || "לא הוקצה"; 
-        else if (analyticsDim === "TOPIC") key = t.topic || "ללא"; 
-        else if (analyticsDim === "UNIT") key = t.unit || "כללי"; 
-        counts[key] = (counts[key] || 0) + 1; 
-    });
+                // אם המשתמש הוא לא OWNER, נסנן לו רק את היחידות שבחר
+                if (currentUser.role !== 'OWNER') {
+                    list = tickets.filter(t => {
+                        const ticketUnitsArray = String(t.unit || "").split(',').map(s => s.trim());
+                        return userUnits.some(un => ticketUnitsArray.includes(un));
+                    });
+                }
 
-    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-    const colors = ["#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#14b8a6"];
-    
-    let paths = "", startAngle = 0;
-    const pieTotal = total || 1;
-    if (sorted.length === 1 && total > 0) { 
-        paths = `<circle cx="50" cy="50" r="50" fill="${colors[0]}" class="pie-slice"><title>${sorted[0][0]}</title></circle>`; 
-    } else if (total > 0) { 
-        sorted.forEach(([label, val], i) => { 
-            const pct = val / pieTotal; 
-            const sliceAngle = pct * 360; 
-            const endAngle = startAngle + sliceAngle; 
-            const x1 = 50 + 50 * Math.cos(Math.PI * startAngle / 180); 
-            const y1 = 50 + 50 * Math.sin(Math.PI * startAngle / 180); 
-            const x2 = 50 + 50 * Math.cos(Math.PI * endAngle / 180); 
-            const y2 = 50 + 50 * Math.sin(Math.PI * endAngle / 180); 
-            const largeArc = sliceAngle > 180 ? 1 : 0; 
-            const d = `M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`; 
-            paths += `<path d="${d}" fill="${colors[i % colors.length]}" class="pie-slice" stroke="rgba(15,23,42,0.5)" stroke-width="1"><title>${label}: ${val}</title></path>`; 
-            startAngle = endAngle; 
-        }); 
-    }
+                // סינון לפי טווח תאריכים
+                list = list.filter(t => {
+                    const d = new Date(t.createdAt);
+                    return d >= range.start && d <= range.end;
+                });
+                // ------------------------------------------
 
-    main.innerHTML = `
+                const open = list.filter(t => !t.isClosed).length;
+                const closed = list.filter(t => t.isClosed).length;
+                const total = list.length;
+                const hamalCount = list.filter(t => t.isHamalDown).length;
+
+                const counts = {};
+                list.forEach(t => {
+                    let key = "אחר";
+                    if (analyticsDim === "STATUS") key = STATUS_LABEL[t.status] || t.status;
+                    else if (analyticsDim === "ROLE") key = roleLabel(t.assignedRole) || "לא הוקצה";
+                    else if (analyticsDim === "TOPIC") key = t.topic || "ללא";
+                    else if (analyticsDim === "UNIT") key = t.unit || "כללי";
+                    counts[key] = (counts[key] || 0) + 1;
+                });
+
+                const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+                const colors = ["#ec4899", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#6366f1", "#14b8a6"];
+
+                let paths = "", startAngle = 0;
+                const pieTotal = total || 1;
+                if (sorted.length === 1 && total > 0) {
+                    paths = `<circle cx="50" cy="50" r="50" fill="${colors[0]}" class="pie-slice"><title>${sorted[0][0]}</title></circle>`;
+                } else if (total > 0) {
+                    sorted.forEach(([label, val], i) => {
+                        const pct = val / pieTotal;
+                        const sliceAngle = pct * 360;
+                        const endAngle = startAngle + sliceAngle;
+                        const x1 = 50 + 50 * Math.cos(Math.PI * startAngle / 180);
+                        const y1 = 50 + 50 * Math.sin(Math.PI * startAngle / 180);
+                        const x2 = 50 + 50 * Math.cos(Math.PI * endAngle / 180);
+                        const y2 = 50 + 50 * Math.sin(Math.PI * endAngle / 180);
+                        const largeArc = sliceAngle > 180 ? 1 : 0;
+                        const d = `M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                        paths += `<path d="${d}" fill="${colors[i % colors.length]}" class="pie-slice" stroke="rgba(15,23,42,0.5)" stroke-width="1"><title>${label}: ${val}</title></path>`;
+                        startAngle = endAngle;
+                    });
+                }
+
+                main.innerHTML = `
         <div class="page-header"><div class="page-title">דשבורד אנליטיקה</div></div>
         <div class="date-control-bar">
             <div style="display:flex;gap:5px;">
@@ -2019,10 +2045,10 @@ function startOverdueCheck() {
                 </div>
             </div>
         </div>`;
-    
-    window.setDim = (d) => { analyticsDim = d; render(); };
-    lucide.createIcons();
-}
+
+                window.setDim = (d) => { analyticsDim = d; render(); };
+                lucide.createIcons();
+            }
             if (activePage === "NOTIFICATIONS") {
                 if (!currentUser.isManager && currentUser.role !== 'OWNER') return nav('HOME');
 
@@ -2046,14 +2072,14 @@ function startOverdueCheck() {
                 };
             }
             if (activePage === "PROFILE") {
-    const isOwner = currentUser.role === 'OWNER';
-    
-    // הכנת התצוגה המקדימה של היחידות שנבחרו
-    const selectedArray = Array.isArray(currentUser.unit) ? currentUser.unit : (currentUser.unit ? [currentUser.unit] : []);
-    const displayText = selectedArray.length === 0 ? "בחר יחידות..." : 
-                        (selectedArray.length <= 2 ? selectedArray.join(', ') : `${selectedArray[0]} + עוד ${selectedArray.length - 1}`);
+                const isOwner = currentUser.role === 'OWNER';
 
-    main.innerHTML = `
+                // הכנת התצוגה המקדימה של היחידות שנבחרו
+                const selectedArray = Array.isArray(currentUser.unit) ? currentUser.unit : (currentUser.unit ? [currentUser.unit] : []);
+                const displayText = selectedArray.length === 0 ? "בחר יחידות..." :
+                    (selectedArray.length <= 2 ? selectedArray.join(', ') : `${selectedArray[0]} + עוד ${selectedArray.length - 1}`);
+
+                main.innerHTML = `
         <header class="header"><div class="page-title">פרופיל אישי</div></header>
         ${currentUser.isManager || isOwner ? `<div class="card" style="margin-bottom:20px; background:rgba(16, 185, 129, 0.1); border:1px solid #10b981;"><div style="display:flex; align-items:center; gap:12px; color:#10b981;"><i data-lucide="shield-check" style="width:32px; height:32px;"></i><div><div style="font-weight:800; font-size:1.1rem;">${isOwner ? 'בעלים (Admin)' : 'מנהל מערכת (Manager)'}</div><div style="font-size:0.85rem; opacity:0.8;">יש לך הרשאות מורחבות לצפייה וניהול.</div></div></div></div>` : ''}
         <div class="card">
@@ -2076,8 +2102,8 @@ function startOverdueCheck() {
                         </div>
                         <div class="dropdown-options card" id="units-dropdown-list">
                             ${units.map(u => {
-                                const isChecked = selectedArray.includes(u.name);
-                                return `
+                    const isChecked = selectedArray.includes(u.name);
+                    return `
                                     <label class="dropdown-item">
                                         <span>${escapeHtml(u.name)}</span>
                                         <input type="checkbox" name="unit_choice" value="${escapeHtml(u.name)}" 
@@ -2086,7 +2112,7 @@ function startOverdueCheck() {
                                                style="width:18px; height:18px; accent-color:var(--accent);">
                                     </label>
                                 `;
-                            }).join('')}
+                }).join('')}
                         </div>
                     </div>
                 </div>
@@ -2112,27 +2138,27 @@ function startOverdueCheck() {
             <button class="btn btn-danger" onclick="doLogout()" style="width:100%; margin-top:20px; justify-content:center;"><i data-lucide="log-out"></i> התנתקות מהחשבון</button>
         </div>`;
 
-    lucide.createIcons();
+                lucide.createIcons();
 
-    document.getElementById("profile-form").onsubmit = async (e) => {
-        e.preventDefault();
-        const selectedUnits = Array.from(e.target.querySelectorAll('input[name="unit_choice"]:checked')).map(el => el.value);
+                document.getElementById("profile-form").onsubmit = async (e) => {
+                    e.preventDefault();
+                    const selectedUnits = Array.from(e.target.querySelectorAll('input[name="unit_choice"]:checked')).map(el => el.value);
 
-        await withLoader(document.querySelector(".card"), async () => {
-            const updates = {
-                full_name: e.target.fn.value,
-                phone: e.target.ph.value,
-                unit: selectedUnits,
-                requested_role: e.target.requestedRole.value,
-                role_status: "Pending"
-            };
-            await supabase.from("users").update(updates).eq("id", currentUser.id);
-            await loadData();
-            showToast("פרופיל עודכן בהצלחה");
-            render();
-        });
-    };
-}
+                    await withLoader(document.querySelector(".card"), async () => {
+                        const updates = {
+                            full_name: e.target.fn.value,
+                            phone: e.target.ph.value,
+                            unit: selectedUnits,
+                            requested_role: e.target.requestedRole.value,
+                            role_status: "Pending"
+                        };
+                        await supabase.from("users").update(updates).eq("id", currentUser.id);
+                        await loadData();
+                        showToast("פרופיל עודכן בהצלחה");
+                        render();
+                    });
+                };
+            }
             if (activePage === "ROLE_APPROVAL") {
                 const pending = users.filter(u => u.roleStatus === "Pending");
                 main.innerHTML = `<header class="header"><div class="page-title">אישור תפקידים</div></header><div class="card">${pending.length === 0 ? 'אין בקשות ממתינות' : pending.map(u => `<div class="list-item"><div><b>${escapeHtml(u.fullName)}</b> מבקש לעבור ל-<b>${roleLabel(u.requestedRole)}</b></div><button class="btn btn-primary" onclick="approveRole('${u.id}', '${u.requestedRole}')">אשר</button></div>`).join('')}</div>`;
@@ -2141,36 +2167,36 @@ function startOverdueCheck() {
 
 
         window.toggleUnitsDropdown = (e) => {
-    e.stopPropagation();
-    const list = document.getElementById('units-dropdown-list');
-    const isVisible = list.classList.contains('show');
-    
-    // סגירת תפריטים אחרים אם קיימים
-    document.querySelectorAll('.dropdown-options').forEach(el => el.classList.remove('show'));
-    
-    if (!isVisible) {
-        list.classList.add('show');
-        // סגירה בלחיצה מחוץ לתפריט
-        document.addEventListener('click', function closeMenu(event) {
-            if (!event.target.closest('.custom-multiselect')) {
-                list.classList.remove('show');
-                document.removeEventListener('click', closeMenu);
-            }
-        });
-    }
-};
+            e.stopPropagation();
+            const list = document.getElementById('units-dropdown-list');
+            const isVisible = list.classList.contains('show');
 
-window.updateSelectedUnitsText = () => {
-    const checked = Array.from(document.querySelectorAll('input[name="unit_choice"]:checked')).map(el => el.value);
-    const textEl = document.getElementById('selected-units-text');
-    if (checked.length === 0) {
-        textEl.innerText = "בחר יחידות...";
-    } else if (checked.length <= 2) {
-        textEl.innerText = checked.join(', ');
-    } else {
-        textEl.innerText = `${checked[0]} + עוד ${checked.length - 1}`;
-    }
-};
+            // סגירת תפריטים אחרים אם קיימים
+            document.querySelectorAll('.dropdown-options').forEach(el => el.classList.remove('show'));
+
+            if (!isVisible) {
+                list.classList.add('show');
+                // סגירה בלחיצה מחוץ לתפריט
+                document.addEventListener('click', function closeMenu(event) {
+                    if (!event.target.closest('.custom-multiselect')) {
+                        list.classList.remove('show');
+                        document.removeEventListener('click', closeMenu);
+                    }
+                });
+            }
+        };
+
+        window.updateSelectedUnitsText = () => {
+            const checked = Array.from(document.querySelectorAll('input[name="unit_choice"]:checked')).map(el => el.value);
+            const textEl = document.getElementById('selected-units-text');
+            if (checked.length === 0) {
+                textEl.innerText = "בחר יחידות...";
+            } else if (checked.length <= 2) {
+                textEl.innerText = checked.join(', ');
+            } else {
+                textEl.innerText = `${checked[0]} + עוד ${checked.length - 1}`;
+            }
+        };
         // --- ACTIONS ---
 
 
@@ -2218,30 +2244,30 @@ window.updateSelectedUnitsText = () => {
         window.toggleManager = async (uid, state) => { await supabase.from("users").update({ is_manager: state, requested_manager: false }).eq("id", uid); await loadData(); showToast("הרשאות עודכנו"); };
         window.approveRole = async (uid, role) => { await supabase.from("users").update({ role: role, role_status: "Approved", requested_role: null }).eq("id", uid); pushTicketShort({ userIds: [uid], ticketId: 0, title: "🎉 התפקיד אושר!", message: `הבקשה שלך לתפקיד ${roleLabel(role)} אושרה בהצלחה.` }); await loadData(); render(); showToast("המשתמש אושר ונשלחה לו התראה"); };
         window.updateTicket = async (tid) => {
-    const t = tickets.find(x => x.id == tid);
-    if (!t) return;
-    
-    const isAllowed = currentUser.role === 'OWNER' || currentUser.isManager || t.assignedRole === currentUser.role;
-    if (!isAllowed) {
-        alert("אין לך הרשאה לעדכן תקלה זו");
-        return;
-    }
+            const t = tickets.find(x => x.id == tid);
+            if (!t) return;
 
-    const st = document.getElementById("upd-status").value;
-    const isClosed = (st === 'RESOLVED' || st === 'CLOSED'); // תוקן כדי לכלול גם מצב סגור
+            const isAllowed = currentUser.role === 'OWNER' || currentUser.isManager || t.assignedRole === currentUser.role;
+            if (!isAllowed) {
+                alert("אין לך הרשאה לעדכן תקלה זו");
+                return;
+            }
 
-    await withLoader(document.querySelector(".main"), async () => {
-        await supabase.from("tickets").update({ 
-            status: st, 
-            is_closed: isClosed,
-            updated_at: new Date().toISOString() // חשוב להקפצות!
-        }).eq("id", tid);
-        
-        await loadData();
-        render();
-        showToast("הסטטוס עודכן בהצלחה");
-    });
-}; window.postComment = async (e, tid) => {
+            const st = document.getElementById("upd-status").value;
+            const isClosed = (st === 'RESOLVED' || st === 'CLOSED'); // תוקן כדי לכלול גם מצב סגור
+
+            await withLoader(document.querySelector(".main"), async () => {
+                await supabase.from("tickets").update({
+                    status: st,
+                    is_closed: isClosed,
+                    updated_at: new Date().toISOString() // חשוב להקפצות!
+                }).eq("id", tid);
+
+                await loadData();
+                render();
+                showToast("הסטטוס עודכן בהצלחה");
+            });
+        }; window.postComment = async (e, tid) => {
             e.preventDefault();
             await supabase.from("ticket_comments").insert({ ticket_id: tid, content: e.target.txt.value, author_user_id: currentUser.id, author_name: currentUser.fullName, author_role: currentUser.role });
             e.target.reset();
@@ -2260,36 +2286,36 @@ window.updateSelectedUnitsText = () => {
             render();
         };
         window.doLogout = async () => {
-    try {
-        // 1. ננסה להביא את הרישום הקיים כדי לדעת מה למחוק מהשרת
-        if ("serviceWorker" in navigator) {
-            const reg = await navigator.serviceWorker.ready;
-            const sub = await reg.pushManager.getSubscription();
-            
-            if (sub && currentUser) {
-                // 2. קריאה ל-Worker למחיקת המשתמש מה-KV
-                await fetch(`${PUSH_WORKER_BASE}/unsubscribe`, {
-                    method: "POST",
-                    headers: { "content-type": "application/json" },
-                    body: JSON.stringify({ 
-                        userId: String(currentUser.id)
-                    })
-                });
-                
-                // 3. ביטול הרישום בדפדפן עצמו
-                await sub.unsubscribe();
-            }
-        }
-    } catch (e) {
-        console.error("Error during unsubscribe:", e);
-    }
+            try {
+                // 1. ננסה להביא את הרישום הקיים כדי לדעת מה למחוק מהשרת
+                if ("serviceWorker" in navigator) {
+                    const reg = await navigator.serviceWorker.ready;
+                    const sub = await reg.pushManager.getSubscription();
 
-    // ניקוי זיכרון מקומי והתנתקות מ-Supabase
-    localStorage.clear();
-    sessionStorage.clear();
-    await supabase.auth.signOut();
-    window.location.reload();
-};
+                    if (sub && currentUser) {
+                        // 2. קריאה ל-Worker למחיקת המשתמש מה-KV
+                        await fetch(`${PUSH_WORKER_BASE}/unsubscribe`, {
+                            method: "POST",
+                            headers: { "content-type": "application/json" },
+                            body: JSON.stringify({
+                                userId: String(currentUser.id)
+                            })
+                        });
+
+                        // 3. ביטול הרישום בדפדפן עצמו
+                        await sub.unsubscribe();
+                    }
+                }
+            } catch (e) {
+                console.error("Error during unsubscribe:", e);
+            }
+
+            // ניקוי זיכרון מקומי והתנתקות מ-Supabase
+            localStorage.clear();
+            sessionStorage.clear();
+            await supabase.auth.signOut();
+            window.location.reload();
+        };
 
         window.enableNotificationsManual = async () => { try { if (!("serviceWorker" in navigator)) { alert("❌ שגיאה: הדפדפן לא תומך ב-Service Worker"); return; } if (!("PushManager" in window)) { alert("❌ שגיאה: האייפון לא מזהה תמיכה ב-Push. האם פתחת דרך מסך הבית?"); return; } const permission = await Notification.requestPermission(); if (permission !== 'granted') { alert("⚠️ המשתמש לא אישר או שההגדרות חוסמות."); return; } const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const res = await fetch(`${PUSH_WORKER_BASE}/publicKey`); if (!res.ok) throw new Error("לא הצלחתי להביא מפתח ציבורי מהשרת"); const { publicKey } = await res.json(); const convertedKey = urlBase64ToUint8Array(publicKey); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: convertedKey }); } const saveRes = await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(currentUser.id), subscription: sub }) }); if (saveRes.ok) alert("🎉 הצלחה! המכשיר רשום"); else alert("❌ השרת החזיר שגיאה בשמירה: " + saveRes.status); } catch (err) { alert("💀 קרסה הפונקציה: " + err.message); console.error(err); } };
 
@@ -2298,38 +2324,38 @@ window.updateSelectedUnitsText = () => {
         async function ensurePushAutoForUser(userId) { if (!("serviceWorker" in navigator)) return; const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const { publicKey } = await fetch(`${PUSH_WORKER_BASE}/publicKey`).then(r => r.json()); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userId: String(userId), subscription: sub }) }); }
         async function pushTicketShort({ userIds, ticketId, title, message }) { const cleanIds = [...new Set(userIds.map(String).filter(Boolean))]; if (cleanIds.length === 0) return; await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: title, body: message, url: `/?ticket=${ticketId}`, icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" }) }); }
         function getNotifyUserIdsForTicket(ticket, actingUserId) {
-    const notifyIds = new Set();
-    
-    // מפרק את התקלה (למשל "שומרון, אפרים") למערך שניתן לבדוק
-    const ticketUnitsArray = String(ticket.unit || "").split(',').map(s => s.trim()); 
+            const notifyIds = new Set();
 
-    users.forEach(u => {
-        if (u.id === actingUserId || u.isFrozen) return;
+            // מפרק את התקלה (למשל "שומרון, אפרים") למערך שניתן לבדוק
+            const ticketUnitsArray = String(ticket.unit || "").split(',').map(s => s.trim());
 
-        const userUnits = Array.isArray(u.unit) ? u.unit : [];
-        const s = u.settings || {};
-        
-        if (ticket.is_hamal_down) {
-            notifyIds.add(u.id);
-            return;
+            users.forEach(u => {
+                if (u.id === actingUserId || u.isFrozen) return;
+
+                const userUnits = Array.isArray(u.unit) ? u.unit : [];
+                const s = u.settings || {};
+
+                if (ticket.is_hamal_down) {
+                    notifyIds.add(u.id);
+                    return;
+                }
+
+                if (s.notifyNew === false) return;
+
+                if (u.role === 'OWNER' || u.role === 'HR') {
+                    notifyIds.add(u.id);
+                } else if (u.role === 'HATAP') {
+                    // התראה תשלח רק אם יש חפיפה כלשהי בין יחידות המשתמש ליחידות התקלה
+                    if (userUnits.some(un => ticketUnitsArray.includes(un))) {
+                        notifyIds.add(u.id);
+                    }
+                } else if (u.role === ticket.assigned_role) {
+                    notifyIds.add(u.id);
+                }
+            });
+
+            return Array.from(notifyIds);
         }
-
-        if (s.notifyNew === false) return;
-
-        if (u.role === 'OWNER' || u.role === 'HR') {
-            notifyIds.add(u.id);
-        } else if (u.role === 'HATAP') {
-            // התראה תשלח רק אם יש חפיפה כלשהי בין יחידות המשתמש ליחידות התקלה
-            if (userUnits.some(un => ticketUnitsArray.includes(un))) {
-                notifyIds.add(u.id);
-            }
-        } else if (u.role === ticket.assigned_role) {
-            notifyIds.add(u.id);
-        }
-    });
-
-    return Array.from(notifyIds);
-}
         async function bumpExistingTicket(ticketId, userComment) {
             // 1. שליפת פרטי התקלה המקורית כדי לבדוק זמן פתיחה ומי התפקיד המטפל
             const { data: ticket, error: ticketErr } = await supabase
@@ -2367,78 +2393,74 @@ window.updateSelectedUnitsText = () => {
         }
 
         async function sendManagerAlerts(ticket) {
-    const currentRoleAtTicket = ticket.assigned_role;
+            const currentRoleAtTicket = ticket.assigned_role;
 
-    // שליפת המנהלים הרלוונטיים + ההגדרות שלהם
-    const { data: managers, error } = await supabase
-        .from("users")
-        .select("id, role, is_manager, settings") 
-        .or(`role.eq.OWNER,and(role.eq.HR,is_manager.eq.true),and(role.eq.${currentRoleAtTicket},is_manager.eq.true)`);
+            // שליפת המנהלים הרלוונטיים + ההגדרות שלהם
+            const { data: managers, error } = await supabase
+                .from("users")
+                .select("id, role, is_manager, settings")
+                .or(`role.eq.OWNER,and(role.eq.HR,is_manager.eq.true),and(role.eq.${currentRoleAtTicket},is_manager.eq.true)`);
 
-    if (error || !managers) return;
+            if (error || !managers) return;
 
-    const notifyUserIds = new Set();
+            const notifyUserIds = new Set();
 
-    managers.forEach(m => {
-        // בדיקת הגדרות: האם המשתמש כיבה את התראות החריגה?
-        // ברירת המחדל כאן תלויה במה שתרצה. 
-        // לפי הבקשה שלך ("אלא אם החליט שלא"), נגדיר שברירת המחדל היא לקבל:
-        const s = m.settings || {};
-        const wantsOverdue = s.notifyOverdue !== false; 
+            managers.forEach(m => {
+                // בדיקת הגדרות: האם המשתמש כיבה את התראות החריגה?
+                // ברירת המחדל כאן תלויה במה שתרצה. 
+                // לפי הבקשה שלך ("אלא אם החליט שלא"), נגדיר שברירת המחדל היא לקבל:
+                const s = m.settings || {};
+                const wantsOverdue = s.notifyOverdue !== false;
 
-        // אם המשתמש ביטל אקטיבית - דלג עליו
-        if (!wantsOverdue) return;
+                // אם המשתמש ביטל אקטיבית - דלג עליו
+                if (!wantsOverdue) return;
 
-        // הלוגיקה זהה לתקלות חדשות, רק מסוננת למנהלים בלבד (בגלל השאילתה למעלה)
-        
-        // 1. בעלים
-        if (m.role === 'OWNER') notifyUserIds.add(m.id);
-        
-        // 2. מנהל מש"א
-        else if (m.role === 'HR') notifyUserIds.add(m.id);
-        
-        // 3. מנהל התפקיד הנוכחי
-        else if (m.role === currentRoleAtTicket) notifyUserIds.add(m.id);
-    });
+                // הלוגיקה זהה לתקלות חדשות, רק מסוננת למנהלים בלבד (בגלל השאילתה למעלה)
 
-    if (notifyUserIds.size > 0) {
-        pushTicketShort({
-            userIds: Array.from(notifyUserIds),
-            ticketId: ticket.ticket_number,
-            title: `⏰ חריגת זמן: תקלה #${ticket.ticket_number}`,
-            message: `תקלה בסטטוס ${currentRoleAtTicket} פתוחה זמן רב. לטיפולך.`
-        });
-    }
-}
-window.toggleCreateUnitsDropdown = (e) => {
-    e.stopPropagation();
-    const list = document.getElementById('create-units-dropdown-list');
-    list.classList.toggle('show');
-    
-    document.addEventListener('click', function close(event) {
-        if (!event.target.closest('.custom-multiselect')) {
-            list.classList.remove('show');
-            document.removeEventListener('click', close);
+                // 1. בעלים
+                if (m.role === 'OWNER') notifyUserIds.add(m.id);
+
+                // 2. מנהל מש"א
+                else if (m.role === 'HR') notifyUserIds.add(m.id);
+
+                // 3. מנהל התפקיד הנוכחי
+                else if (m.role === currentRoleAtTicket) notifyUserIds.add(m.id);
+            });
+
+            if (notifyUserIds.size > 0) {
+                pushTicketShort({
+                    userIds: Array.from(notifyUserIds),
+                    ticketId: ticket.ticket_number,
+                    title: `⏰ חריגת זמן: תקלה #${ticket.ticket_number}`,
+                    message: `תקלה בסטטוס ${currentRoleAtTicket} פתוחה זמן רב. לטיפולך.`
+                });
+            }
         }
-    });
-};
+        window.toggleCreateUnitsDropdown = (e) => {
+            e.stopPropagation();
+            const list = document.getElementById('create-units-dropdown-list');
+            list.classList.toggle('show');
 
-window.updateCreateUnitsText = () => {
-    const checked = Array.from(document.querySelectorAll('input[name="ticket_unit_choice"]:checked')).map(el => el.value);
-    const textEl = document.getElementById('create-selected-units-text');
-    if (checked.length === 0) {
-        textEl.innerText = "בחר יחידות...";
-    } else if (checked.length <= 2) {
-        textEl.innerText = checked.join(', ');
-    } else {
-        textEl.innerText = `${checked[0]} + עוד ${checked.length - 1}`;
-    }
-};
+            document.addEventListener('click', function close(event) {
+                if (!event.target.closest('.custom-multiselect')) {
+                    list.classList.remove('show');
+                    document.removeEventListener('click', close);
+                }
+            });
+        };
+
+        window.updateCreateUnitsText = () => {
+            const checked = Array.from(document.querySelectorAll('input[name="ticket_unit_choice"]:checked')).map(el => el.value);
+            const textEl = document.getElementById('create-selected-units-text');
+            if (checked.length === 0) {
+                textEl.innerText = "בחר יחידות...";
+            } else if (checked.length <= 2) {
+                textEl.innerText = checked.join(', ');
+            } else {
+                textEl.innerText = `${checked[0]} + עוד ${checked.length - 1}`;
+            }
+        };
     </script>
 </body>
 
 </html>
-
-
-
-
