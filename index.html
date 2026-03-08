@@ -1302,7 +1302,10 @@
                 isManager: u.is_manager,
                 requestedManager: u.requested_manager,
                 // התיקון הקריטי: מוודא שתמיד חוזר מערך, גם אם ב-DB יש null או טקסט
-                unit: Array.isArray(u.unit) ? u.unit : (u.unit ? [u.unit] : []),
+              // בתוך loadData, במיפוי של users:
+                unit: Array.isArray(u.unit) 
+                ? u.unit.map(unit => String(unit).trim()) 
+                : (u.unit ? [String(u.unit).trim()] : []),
                 unitId: u.unit_id,
                 requestedRole: u.requested_role,
                 roleStatus: u.role_status,
@@ -1617,17 +1620,18 @@
                // בתוך renderPage, תחת התנאי if (activePage === "MY_TICKETS" || activePage === "ALL_TICKETS")
 // החלף את לוגיקת הסינון בזו:
 
+               // בתוך renderPage תחת המקרה של רשימת תקלות
                 let list = tickets;
 
-                // לוגיקה לחט"פ: הצג רק מה ששייך ליחידות שבאחריותו
-                // בתוך renderPage, תחת הסינון של החט"פ:
                 if (currentUser.role === 'HATAP' && currentUser.role !== 'OWNER') {
-                    const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : (currentUser.unit ? [currentUser.unit] : []);
+                    // וידוא שיש לנו מערך נקי של יחידות המשתמש
+                    const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : [];
                     
-                    list = tickets.filter(t => 
-                        // בדיקה אם היחידה של התקלה היא אחת מהיחידות שהחט"פ אחראי עליהן
-                        userUnits.includes(t.unit) || t.createdByUserId === currentUser.id
-                    );
+                    list = tickets.filter(t => {
+                        const ticketUnit = String(t.unit || "").trim();
+                        // בדיקה: האם יחידת התקלה קיימת בתוך המערך של המשתמש?
+                        return userUnits.includes(ticketUnit) || t.createdByUserId === currentUser.id;
+                    });
                 }
 
                 // המשך הסינון לפי חיפוש/נושא (נשאר כפי שהיה)
