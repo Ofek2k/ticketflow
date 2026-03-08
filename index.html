@@ -2245,37 +2245,40 @@ window.updateSelectedUnitsText = () => {
         async function pushTicketShort({ userIds, ticketId, title, message }) { const cleanIds = [...new Set(userIds.map(String).filter(Boolean))]; if (cleanIds.length === 0) return; await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: title, body: message, url: `/?ticket=${ticketId}`, icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" }) }); }
         function getNotifyUserIdsForTicket(ticket, actingUserId) {
     const notifyIds = new Set();
-    const ticketUnit = ticket.unit; // הערך שנשמר ב-DB (למשל "חטיבת שומרון")
+    // יחידת התקלה (טקסט בודד מה-DB, למשל: "חטיבת שומרון")
+    const ticketUnit = ticket.unit; 
 
     users.forEach(u => {
         if (u.id === actingUserId || u.isFrozen) return;
 
+        // הפיכה בטוחה למערך (גם אם זה טקסט בודד וגם אם זה Array)
         const userUnits = Array.isArray(u.unit) ? u.unit : (u.unit ? [u.unit] : []);
+        
         const s = u.settings || {};
-        const wantsNew = s.notifyNew !== false;
-
         if (ticket.is_hamal_down) {
             notifyIds.add(u.id);
             return;
         }
 
-        if (!wantsNew) return;
+        if (s.notifyNew === false) return;
 
         if (u.role === 'OWNER' || u.role === 'HR') {
             notifyIds.add(u.id);
-        } else if (u.role === 'HATAP') {
-            // בדיקה אם יחידת התקלה קיימת בתוך רשימת היחידות של המשתמש
+        } 
+        // התיקון הקריטי כאן:
+        else if (u.role === 'HATAP') {
+            // בודק אם היחידה הספציפית של התקלה נמצאת בתוך רשימת היחידות של המשתמש
             if (userUnits.includes(ticketUnit)) {
                 notifyIds.add(u.id);
             }
-        } else if (u.role === ticket.assigned_role) {
+        } 
+        else if (u.role === ticket.assigned_role) {
             notifyIds.add(u.id);
         }
     });
 
     return Array.from(notifyIds);
 }
-
 async function bumpExistingTicket(ticketId, userComment) {
             // 1. שליפת פרטי התקלה המקורית כדי לבדוק זמן פתיחה ומי התפקיד המטפל
             const { data: ticket, error: ticketErr } = await supabase
