@@ -2245,45 +2245,37 @@ window.updateSelectedUnitsText = () => {
         async function pushTicketShort({ userIds, ticketId, title, message }) { const cleanIds = [...new Set(userIds.map(String).filter(Boolean))]; if (cleanIds.length === 0) return; await fetch(`${PUSH_WORKER_BASE}/sendUsers`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ userIds: cleanIds, title: title, body: message, url: `/?ticket=${ticketId}`, icon: "https://cdn-icons-png.flaticon.com/512/906/906343.png" }) }); }
         function getNotifyUserIdsForTicket(ticket, actingUserId) {
     const notifyIds = new Set();
-    const isHamalEmergency = ticket.is_hamal_down || false;
+    const ticketUnit = ticket.unit; // הערך שנשמר ב-DB (למשל "חטיבת שומרון")
 
     users.forEach(u => {
-        // סינון בסיסי: לא לשלוח לעצמי, לא למשתמש קפוא
         if (u.id === actingUserId || u.isFrozen) return;
 
+        const userUnits = Array.isArray(u.unit) ? u.unit : (u.unit ? [u.unit] : []);
         const s = u.settings || {};
-        const wantsNew = s.notifyNew !== false; 
+        const wantsNew = s.notifyNew !== false;
 
-        // 1. חירום (חמ"ל מושבת) - כולם (מנהלים ובעלים) מקבלים תמיד
-        if (isHamalEmergency) {
+        if (ticket.is_hamal_down) {
             notifyIds.add(u.id);
-            return; 
+            return;
         }
 
-        // אם המשתמש ביטל התראות רגילות - דלג עליו
         if (!wantsNew) return;
 
-        // 2. בעלים ומש"א (HR) - מקבלים את כל התקלות בכל היחידות
         if (u.role === 'OWNER' || u.role === 'HR') {
             notifyIds.add(u.id);
-        }
-        
-        // 3. חט"פ (HATAP) - מקבל רק אם היחידה שלו תואמת ליחידת התקלה
-        else if (u.role === 'HATAP') {
-            if (u.unit === ticket.unit) {
+        } else if (u.role === 'HATAP') {
+            // בדיקה אם יחידת התקלה קיימת בתוך רשימת היחידות של המשתמש
+            if (userUnits.includes(ticketUnit)) {
                 notifyIds.add(u.id);
             }
-        }
-
-        // 4. תפקידים טכניים אחרים (ממר"ם, אפליקציה וכו')
-        // כרגע הגדרנו שהם מקבלים הכל גלובלי (או שתרצה להחיל גם עליהם סינון יחידה?)
-        else if (u.role === ticket.assigned_role) {
+        } else if (u.role === ticket.assigned_role) {
             notifyIds.add(u.id);
         }
     });
 
     return Array.from(notifyIds);
 }
+
 async function bumpExistingTicket(ticketId, userComment) {
             // 1. שליפת פרטי התקלה המקורית כדי לבדוק זמן פתיחה ומי התפקיד המטפל
             const { data: ticket, error: ticketErr } = await supabase
