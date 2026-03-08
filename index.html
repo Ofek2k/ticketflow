@@ -1610,15 +1610,25 @@
 // החלף את לוגיקת הסינון בזו:
 
                // בתוך renderPage תחת המקרה של רשימת תקלות
+               // בתוך renderPage, תחת הצגת רשימת תקלות
                 let list = tickets;
 
-                // בתוך renderPage תחת MY_TICKETS / ALL_TICKETS
+                // אם המשתמש הוא חט"פ, נראה לו רק מה ששייך ליחידות שלו
                 if (currentUser.role === 'HATAP' && currentUser.role !== 'OWNER') {
-                    const userUnits = currentUser.unit || []; // זה עכשיו בוודאות מערך בזכות התיקון ב-loadData
+                    // וידוא שיש לנו מערך של יחידות (מגיע מתוקן מ-loadData)
+                    const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : [];
+                    
                     list = tickets.filter(t => {
+                        // ניקוי יחידת התקלה מרווחים
                         const ticketUnit = String(t.unit || "").trim();
-                        // בדיקה האם יחידת התקלה קיימת בתוך רשימת היחידות של המשתמש
-                        return userUnits.some(u => String(u).trim() === ticketUnit) || t.createdByUserId === currentUser.id;
+                        
+                        // 1. האם יחידת התקלה קיימת במערך היחידות של החט"פ?
+                        const isAssignedToMyUnit = userUnits.some(un => String(un).trim() === ticketUnit);
+                        
+                        // 2. האם אני יצרתי את התקלה?
+                        const isMyTicket = t.createdByUserId === currentUser.id;
+                        
+                        return isAssignedToMyUnit || isMyTicket;
                     });
                 }
 
