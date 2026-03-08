@@ -1282,7 +1282,11 @@
                 supabase.from("units").select("*")
             ]);
 
-            users = (uRes.data || []).map(u => ({ id: u.id, authUserId: u.auth_user_id, fullName: u.full_name, email: u.email, phone: u.phone, role: u.role, isManager: u.is_manager, requestedManager: u.requested_manager, unit: u.unit, unitId: u.unit_id, requestedRole: u.requested_role, roleStatus: u.role_status, isFrozen: u.is_frozen, settings: u.settings }));
+          users = (uRes.data || []).map(u => ({
+    ...u,
+    unit: Array.isArray(u.unit) ? u.unit : (u.unit ? [u.unit] : []), // מוודא שזה תמיד מערך
+    settings: typeof u.settings === 'string' ? JSON.parse(u.settings) : (u.settings || {})
+}));
             tickets = (tRes.data || []).map(t => ({
                 id: t.id,
                 ticketNumber: t.ticket_number,
