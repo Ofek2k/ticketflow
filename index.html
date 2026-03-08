@@ -1273,55 +1273,78 @@
         });
 
         async function loadData() {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return null;
-            const [uRes, tRes, unRes] = await Promise.all([
-                // FIXED: Select only necessary columns to minimize data leak surface (Backend RLS still required)
-                supabase.from("users").select("id, auth_user_id, full_name, email, phone, role, is_manager, requested_manager, unit, unit_id, requested_role, role_status, is_frozen, settings"),
-                supabase.from("tickets").select("*").order("created_at", { ascending: false }).limit(fetchLimit),
-                supabase.from("units").select("*")
-            ]);
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return null;
 
-          users = (uRes.data || []).map(u => ({
-    ...u,
-    unit: Array.isArray(u.unit) ? u.unit : (u.unit ? [u.unit] : []), // מוודא שזה תמיד מערך
-    settings: typeof u.settings === 'string' ? JSON.parse(u.settings) : (u.settings || {})
-}));
-            tickets = (tRes.data || []).map(t => ({
-                id: t.id,
-                ticketNumber: t.ticket_number,
-                title: t.title,
-                description: t.description,
-                topic: t.topic,
-                unit: t.unit,
-                status: t.status,
-                assignedRole: t.assigned_role,
-                createdByUserId: t.created_by_user_id,
-                createdByName: t.created_by_name,
-                createdAt: t.created_at,
-                updatedAt: t.updated_at,
-                // מיפוי כפול כדי להיות בטוחים:
-                is_closed: !!t.is_closed,
-                isClosed: !!t.is_closed,
-                isHamalDown: !!t.is_hamal_down,
-                is_bumped: !!t.is_bumped
-            }));
-            units = unRes.data || [];
-            currentUser = users.find(u => u.authUserId === user.id);
+        const [uRes, tRes, unRes] = await Promise.all([
+            supabase.from("users").select("*"),
+            supabase.from("tickets").select("*").order("created_at", { ascending: false }).limit(fetchLimit),
+            supabase.from("units").select("*")
+        ]);
 
-            if (currentUser && currentUser.isFrozen) {
-                await supabase.auth.signOut();
-                alert("החשבון הוקפא. פנה למנהל המערכת.");
-                location.reload();
-                return null;
-            }
-            if (currentUser) ensurePushAutoForUser(currentUser.id).catch(console.error);
+        if (uRes.error) throw uRes.error;
 
-            startOverdueCheck();
+        // מיפוי משתמשים עם הגנה מפני נתונים פגומים
+        users = (uRes.data || []).map(u => {
+            let parsedSettings = {};
+            try {
+                parsedSettings = typeof u.settings === 'string' ? JSON.parse(u.settings) : (u.settings || {});
+            } catch (e) { console.error("Settings parse error for user", u.id); }
 
-            return currentUser;
+            return {
+                id: u.id,
+                authUserId: u.auth_user_id,
+                fullName: u.full_name,
+                email: u.email,
+                phone: u.phone,
+                role: u.role,
+                isManager: u.is_manager,
+                requestedManager: u.requested_manager,
+                // התיקון הקריטי: מוודא שתמיד חוזר מערך, גם אם ב-DB יש null או טקסט
+                unit: Array.isArray(u.unit) ? u.unit : (u.unit ? [u.unit] : []),
+                unitId: u.unit_id,
+                requestedRole: u.requested_role,
+                roleStatus: u.role_status,
+                isFrozen: u.is_frozen,
+                settings: parsedSettings
+            };
+        });
+
+        // מיפוי תקלות
+        tickets = (tRes.data || []).map(t => ({
+            id: t.id,
+            ticketNumber: t.ticket_number,
+            title: t.title,
+            description: t.description,
+            topic: t.topic,
+            unit: t.unit, // יחידת התקלה היא תמיד טקסט בודד מה-DB
+            status: t.status,
+            assignedRole: t.assigned_role,
+            createdByUserId: t.created_by_user_id,
+            createdByName: t.created_by_name,
+            forwardedByHatapName: t.forwarded_by_hatap_name,
+            createdAt: t.created_at,
+            isClosed: !!t.is_closed,
+            isHamalDown: !!t.is_hamal_down
+        }));
+
+        units = unRes.data || [];
+        currentUser = users.find(u => u.authUserId === user.id);
+
+        if (currentUser && currentUser.isFrozen) {
+            await supabase.auth.signOut();
+            alert("החשבון הוקפא. פנה למנהל המערכת.");
+            return null;
         }
 
+        return currentUser;
+    } catch (err) {
+        console.error("Critical Load Error:", err);
+        // במקרה של שגיאה קריטית, ננסה להמשיך עם מה שיש כדי לא לתקוע את המשתמש
+        return currentUser;
+    }
+}
         function startOverdueCheck() {
             setInterval(() => {
                 if (!currentUser || (!currentUser.isManager && currentUser.role !== 'OWNER')) return;
