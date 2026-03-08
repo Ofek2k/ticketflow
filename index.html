@@ -1289,6 +1289,7 @@
                 title: t.title,
                 description: t.description,
                 topic: t.topic,
+                unit: t.unit,
                 status: t.status,
                 assignedRole: t.assigned_role,
                 createdByUserId: t.created_by_user_id,
@@ -2112,7 +2113,7 @@ window.updateSelectedUnitsText = () => {
 
         window.nav = async (p, id = null) => {
             // אם עוברים ל-DETAILS, טוענים קודם את התגובות
-            if (p === 'DETAILS' && id) {
+            if (activePage === 'DETAILS' && id) {
                 activePage = p;
                 selectedTicketId = id;
                 comments = []; // איפוס תצוגה
