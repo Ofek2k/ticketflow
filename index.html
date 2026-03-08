@@ -1307,13 +1307,15 @@
                 ? u.unit.map(unit => String(unit).trim()) 
                 : (u.unit ? [String(u.unit).trim()] : []),
                 unitId: u.unit_id,
+
                 requestedRole: u.requested_role,
                 roleStatus: u.role_status,
                 isFrozen: u.is_frozen,
                 settings: parsedSettings
+                
             };
         });
-
+        console.log(unitId);
         // מיפוי תקלות
         tickets = (tRes.data || []).map(t => ({
             id: t.id,
