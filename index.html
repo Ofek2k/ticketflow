@@ -1272,7 +1272,7 @@
             render();
         });
 
-        async function loadData() {
+       async function loadData() {
     try {
         console.log("--- תחילת טעינת נתונים ---");
         const { data: { user } } = await supabase.auth.getUser();
@@ -1289,37 +1289,13 @@
 
         if (uRes.error) throw uRes.error;
 
-        // הדפסת המשתמש הראשון לבדיקת סוג הנתונים של ה-unit
-        if (uRes.data && uRes.data.length > 0) {
-            const sampleUser = uRes.data.find(u => u.auth_user_id === user.id) || uRes.data[0];
-            console.log("בדיקת סוג נתון ל-Unit של משתמש:", {
-                value: sampleUser.unit,
-                type: typeof sampleUser.unit,
-                isArray: Array.isArray(sampleUser.unit)
-            });
-        }
-
         users = (uRes.data || []).map(u => {
-            // טיפול בטוח ביחידות - הפיכה למערך בכל מחיר
-            let finalUnits = [];
+            let parsedSettings = {};
             try {
-                if (Array.isArray(u.unit)) {
-                    finalUnits = u.unit;
-                } else if (typeof u.unit === 'string') {
-                    // אם זה נשמר כטקסט של מערך "[...] "
-                    if (u.unit.startsWith('[') && u.unit.endsWith(']')) {
-                        finalUnits = JSON.parse(u.unit);
-                    } else {
-                        finalUnits = [u.unit];
-                    }
-                } else if (u.unit) {
-                    finalUnits = [u.unit];
-                }
-            } catch (e) {
-                console.error("שגיאה בעיבוד יחידות למשתמש " + u.id, e);
-                finalUnits = [];
-            }
+                parsedSettings = typeof u.settings === 'string' ? JSON.parse(u.settings) : (u.settings || {});
+            } catch (e) { console.error("Settings parse error", e); }
 
+            // כאן היה ה-Crash: שימוש ב-u.unit_id במקום במשתנה לא מוגדר
             return {
                 id: u.id,
                 authUserId: u.auth_user_id,
@@ -1329,20 +1305,24 @@
                 role: u.role,
                 isManager: u.is_manager,
                 requestedManager: u.requested_manager,
-                unit: finalUnits, // תמיד חוזר כמערך
-                unitId: u.unit_id,
+                // הפיכה בטוחה למערך
+                unit: Array.isArray(u.unit) ? u.unit : (u.unit ? [String(u.unit)] : []),
+                unitId: u.unit_id || null, 
                 requestedRole: u.requested_role,
                 roleStatus: u.role_status,
                 isFrozen: u.is_frozen,
-                settings: typeof u.settings === 'string' ? JSON.parse(u.settings) : (u.settings || {})
+                settings: parsedSettings
             };
         });
+
+        // הדפסה לאיתור התקלה שביקשת
+        console.log("דגימת נתוני יחידות של משתמשים:", users.map(u => ({ name: u.fullName, units: u.unit })));
 
         tickets = (tRes.data || []).map(t => ({
             ...t,
             id: t.id,
             ticketNumber: t.ticket_number,
-            unit: String(t.unit || "").trim(), // יחידת התקלה תמיד מחרוזת
+            unit: String(t.unit || "").trim(), 
             isClosed: !!t.is_closed,
             isHamalDown: !!t.is_hamal_down
         }));
@@ -1351,16 +1331,12 @@
         currentUser = users.find(u => u.authUserId === user.id);
         
         console.log("משתמש נוכחי נטען:", currentUser);
-        console.log("--- טעינה הושלמה בהצלחה ---");
-
         return currentUser;
     } catch (err) {
-        console.error("!!! שגיאת טעינה קריטית !!!", err);
-        // החזרת אובייקט ריק כדי למנוע קריסה של ה-UI
+        console.error("Critical Load Error:", err);
         return null; 
     }
 }
-
         function startOverdueCheck() {
             setInterval(() => {
                 if (!currentUser || (!currentUser.isManager && currentUser.role !== 'OWNER')) return;
@@ -1636,14 +1612,13 @@
                // בתוך renderPage תחת המקרה של רשימת תקלות
                 let list = tickets;
 
+                // בתוך renderPage תחת MY_TICKETS / ALL_TICKETS
                 if (currentUser.role === 'HATAP' && currentUser.role !== 'OWNER') {
-                    // וידוא שיש לנו מערך נקי של יחידות המשתמש
-                    const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : [];
-                    
+                    const userUnits = currentUser.unit || []; // זה עכשיו בוודאות מערך בזכות התיקון ב-loadData
                     list = tickets.filter(t => {
                         const ticketUnit = String(t.unit || "").trim();
-                        // בדיקה: האם יחידת התקלה קיימת בתוך המערך של המשתמש?
-                        return userUnits.includes(ticketUnit) || t.createdByUserId === currentUser.id;
+                        // בדיקה האם יחידת התקלה קיימת בתוך רשימת היחידות של המשתמש
+                        return userUnits.some(u => String(u).trim() === ticketUnit) || t.createdByUserId === currentUser.id;
                     });
                 }
 
