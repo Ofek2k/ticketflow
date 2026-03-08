@@ -1587,16 +1587,25 @@
 
                 if (typeof window.filterState === 'undefined') window.filterState = { search: "", sort: "DESC", topic: "ALL", role: "ALL" };
 
+               // בתוך renderPage, תחת התנאי if (activePage === "MY_TICKETS" || activePage === "ALL_TICKETS")
+// החלף את לוגיקת הסינון בזו:
+
                 let list = tickets;
 
-                // אם המשתמש הוא חט"פ (ולא מנהל מערכת/בעלים), סנן לו רק את היחידה שלו
-                if (currentUser.role === 'HATAP' && !currentUser.isManager && currentUser.role !== 'OWNER') {
+                // לוגיקה לחט"פ: הצג רק מה ששייך ליחידות שבאחריותו
+                if (currentUser.role === 'HATAP' && currentUser.role !== 'OWNER') {
+                    const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : [currentUser.unit];
                     list = tickets.filter(t => 
-                        t.unit === currentUser.unit || 
-                        t.createdByUserId === currentUser.id
+                        userUnits.includes(t.unit) || t.createdByUserId === currentUser.id
                     );
                 }
-// מנהלים ובעלים ימשיכו לראות הכל כרגיל
+
+                // המשך הסינון לפי חיפוש/נושא (נשאר כפי שהיה)
+                if (window.filterState.search) {
+                    const s = window.filterState.search.toLowerCase();
+                    list = list.filter(t => t.title.toLowerCase().includes(s) || t.ticketNumber.toString().includes(s));
+                }
+                // מנהלים ובעלים ימשיכו לראות הכל כרגיל
                 const hasActiveFilters = window.filterState.search !== "" || window.filterState.topic !== "ALL" || window.filterState.role !== "ALL";
 
                 main.innerHTML = `
