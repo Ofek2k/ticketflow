@@ -1743,47 +1743,51 @@
     lucide.createIcons();
 
     document.getElementById("create-form").onsubmit = async (e) => {
-        e.preventDefault();
-        const fd = new FormData(e.target);
-        
-        // איסוף היחידות שנבחרו (במידה ויש בחירה מרובה)
-        let selectedUnits;
-        const checkboxes = e.target.querySelectorAll('input[name="ticket_unit_choice"]:checked');
-        if (checkboxes.length > 0) {
-            selectedUnits = Array.from(checkboxes).map(el => el.value).join(', ');
-        } else {
-            selectedUnits = fd.get("unit"); // עבור מקרה של יחידה אחת (Hidden input)
-        }
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    
+    // שליפת היחידה שנבחרה מהטופס
+    // אם יש בחירה מרובה (Checkbox), ניקח את הראשונה או נשלב אותן למחרוזת אחת עבור שדה היחידה של התקלה
+    const selectedUnit = fd.get("unit") || Array.from(e.target.querySelectorAll('input[name="ticket_unit_choice"]:checked')).map(el => el.value).join(', ');
 
-        if (!selectedUnits) {
-            alert("נא לבחור לפחות יחידה אחת");
-            return;
-        }
+    if (!selectedUnit) {
+        showToast("נא לבחור יחידה רלוונטית", "alert-circle");
+        return;
+    }
 
-        const insertData = {
-            ticket_number: await getNextNum(),
-            title: fd.get("title"),
-            description: fd.get("desc"),
-            topic: fd.get("topic"),
-            unit: selectedUnits, 
-            assigned_role: fd.get("role"),
-            status: "OPEN",
-            is_hamal_down: document.getElementById("hamalDown").checked,
-            created_by_user_id: currentUser.id,
-            created_by_name: currentUser.fullName
-        };
-
-        if (currentUser.role === 'HATAP' && fd.get("role") === 'HR') {
-            insertData.forwarded_by_hatap_name = currentUser.fullName;
-        }
-
-        await withLoader(document.querySelector(".card"), async () => {
-            const { data: t, error } = await supabase.from("tickets").insert(insertData).select().single();
-            if (error) throw error;
-            await loadData();
-            nav("DETAILS", t.id);
-        });
+    const insertData = {
+        ticket_number: await getNextNum(),
+        title: fd.get("title"),
+        description: fd.get("desc"),
+        topic: fd.get("topic"),
+        unit: selectedUnit, // כאן התיקון הקריטי - מוודא שהערך נשמר!
+        assigned_role: fd.get("role"),
+        status: "OPEN",
+        is_hamal_down: document.getElementById("hamalDown").checked,
+        created_by_user_id: currentUser.id,
+        created_by_name: currentUser.fullName
     };
+
+    if (currentUser.role === 'HATAP' && fd.get("role") === 'HR') {
+        insertData.forwarded_by_hatap_name = currentUser.fullName;
+    }
+
+    await withLoader(document.querySelector(".card"), async () => {
+        const { data: t, error } = await supabase.from("tickets").insert(insertData).select().single();
+        if (error) throw error;
+        
+        // שליחת התראה לאחר שווידאנו שיש יחידה לתקלה
+        await loadData();
+        pushTicketShort({ 
+            userIds: getNotifyUserIdsForTicket(t, currentUser.id), 
+            ticketId: t.ticket_number, 
+            title: t.is_hamal_down ? "🚨 חמ״ל מושבת!" : "✨ תקלה חדשה", 
+            message: t.title 
+        });
+
+        nav("DETAILS", t.id);
+    });
+};
 }
 
         if (activePage === "DETAILS") {
