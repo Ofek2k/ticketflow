@@ -715,6 +715,157 @@
         @media (max-width: 900px) {
             .dropdown-options.show { position: fixed; top: auto; bottom: 0; left: 0; right: 0; width: 100%; max-height: 60vh; border-radius: 28px 28px 0 0 !important; margin-top: 0; padding: 20px !important; padding-bottom: 40px !important; }
         }
+
+        /* ══════════════════════════════════════════
+           COMMAND PALETTE
+        ══════════════════════════════════════════ */
+        .cmd-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.72);backdrop-filter:blur(10px);z-index:99990;display:flex;align-items:flex-start;justify-content:center;padding-top:12vh;animation:fade 0.15s; }
+        .cmd-box { width:100%;max-width:580px;margin:0 16px;background:rgba(10,15,35,0.98);border:1px solid rgba(255,255,255,0.13);border-radius:22px;box-shadow:0 40px 80px rgba(0,0,0,0.9),0 0 0 1px rgba(236,72,153,0.08);overflow:hidden; }
+        .cmd-input-wrap { display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.07); }
+        .cmd-input-wrap svg { color:var(--text-soft);width:20px;height:20px;flex-shrink:0; }
+        .cmd-input { background:none;border:none;outline:none;color:#fff;font-size:1rem;font-family:Heebo,sans-serif;width:100%;direction:rtl; }
+        .cmd-results { max-height:380px;overflow-y:auto;padding:8px; }
+        .cmd-section-label { font-size:0.63rem;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-soft);padding:8px 12px 4px;opacity:0.6; }
+        .cmd-item { display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;cursor:pointer;transition:background 0.1s; }
+        .cmd-item:hover, .cmd-item.cmd-selected { background:rgba(236,72,153,0.1);border:1px solid rgba(236,72,153,0.15); }
+        .cmd-item { border:1px solid transparent; }
+        .cmd-item-icon { width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.9rem; }
+        .cmd-item-icon svg { width:16px;height:16px; }
+        .cmd-item-title { font-size:0.9rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+        .cmd-item-sub { font-size:0.72rem;color:var(--text-soft);margin-top:1px; }
+        .cmd-item-badge { font-size:0.65rem;padding:2px 8px;border-radius:6px;background:rgba(255,255,255,0.06);color:var(--text-soft);flex-shrink:0; }
+        .cmd-empty { text-align:center;padding:40px 20px;color:var(--text-soft);font-size:0.9rem; }
+        .cmd-footer { display:flex;align-items:center;gap:16px;padding:10px 16px;border-top:1px solid rgba(255,255,255,0.06);font-size:0.72rem;color:var(--text-soft); }
+        .cmd-key { display:inline-flex;align-items:center;justify-content:center;padding:2px 7px;border-radius:5px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);font-family:'Space Mono',monospace;font-size:0.65rem; }
+
+        /* ══════════════════════════════════════════
+           KEYBOARD SHORTCUTS MODAL
+        ══════════════════════════════════════════ */
+        .shortcuts-box { background:rgba(10,15,35,0.98);border:1px solid rgba(255,255,255,0.12);border-radius:24px;padding:32px;width:90%;max-width:460px;box-shadow:0 40px 80px rgba(0,0,0,0.8); }
+        .shortcuts-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px; }
+        .shortcut-row { display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.03);font-size:0.82rem;gap:12px; }
+        .shortcut-keys { display:flex;gap:4px;flex-shrink:0; }
+        .kbd-hint { position:fixed;bottom:22px;left:22px;background:rgba(10,15,35,0.88);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px 12px;font-size:0.7rem;color:var(--text-soft);backdrop-filter:blur(12px);display:flex;align-items:center;gap:6px;z-index:200;cursor:pointer;transition:0.2s; }
+        .kbd-hint:hover { border-color:rgba(236,72,153,0.4);color:#fff; }
+        @media(max-width:900px) { .kbd-hint { display:none; } }
+
+        /* ══════════════════════════════════════════
+           STATUS STEPPER (progress bar)
+        ══════════════════════════════════════════ */
+        .status-stepper { display:flex;align-items:flex-start;padding:4px 0;gap:0; }
+        .stepper-step { display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;position:relative; }
+        .stepper-step:not(:last-child)::after { content:'';position:absolute;top:13px;left:-50%;width:100%;height:2px;background:rgba(255,255,255,0.08);z-index:0; }
+        .stepper-step.step-done:not(:last-child)::after { background:linear-gradient(to left,rgba(255,255,255,0.15),var(--sc)); }
+        .stepper-dot { width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;z-index:1;position:relative;transition:all 0.35s cubic-bezier(0.16,1,0.3,1); }
+        .stepper-dot svg { width:12px;height:12px; }
+        .stepper-step.step-done .stepper-dot { background:var(--sc);border-color:var(--sc);box-shadow:0 0 10px var(--sc),0 0 20px color-mix(in srgb,var(--sc) 40%,transparent); }
+        .stepper-step.step-active .stepper-dot { background:rgba(255,255,255,0.08);border-color:var(--sc);border-width:2px;animation:stepPulse 2s infinite; }
+        .stepper-label { font-size:0.58rem;color:var(--text-soft);text-align:center;line-height:1.2; }
+        .stepper-step.step-done .stepper-label, .stepper-step.step-active .stepper-label { color:rgba(255,255,255,0.9);font-weight:700; }
+        @keyframes stepPulse { 0%,100% { box-shadow:0 0 6px var(--sc,#ec4899); } 50% { box-shadow:0 0 18px var(--sc,#ec4899); } }
+
+        /* ══════════════════════════════════════════
+           SLA BAR & TICKET ENHANCEMENTS
+        ══════════════════════════════════════════ */
+        .sla-strip { height:3px;border-radius:0 0 16px 16px;position:absolute;bottom:0;left:0;right:0;transition:width 0.6s; }
+        .list-item { position:relative;overflow:hidden; }
+
+        /* ══════════════════════════════════════════
+           EMPTY STATE
+        ══════════════════════════════════════════ */
+        .empty-state { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 20px;text-align:center; }
+        .empty-state-title { font-size:1rem;font-weight:700;margin:16px 0 6px; }
+        .empty-state-sub { font-size:0.85rem;color:var(--text-soft);max-width:220px; }
+
+        /* ══════════════════════════════════════════
+           FAB - Floating Action Button (mobile)
+        ══════════════════════════════════════════ */
+        .fab { display:none; }
+        @media(max-width:900px) {
+            .fab { display:flex; position:fixed; bottom:calc(90px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); z-index:9000; width:56px; height:56px; border-radius:18px; background:linear-gradient(135deg,#ec4899,#8b5cf6); border:none; color:#fff; cursor:pointer; align-items:center; justify-content:center; box-shadow:0 8px 24px rgba(236,72,153,0.5),0 0 0 1px rgba(236,72,153,0.3); transition:all 0.2s cubic-bezier(0.16,1,0.3,1); }
+            .fab:active { transform:translateX(-50%) scale(0.92); }
+            .fab svg { width:24px; height:24px; }
+        }
+
+        /* ══════════════════════════════════════════
+           CREATE WIZARD
+        ══════════════════════════════════════════ */
+        .wizard-steps { display:flex; align-items:center; gap:0; margin-bottom:28px; }
+        .wizard-step-item { display:flex; flex-direction:column; align-items:center; gap:6px; flex:1; position:relative; }
+        .wizard-step-item:not(:last-child)::after { content:''; position:absolute; top:15px; left:-50%; width:100%; height:2px; background:rgba(255,255,255,0.08); z-index:0; }
+        .wizard-step-item.wz-done:not(:last-child)::after, .wizard-step-item.wz-active:not(:last-child)::after { background:rgba(236,72,153,0.4); }
+        .wizard-dot { width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,0.05); border:2px solid rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; z-index:1; position:relative; transition:all 0.3s; }
+        .wizard-step-item.wz-done .wizard-dot { background:#ec4899; border-color:#ec4899; box-shadow:0 0 12px rgba(236,72,153,0.5); }
+        .wizard-step-item.wz-active .wizard-dot { background:rgba(236,72,153,0.15); border-color:#ec4899; color:#ec4899; }
+        .wizard-step-label { font-size:0.62rem; color:var(--text-soft); text-align:center; }
+        .wizard-step-item.wz-active .wizard-step-label { color:#fff; font-weight:700; }
+        .topic-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:4px; }
+        .topic-chip { padding:16px 12px; border-radius:16px; border:2px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); cursor:pointer; text-align:center; transition:all 0.2s; font-size:0.9rem; }
+        .topic-chip:hover { border-color:rgba(236,72,153,0.4); background:rgba(236,72,153,0.08); }
+        .topic-chip.selected { border-color:#ec4899; background:rgba(236,72,153,0.15); box-shadow:0 0 16px rgba(236,72,153,0.2); }
+        .topic-chip-icon { font-size:1.6rem; margin-bottom:6px; }
+        .topic-chip-label { font-weight:700; font-size:0.82rem; }
+        .role-list { display:flex; flex-direction:column; gap:8px; margin-top:4px; }
+        .role-item { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:14px; border:2px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.03); cursor:pointer; transition:all 0.2s; }
+        .role-item:hover { border-color:rgba(236,72,153,0.3); background:rgba(236,72,153,0.06); }
+        .role-item.selected { border-color:#ec4899; background:rgba(236,72,153,0.12); }
+        .role-item-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
+        .wizard-nav { display:flex; gap:10px; margin-top:24px; }
+        .wizard-nav .btn { flex:1; justify-content:center; }
+
+        /* ══════════════════════════════════════════
+           URGENT SECTION (dashboard)
+        ══════════════════════════════════════════ */
+        .urgent-banner { border:1.5px solid rgba(239,68,68,0.5); background:linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.04)); border-radius:20px; padding:16px; margin-bottom:14px; animation:hamalPulse 3s ease-in-out infinite; }
+        .urgent-banner-header { display:flex; align-items:center; gap:8px; font-weight:800; color:#ef4444; font-size:0.9rem; margin-bottom:12px; }
+        .urgent-banner-header svg { width:18px; height:18px; }
+        .hamal-ticket-card { background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.3); border-radius:14px; padding:12px 14px; margin-bottom:8px; cursor:pointer; transition:0.2s; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+        .hamal-ticket-card:last-child { margin-bottom:0; }
+        .hamal-ticket-card:hover { background:rgba(239,68,68,0.14); }
+        .hamal-ticket-title { font-weight:700; font-size:0.9rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .hamal-ticket-meta { font-size:0.72rem; color:rgba(239,68,68,0.7); margin-top:3px; }
+
+        /* ══════════════════════════════════════════
+           TREND BADGE (stat cards)
+        ══════════════════════════════════════════ */
+        .trend-badge { font-size:0.68rem; font-weight:700; padding:2px 7px; border-radius:6px; display:inline-flex; align-items:center; gap:3px; }
+        .trend-up { background:rgba(239,68,68,0.15); color:#ef4444; }
+        .trend-down { background:rgba(16,185,129,0.15); color:#10b981; }
+        .trend-flat { background:rgba(255,255,255,0.06); color:var(--text-soft); }
+
+        /* ══════════════════════════════════════════
+           BUTTON LOADING STATE
+        ══════════════════════════════════════════ */
+        .btn-loading { pointer-events:none; opacity:0.7; }
+        .btn-spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin 0.7s linear infinite; flex-shrink:0; }
+
+        /* ══════════════════════════════════════════
+           MOBILE FONT & SPACING IMPROVEMENTS
+        ══════════════════════════════════════════ */
+        @media(max-width:900px) {
+            .list-item { padding:14px 16px; min-height:72px; }
+            .page-title { font-size:1.4rem !important; }
+            .card-title { font-size:1rem; }
+        }
+
+        /* ══════════════════════════════════════════
+           CONFETTI CANVAS
+        ══════════════════════════════════════════ */
+        #confetti-canvas { position:fixed;inset:0;pointer-events:none;z-index:99980; }
+
+        /* ══════════════════════════════════════════
+           TOAST ENHANCEMENTS
+        ══════════════════════════════════════════ */
+        .toast-action { background:none;border:1px solid rgba(255,255,255,0.25);color:#fff;padding:4px 12px;border-radius:8px;font-size:0.78rem;cursor:pointer;white-space:nowrap;transition:0.2s; }
+        .toast-action:hover { background:rgba(255,255,255,0.1); }
+
+        /* ══════════════════════════════════════════
+           ENHANCED DASHBOARD HERO CARDS
+        ══════════════════════════════════════════ */
+        .stat-card { position:relative;overflow:hidden;cursor:pointer; }
+        .stat-card::before { content:'';position:absolute;inset:-50%;border-radius:50%;background:radial-gradient(ellipse,var(--glow,rgba(236,72,153,0.3)) 0%,transparent 65%);opacity:0.5;pointer-events:none;transition:opacity 0.3s; }
+        .stat-card:hover::before { opacity:0.8; }
+
     </style>
 </head>
 
@@ -780,6 +931,56 @@
     <div id="root"></div>
     <div id="modal-root"></div>
     <div id="toast-root"></div>
+    <canvas id="confetti-canvas"></canvas>
+    <!-- FAB -->
+    <button class="fab" id="fab-btn" onclick="nav('CREATE');haptic('medium')" style="display:none;">
+      <i data-lucide="plus"></i>
+    </button>
+    <!-- Command Palette -->
+    <div id="cmd-palette" style="display:none;" onclick="if(event.target===this)closeCmdPalette()">
+      <div class="cmd-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.72);backdrop-filter:blur(10px);z-index:99990;display:flex;align-items:flex-start;justify-content:center;padding-top:12vh;">
+        <div class="cmd-box">
+          <div class="cmd-input-wrap">
+            <i data-lucide="search"></i>
+            <input class="cmd-input" id="cmd-input" placeholder="חפש תקלות, עמודים, פעולות..." autocomplete="off" oninput="renderCmdResults()" onkeydown="handleCmdKey(event)" />
+            <span class="cmd-key">ESC</span>
+          </div>
+          <div class="cmd-results" id="cmd-results"></div>
+          <div class="cmd-footer">
+            <span><span class="cmd-key">↑↓</span> ניווט</span>
+            <span><span class="cmd-key">↵</span> בחירה</span>
+            <span><span class="cmd-key">ESC</span> סגירה</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="shortcuts-modal" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:99990;display:flex;align-items:center;justify-content:center;">
+        <div class="shortcuts-box">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <div style="font-size:1.1rem;font-weight:800;">קיצורי מקלדת</div>
+            <button onclick="document.getElementById('shortcuts-modal').style.display='none'" style="background:none;border:none;color:var(--text-soft);font-size:1.3rem;cursor:pointer;line-height:1;">×</button>
+          </div>
+          <div style="color:var(--text-soft);font-size:0.82rem;margin-bottom:4px;">כל הפעולות זמינות מכל מקום</div>
+          <div class="shortcuts-grid">
+            <div class="shortcut-row"><span>פלטת פקודות</span><div class="shortcut-keys"><span class="cmd-key">⌘K</span></div></div>
+            <div class="shortcut-row"><span>דשבורד</span><div class="shortcut-keys"><span class="cmd-key">G</span><span class="cmd-key">H</span></div></div>
+            <div class="shortcut-row"><span>תקלה חדשה</span><div class="shortcut-keys"><span class="cmd-key">G</span><span class="cmd-key">C</span></div></div>
+            <div class="shortcut-row"><span>התקלות שלי</span><div class="shortcut-keys"><span class="cmd-key">G</span><span class="cmd-key">T</span></div></div>
+            <div class="shortcut-row"><span>אנליטיקה</span><div class="shortcut-keys"><span class="cmd-key">G</span><span class="cmd-key">A</span></div></div>
+            <div class="shortcut-row"><span>סגירה / חזרה</span><div class="shortcut-keys"><span class="cmd-key">ESC</span></div></div>
+            <div class="shortcut-row"><span>קיצורים אלו</span><div class="shortcut-keys"><span class="cmd-key">?</span></div></div>
+            <div class="shortcut-row"><span>חיפוש מהיר</span><div class="shortcut-keys"><span class="cmd-key">/</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Keyboard hint badge -->
+    <div class="kbd-hint" onclick="document.getElementById('shortcuts-modal').style.display='block'">
+      <i data-lucide="keyboard" style="width:13px;height:13px;"></i>
+      <span class="cmd-key">⌘K</span> פלטת פקודות
+    </div>
 
     <div id="ptr-loader" class="ptr-loader">
         <div class="ptr-content">
@@ -882,7 +1083,15 @@
         function timeAgo(dateParam) { if (!dateParam) return null; const date = new Date(dateParam), now = new Date(), minutes = Math.floor((now - date) / 60000), hours = Math.floor(minutes / 60), days = Math.floor(hours / 24); if (minutes < 60) return `לפני ${minutes} דק'`; if (hours < 24) return `לפני ${hours} שעות`; return `לפני ${days} ימים`; }
         function isOverHour(dateParam) { if (!dateParam) return false; return (new Date() - new Date(dateParam)) > 3600000; }
 
-        function showToast(msg, icon = "check") { const el = document.createElement("div"); el.className = "toast"; el.innerHTML = `<i data-lucide="${icon}"></i><span>${msg}</span>`; document.getElementById("toast-root").appendChild(el); lucide.createIcons(); setTimeout(() => el.remove(), 3000); }
+        function showToast(msg, icon = "check", actionLabel = null, actionFn = null) {
+            const el = document.createElement("div");
+            el.className = "toast";
+            el.innerHTML = `<i data-lucide="${icon}"></i><span>${msg}</span>${actionLabel ? `<button class="toast-action" id="toast-btn">${actionLabel}</button>` : ''}`;
+            document.getElementById("toast-root").appendChild(el);
+            lucide.createIcons();
+            if (actionLabel && actionFn) { el.querySelector('#toast-btn').onclick = () => { actionFn(); el.remove(); }; }
+            setTimeout(() => el.remove(), actionLabel ? 5000 : 3000);
+        }
 
         /* ── HAPTIC FEEDBACK ── */
         function haptic(type = 'light') {
@@ -908,6 +1117,40 @@
         function showModal(title, msg, isErr = false) { return new Promise(resolve => { const root = document.getElementById("modal-root"); root.innerHTML = `<div class="modal-overlay"><div class="modal" style="border-color:${isErr ? '#f43f5e' : 'rgba(255,255,255,0.1)'}"><div style="font-size:3rem;margin-bottom:10px;">${isErr ? '😓' : '✨'}</div><div style="font-size:1.2rem;font-weight:800;margin-bottom:8px;">${title}</div><div style="color:#94a3b8;margin-bottom:24px;line-height:1.5;">${msg}</div><button class="btn btn-primary" style="width:100%;justify-content:center;" id="mod-ok">הבנתי, סגור</button></div></div>`; document.getElementById("mod-ok").onclick = () => { root.innerHTML = ""; resolve(); }; }); }
         async function withLoader(el, fn) { const l = document.createElement("div"); l.className = "loader-wrap"; l.innerHTML = `<div class="spinner"></div>`; if (getComputedStyle(el).position === "static") el.style.position = "relative"; el.appendChild(l); try { await fn(); } catch (e) { console.error(e); showModal("שגיאה", e.message, true); } finally { if (l.parentNode === el) el.removeChild(l); } }
 
+        async function withBtnLoader(btn, fn) {
+            const orig = btn.innerHTML;
+            btn.classList.add('btn-loading');
+            btn.innerHTML = `<div class="btn-spinner"></div>`;
+            try { await fn(); } catch (e) { console.error(e); showModal("שגיאה", e.message, true); }
+            finally { btn.classList.remove('btn-loading'); btn.innerHTML = orig; lucide.createIcons(); }
+        }
+
+        // Wizard state
+        let createStep = 1;
+        let createData = {};
+
+        // Trend helper: compare today vs yesterday count
+        function getTrend(filterFn) {
+            const now = new Date();
+            const todayStart = new Date(now); todayStart.setHours(0,0,0,0);
+            const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(yesterdayStart.getDate()-1);
+            const todayCount = tickets.filter(t => { const d=new Date(t.createdAt); return d>=todayStart && filterFn(t); }).length;
+            const yestCount = tickets.filter(t => { const d=new Date(t.createdAt); return d>=yesterdayStart && d<todayStart && filterFn(t); }).length;
+            const diff = todayCount - yestCount;
+            if (diff > 0) return `<span class="trend-badge trend-up">↑ +${diff} היום</span>`;
+            if (diff < 0) return `<span class="trend-badge trend-down">↓ ${Math.abs(diff)} פחות</span>`;
+            return `<span class="trend-badge trend-flat">— ללא שינוי</span>`;
+        }
+
+        // Show/hide FAB based on page
+        function updateFab() {
+            const fab = document.getElementById('fab-btn');
+            if (!fab) return;
+            const show = window.innerWidth <= 900 && currentUser && activePage !== 'CREATE';
+            fab.style.display = show ? 'flex' : 'none';
+            if (show) lucide.createIcons();
+        }
+
         async function checkSimilarity(title, topic) {
             const userUuid = currentUser.authUserId;
             try {
@@ -929,6 +1172,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", async () => {
+            lucide.createIcons(); // init static elements (kbd-hint etc.)
             if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
 
             supabase.auth.onAuthStateChange((event, session) => {
@@ -1002,10 +1246,29 @@
 
         window.loadMoreData = async () => { fetchLimit += 50; await loadData(); renderPage(); };
         function setupRealtime() {
-            supabase.channel('public:tickets').on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async () => {
-                if (activePage === 'CREATE' || (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA'))) { showToast("מידע חדש התקבל (רענן לצפייה)", "info"); return; }
+            supabase.channel('public:tickets').on('postgres_changes', { event: '*', schema: 'public', table: 'tickets' }, async (payload) => {
+                if (activePage === 'CREATE' || (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA'))) { showToast("מידע חדש התקבל", "info", "רענן", () => window.location.reload()); return; }
                 if (debounceTimer) clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(async () => { await loadData(); render(); showToast("הנתונים התעדכנו", "refresh-cw"); }, 1000);
+            }).subscribe();
+            // Real-time comments
+            supabase.channel('public:ticket_comments').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ticket_comments' }, async (payload) => {
+                if (activePage !== 'DETAILS' || !selectedTicketId) return;
+                const c = payload.new;
+                if (String(c.ticket_id) !== String(selectedTicketId)) return;
+                if (c.author_user_id === currentUser?.id) return; // already rendered
+                const newComment = { id: c.id, ticketId: c.ticket_id, content: c.content, authorName: c.author_name, authorRole: c.author_role, createdAt: c.created_at };
+                comments = [...comments, newComment];
+                const list = document.getElementById('comments-list');
+                if (list) {
+                    const div = document.createElement('div');
+                    div.className = 'chat-bubble page-animate';
+                    div.innerHTML = `<div class="chat-meta"><div class="details-comment-avatar">${escapeHtml(newComment.authorName||'?').charAt(0)}</div><span style="font-weight:600;">${escapeHtml(newComment.authorName)}</span><span style="opacity:0.3;">·</span><span>${roleLabel(newComment.authorRole)}</span><span style="opacity:0.3;margin-right:auto;">·</span><span style="font-size:0.75rem;">${formatDate(newComment.createdAt)}</span></div><div style="font-size:0.9rem;line-height:1.6;white-space:pre-wrap;">${escapeHtml(newComment.content)}</div>`;
+                    const emptyEl = list.querySelector('.details-empty-comments');
+                    if (emptyEl) emptyEl.remove();
+                    list.appendChild(div);
+                    showToast(`הערה חדשה מ-${escapeHtml(newComment.authorName)}`, "message-circle");
+                }
             }).subscribe();
         }
 
@@ -1015,6 +1278,7 @@
             if (!currentUser.fullName || !currentUser.phone) return renderOnboarding();
             renderApp();
             setTimeout(initPullToRefresh, 500);
+            setTimeout(updateFab, 50);
         }
 
         function renderResetPassword() {
@@ -1036,7 +1300,7 @@
             const isManager = currentUser.isManager || isOwner;
             const pendingManagerRequests = users.filter(u => u.requestedManager).length;
             const root = document.getElementById("root");
-            root.innerHTML = `<div class="app-root"><aside class="sidebar"><div class="brand"><img src="logo.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/906/906343.png'"><div><div class="brand-title">TicketFlow</div><div style="font-size:1rem;color:#94a3b8;">Yanai</div></div></div><div class="nav-group"><div class="nav-label">ראשי</div><div class="nav-item ${activePage === 'HOME' ? 'active' : ''}" onclick="nav('HOME')"><i data-lucide="layout-grid"></i><span>דשבורד</span></div><div class="nav-item ${activePage === 'MY_TICKETS' ? 'active' : ''}" onclick="nav('MY_TICKETS')"><i data-lucide="list"></i><span>התקלות שלי</span></div><div class="nav-item ${activePage === 'CREATE' ? 'active' : ''}" onclick="nav('CREATE')"><i data-lucide="plus-circle"></i><span>פתיחת תקלה</span></div>${isManager ? `<div class="nav-item ${activePage === 'ALL_TICKETS' ? 'active' : ''}" onclick="nav('ALL_TICKETS')"><i data-lucide="layers"></i><span>כל התקלות</span></div>` : ''}<div class="nav-item ${activePage === 'PROFILE' ? 'active' : ''}" onclick="nav('PROFILE')"><i data-lucide="user-circle"></i><span>פרופיל</span></div></div><div class="nav-group"><div class="nav-label">ניהול</div>${isManager ? `<div class="nav-item ${activePage === 'ANALYTICS' ? 'active' : ''}" onclick="nav('ANALYTICS')"><i data-lucide="bar-chart-3"></i><span>אנליטיקה</span></div>` : ''}${isManager ? `<div class="nav-item ${activePage === 'NOTIFICATIONS' ? 'active' : ''}" onclick="nav('NOTIFICATIONS')"><i data-lucide="bell-ring"></i><span>התראות</span></div>` : ''}${isOwner ? `<div class="nav-item ${activePage === 'MANAGE_USERS' ? 'active' : ''}" onclick="nav('MANAGE_USERS')"><i data-lucide="users"></i><span>משתמשים</span> ${pendingManagerRequests > 0 ? `<span class="notification-dot"></span>` : ''}</div>` : ''}${isOwner ? `<div class="nav-item ${activePage === 'ROLE_APPROVAL' ? 'active' : ''}" onclick="nav('ROLE_APPROVAL')"><i data-lucide="shield-check"></i><span>אישורים</span></div>` : ''}${isOwner ? `<div class="nav-item ${activePage === 'SYSTEM_CHECK' ? 'active' : ''}" onclick="nav('SYSTEM_CHECK')"><i data-lucide="activity"></i><span>מערכת</span></div>` : ''}</div><div class="user-card"><div class="avatar">${(currentUser.fullName?.[0] || 'U')}</div><div class="user-info"><div class="user-name">${escapeHtml(currentUser.fullName)}</div><div class="user-role" style="font-size:0.7rem;opacity:0.8;">${roleLabel(currentUser.role)} • ${Array.isArray(currentUser.unit) && currentUser.unit.length > 0 ? currentUser.unit[0] + (currentUser.unit.length > 1 ? ' +' + (currentUser.unit.length - 1) : '') : 'ללא יחידה'}</div></div><button class="logout-btn" onclick="doLogout()"><i data-lucide="log-out"></i></button></div></aside><main class="main" id="main-content"></main></div>`;
+            root.innerHTML = `<div class="app-root"><aside class="sidebar"><div class="brand"><img src="logo.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/906/906343.png'"><div><div class="brand-title">TicketFlow</div><div style="font-size:1rem;color:#94a3b8;">Yanai</div></div></div><div class="nav-item" onclick="openCmdPalette()" style="margin-bottom:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);justify-content:space-between;"><div style="display:flex;align-items:center;gap:12px;"><i data-lucide="search"></i><span style="color:var(--text-soft);">חיפוש מהיר...</span></div><span class="cmd-key" style="font-size:0.62rem;">⌘K</span></div><div class="nav-group"><div class="nav-label">ראשי</div><div class="nav-item ${activePage === 'HOME' ? 'active' : ''}" onclick="nav('HOME')"><i data-lucide="layout-grid"></i><span>דשבורד</span></div><div class="nav-item ${activePage === 'MY_TICKETS' ? 'active' : ''}" onclick="nav('MY_TICKETS')"><i data-lucide="list"></i><span>התקלות שלי</span></div><div class="nav-item ${activePage === 'CREATE' ? 'active' : ''}" onclick="nav('CREATE')"><i data-lucide="plus-circle"></i><span>פתיחת תקלה</span></div>${isManager ? `<div class="nav-item ${activePage === 'ALL_TICKETS' ? 'active' : ''}" onclick="nav('ALL_TICKETS')"><i data-lucide="layers"></i><span>כל התקלות</span></div>` : ''}<div class="nav-item ${activePage === 'PROFILE' ? 'active' : ''}" onclick="nav('PROFILE')"><i data-lucide="user-circle"></i><span>פרופיל</span></div></div><div class="nav-group"><div class="nav-label">ניהול</div>${isManager ? `<div class="nav-item ${activePage === 'ANALYTICS' ? 'active' : ''}" onclick="nav('ANALYTICS')"><i data-lucide="bar-chart-3"></i><span>אנליטיקה</span></div>` : ''}${isManager ? `<div class="nav-item ${activePage === 'NOTIFICATIONS' ? 'active' : ''}" onclick="nav('NOTIFICATIONS')"><i data-lucide="bell-ring"></i><span>התראות</span></div>` : ''}${isOwner ? `<div class="nav-item ${activePage === 'MANAGE_USERS' ? 'active' : ''}" onclick="nav('MANAGE_USERS')"><i data-lucide="users"></i><span>משתמשים</span> ${pendingManagerRequests > 0 ? `<span class="notification-dot"></span>` : ''}</div>` : ''}${isOwner ? `<div class="nav-item ${activePage === 'ROLE_APPROVAL' ? 'active' : ''}" onclick="nav('ROLE_APPROVAL')"><i data-lucide="shield-check"></i><span>אישורים</span></div>` : ''}${isOwner ? `<div class="nav-item ${activePage === 'SYSTEM_CHECK' ? 'active' : ''}" onclick="nav('SYSTEM_CHECK')"><i data-lucide="activity"></i><span>מערכת</span></div>` : ''}</div><div class="user-card"><div class="avatar">${(currentUser.fullName?.[0] || 'U')}</div><div class="user-info"><div class="user-name">${escapeHtml(currentUser.fullName)}</div><div class="user-role" style="font-size:0.7rem;opacity:0.8;">${roleLabel(currentUser.role)} • ${Array.isArray(currentUser.unit) && currentUser.unit.length > 0 ? currentUser.unit[0] + (currentUser.unit.length > 1 ? ' +' + (currentUser.unit.length - 1) : '') : 'ללא יחידה'}</div></div><button class="logout-btn" onclick="doLogout()"><i data-lucide="log-out"></i></button></div></aside><main class="main" id="main-content"></main></div>`;
             renderPage();
             lucide.createIcons();
         }
@@ -1072,27 +1336,43 @@
 </header>
 
 <div class="grid-dashboard">
-  <div class="stat-card" onclick="nav('MY_TICKETS');haptic()">
+  <div class="stat-card" style="--glow:rgba(236,72,153,0.35);" onclick="nav('MY_TICKETS');haptic()">
     <div class="stat-lbl">שלי</div>
     <div class="stat-val" style="color:#ec4899;" data-target="${myOpen}">0</div>
-    <div style="font-size:0.7rem;color:rgba(236,72,153,0.5);margin-top:4px;">↑ פתוחות</div>
+    <div style="margin-top:6px;">${getTrend(t => !t.isClosed && t.createdByUserId === currentUser.id)}</div>
   </div>
-  <div class="stat-card" onclick="nav('ALL_TICKETS');haptic()">
-    <div class="stat-lbl">סה"כ</div>
+  <div class="stat-card" style="--glow:rgba(139,92,246,0.35);" onclick="nav('ALL_TICKETS');haptic()">
+    <div class="stat-lbl">סה"כ פתוחות</div>
     <div class="stat-val" style="color:#8b5cf6;" data-target="${totalOpen}">0</div>
-    <div style="font-size:0.7rem;color:rgba(139,92,246,0.5);margin-top:4px;">↑ פתוחות</div>
+    <div style="margin-top:6px;">${getTrend(t => !t.isClosed)}</div>
   </div>
-  <div class="stat-card">
+  <div class="stat-card" style="--glow:rgba(16,185,129,0.3);">
     <div class="stat-lbl">טופלו</div>
     <div class="stat-val" style="color:#10b981;" data-target="${totalClosed}">0</div>
-    <div style="font-size:0.7rem;color:rgba(16,185,129,0.5);margin-top:4px;">✓ סגורות</div>
+    <div style="margin-top:6px;">${getTrend(t => t.isClosed)}</div>
   </div>
-  <div class="stat-card" style="${hamalOpen > 0 ? 'border-color:var(--urgent);background:rgba(239,68,68,0.08);' : ''}">
+  <div class="stat-card" style="--glow:rgba(239,68,68,0.3);${hamalOpen > 0 ? 'border-color:var(--urgent);background:rgba(239,68,68,0.08);' : ''}">
     <div class="stat-lbl">חמ"ל</div>
     <div class="stat-val" style="color:#ef4444;" data-target="${hamalOpen}">0</div>
-    <div style="font-size:0.7rem;color:rgba(239,68,68,0.5);margin-top:4px;">${hamalOpen > 0 ? '🚨 דחוף' : '— תקין'}</div>
+    <div style="margin-top:6px;">${hamalOpen > 0 ? '<span class="trend-badge trend-up">🚨 דחוף</span>' : '<span class="trend-badge trend-flat">— תקין</span>'}</div>
   </div>
 </div>
+
+${(() => {
+  const urgentTickets = tickets.filter(t => !t.isClosed && (t.isHamalDown || isOverHour(t.createdAt))).slice(0, 4);
+  if (!urgentTickets.length) return '';
+  return `<div class="urgent-banner">
+    <div class="urgent-banner-header"><i data-lucide="alert-triangle"></i> דורשות תשומת לב (${urgentTickets.length})</div>
+    ${urgentTickets.map(t => `
+    <div class="hamal-ticket-card" onclick="nav('DETAILS','${t.id}');haptic('medium')">
+      <div style="min-width:0;flex:1;">
+        <div class="hamal-ticket-title">${t.isHamalDown ? '🚨 ' : '⏱ '}${escapeHtml(t.title)}</div>
+        <div class="hamal-ticket-meta">#${t.ticketNumber} · ${escapeHtml(t.unit||'')} · ${timeAgo(t.createdAt)}</div>
+      </div>
+      <i data-lucide="chevron-left" style="width:16px;height:16px;color:rgba(239,68,68,0.6);flex-shrink:0;"></i>
+    </div>`).join('')}
+  </div>`;
+})()}
 
 <div class="card">
   <div class="card-title" style="justify-content:space-between;">
@@ -1116,6 +1396,8 @@
 </div>`;
                 lucide.createIcons();
                 setTimeout(animateCounters, 100);
+                // Update FAB visibility
+                updateFab();
             }
 
             if (activePage === "MY_TICKETS" || activePage === "ALL_TICKETS") {
@@ -1168,37 +1450,120 @@ ${list.map(t => {
         </div>
       </div>
       <div class="badge badge-${t.status}" style="flex-shrink:0;">${STATUS_LABEL[t.status]}</div>
+    ${!t.isClosed ? (() => { const slaMinutes=60; const pct=Math.min(100,elapsed/slaMinutes*100); const color=pct<50?'#4ade80':pct<80?'#fbbf24':'#ef4444'; return `<div class="sla-strip" style="background:linear-gradient(to left,${color},${color}99);width:${pct}%;opacity:0.7;"></div>`; })() : ''}
     </div>`;
 }).join('')}
-${list.length===0?'<div style="text-align:center;padding:48px 20px;opacity:0.4;"><div style="font-size:2rem;margin-bottom:8px;">📭</div>לא נמצאו תקלות</div>':''}
+${list.length===0?`<div class="empty-state">
+  <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="20" width="64" height="44" rx="8" stroke="currentColor" stroke-width="2.5" fill="none" opacity="0.4"/>
+    <path d="M8 32 L40 50 L72 32" stroke="currentColor" stroke-width="2.5" opacity="0.4"/>
+    <circle cx="56" cy="56" r="14" fill="#020617" stroke="currentColor" stroke-width="2" opacity="0.5"/>
+    <path d="M52 56 L55 59 L60 53" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+  </svg>
+  <div class="empty-state-title">אין תקלות כאן</div>
+  <div class="empty-state-sub">${window.filterState?.search || window.filterState?.topic !== 'ALL' ? 'נסה לאפס את הסינון' : 'הכל שקט בינתיים 🎉'}</div>
+  ${window.filterState?.search || window.filterState?.topic !== 'ALL' ? `<button class="btn" style="margin-top:16px;" onclick="clearFilters()">איפוס סינון</button>` : ''}
+</div>`:''}
 </div>`;
                 lucide.createIcons();
             }
 
             if (activePage === "CREATE") {
-                let roleOptions = "";
-                if (currentUser.role === 'USER') { roleOptions = `<option value="HATAP">חט"פ</option>`; }
-                else if (currentUser.role === 'HATAP') { roleOptions = `<option value="HR">מש"א</option>`; }
-                else { roleOptions = `<option value="HATAP">חט"פ</option><option value="HR">מש"א</option><option value="PLHIK">פלחי"ק</option><option value="MAMRAM">ממר"ם</option><option value="APP">אפליקציה</option><option value="NETWORK">רשת</option>`; }
+                if (!window._wizardInit) { createStep = 1; createData = {}; }
+                window._wizardInit = true;
                 const userUnits = Array.isArray(currentUser.unit) ? currentUser.unit : (currentUser.unit ? [currentUser.unit] : []);
-                let unitSelectionHtml = "";
-                if (userUnits.length > 1) {
-                    unitSelectionHtml = `<div class="field-group"><label class="label">יחידות / חמ"לים מושפעים</label><div class="custom-multiselect"><div class="select-display input" onclick="toggleCreateUnitsDropdown(event)"><span id="create-selected-units-text">בחר יחידות...</span><i data-lucide="chevron-down" style="width:16px;opacity:0.5;"></i></div><div class="dropdown-options card" id="create-units-dropdown-list">${userUnits.map(u => `<label class="dropdown-item"><span>${escapeHtml(u)}</span><input type="checkbox" name="ticket_unit_choice" value="${escapeHtml(u)}" onchange="updateCreateUnitsText()" style="width:18px;height:18px;accent-color:var(--accent);"></label>`).join('')}</div></div></div>`;
-                } else { unitSelectionHtml = `<input type="hidden" name="unit" value="${escapeHtml(userUnits[0] || '')}"`; }
-                main.innerHTML = `<header class="header"><div class="page-title">פתיחת קריאה</div></header><div class="card"><form id="create-form"><div style="margin-bottom:20px;padding:15px;border:1px solid #ef4444;background:rgba(239,68,68,0.1);border-radius:12px;display:flex;align-items:center;gap:10px;"><input type="checkbox" name="hamalDown" id="hamalDown" style="width:20px;height:20px;accent-color:#ef4444;"><label for="hamalDown" style="color:#ef4444;font-weight:800;cursor:pointer;">🚨 חמ"ל מושבת</label></div>${unitSelectionHtml}<div class="grid-2cols"><div class="field-group"><label class="label">נושא</label><select class="select" name="topic"><option>אמצעים</option><option>אפליקציה</option><option>רשת</option><option>מחשב</option><option>עמדה דלה</option></select></div><div class="field-group"><label class="label">גורם מטפל</label><select class="select" name="role">${roleOptions}</select></div></div><div class="field-group"><label class="label">כותרת</label><input class="input" name="title" required placeholder="מה הבעיה?" /></div><div class="field-group"><label class="label">פירוט</label><textarea class="textarea" name="desc" required style="min-height:120px;" placeholder="פרט כאן..."></textarea></div><button class="btn btn-primary" type="submit" style="width:100%;">שלח קריאה</button></form></div>`;
+                const availableRoles = currentUser.role === 'USER' ? ['HATAP'] : currentUser.role === 'HATAP' ? ['HR'] : ['HATAP','HR','PLHIK','MAMRAM','APP','NETWORK'];
+                const roleIcons = { HATAP:'🛡️', HR:'👥', PLHIK:'🗺️', MAMRAM:'💻', APP:'📱', NETWORK:'🌐', PLHIK:'🎯' };
+                const topicList = [
+                    { value:'מחשב', icon:'💻', label:'מחשב' },
+                    { value:'רשת', icon:'🌐', label:'רשת' },
+                    { value:'אפליקציה', icon:'📱', label:'אפליקציה' },
+                    { value:'אמצעים', icon:'🔧', label:'אמצעים' },
+                    { value:'עמדה דלה', icon:'🖥️', label:'עמדה דלה' },
+                    { value:'אחר', icon:'📋', label:'אחר' },
+                ];
+                const steps = ['נושא', 'גורם טיפול', 'פרטים'];
+                const stepsHtml = `<div class="wizard-steps">${steps.map((s,i) => {
+                    const idx = i+1;
+                    const cls = idx < createStep ? 'wz-done' : idx === createStep ? 'wz-active' : '';
+                    return `<div class="wizard-step-item ${cls}"><div class="wizard-dot">${idx < createStep ? '✓' : idx}</div><div class="wizard-step-label">${s}</div></div>`;
+                }).join('')}</div>`;
+
+                let stepBody = '';
+                if (createStep === 1) {
+                    stepBody = `
+                    <div style="margin-bottom:20px;padding:14px 16px;border:1.5px solid #ef4444;background:rgba(239,68,68,0.08);border-radius:14px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="this.classList.toggle('selected');document.getElementById('hamalDown').checked=this.classList.contains('selected');this.style.background=this.classList.contains('selected')?'rgba(239,68,68,0.18)':'rgba(239,68,68,0.08)';">
+                        <input type="checkbox" id="hamalDown" style="width:20px;height:20px;accent-color:#ef4444;pointer-events:none;">
+                        <div><div style="color:#ef4444;font-weight:800;font-size:0.95rem;">🚨 חמ"ל מושבת</div><div style="font-size:0.75rem;color:rgba(239,68,68,0.6);margin-top:2px;">סמן אם החמ"ל אינו פעיל לחלוטין</div></div>
+                    </div>
+                    <div class="label" style="margin-bottom:10px;">על מה התקלה?</div>
+                    <div class="topic-grid">
+                        ${topicList.map(t => `<div class="topic-chip ${createData.topic===t.value?'selected':''}" onclick="selectTopic('${t.value}',this)">
+                            <div class="topic-chip-icon">${t.icon}</div>
+                            <div class="topic-chip-label">${t.label}</div>
+                        </div>`).join('')}
+                    </div>
+                    <div class="wizard-nav">
+                        <button class="btn btn-ghost" onclick="nav('HOME')">ביטול</button>
+                        <button class="btn btn-primary" onclick="wizardNext(1)" id="wz-next-1">המשך →</button>
+                    </div>`;
+                } else if (createStep === 2) {
+                    const unitHtml = userUnits.length > 1
+                        ? `<div class="field-group" style="margin-bottom:20px;"><label class="label">יחידה מושפעת</label><select class="select" id="wz-unit">${userUnits.map(u=>`<option value="${escapeHtml(u)}" ${createData.unit===u?'selected':''}>${escapeHtml(u)}</option>`).join('')}</select></div>`
+                        : '';
+                    stepBody = `
+                    ${unitHtml}
+                    <div class="label" style="margin-bottom:10px;">מי יטפל בזה?</div>
+                    <div class="role-list">
+                        ${availableRoles.map(r => `<div class="role-item ${createData.role===r?'selected':''}" onclick="selectRole('${r}',this)">
+                            <div class="role-item-icon" style="background:rgba(236,72,153,0.1);">${roleIcons[r]||'👤'}</div>
+                            <div><div style="font-weight:700;">${roleLabel(r)}</div></div>
+                        </div>`).join('')}
+                    </div>
+                    <div class="wizard-nav">
+                        <button class="btn btn-ghost" onclick="wizardBack()">← חזרה</button>
+                        <button class="btn btn-primary" onclick="wizardNext(2)" id="wz-next-2">המשך →</button>
+                    </div>`;
+                } else {
+                    stepBody = `
+                    <div class="field-group"><label class="label">כותרת הבעיה</label><input class="input" id="wz-title" placeholder="מה הבעיה בקצרה?" value="${escapeHtml(createData.title||'')}" style="font-size:1rem;" /></div>
+                    <div class="field-group"><label class="label">פירוט</label><textarea class="textarea" id="wz-desc" placeholder="תאר את הבעיה בפירוט..." style="min-height:130px;">${escapeHtml(createData.desc||'')}</textarea></div>
+                    <div class="wizard-nav">
+                        <button class="btn btn-ghost" onclick="wizardBack()">← חזרה</button>
+                        <button class="btn btn-primary" id="wz-submit" onclick="wizardSubmit(this)" style="flex:2;">🚀 שלח קריאה</button>
+                    </div>`;
+                }
+                main.innerHTML = `<header class="header" style="margin-bottom:20px;"><button class="btn details-back-btn" onclick="nav('HOME');window._wizardInit=false;"><i data-lucide="arrow-right"></i></button><div class="page-title">פתיחת קריאה</div></header><div class="card">${stepsHtml}${stepBody}</div>`;
                 lucide.createIcons();
-                document.getElementById("create-form").onsubmit = async (e) => {
-                    e.preventDefault();
-                    const fd = new FormData(e.target);
-                    const selectedUnit = fd.get("unit") || Array.from(e.target.querySelectorAll('input[name="ticket_unit_choice"]:checked')).map(el => el.value).join(', ');
-                    if (!selectedUnit) { showToast("נא לבחור יחידה רלוונטית", "alert-circle"); return; }
-                    const insertData = { ticket_number: await getNextNum(), title: fd.get("title"), description: fd.get("desc"), topic: fd.get("topic"), unit: selectedUnit, assigned_role: fd.get("role"), status: "OPEN", is_hamal_down: document.getElementById("hamalDown").checked, created_by_user_id: currentUser.id, created_by_name: currentUser.fullName };
-                    if (currentUser.role === 'HATAP' && fd.get("role") === 'HR') insertData.forwarded_by_hatap_name = currentUser.fullName;
-                    await withLoader(document.querySelector(".card"), async () => {
+
+                window.selectTopic = (val, el) => { createData.topic = val; document.querySelectorAll('.topic-chip').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); };
+                window.selectRole = (val, el) => { createData.role = val; document.querySelectorAll('.role-item').forEach(c => c.classList.remove('selected')); el.classList.add('selected'); };
+                window.wizardBack = () => { createStep--; window._wizardInit = true; renderPage(); };
+                window.wizardNext = (step) => {
+                    if (step === 1) {
+                        createData.hamalDown = document.getElementById('hamalDown')?.checked || false;
+                        if (!createData.topic) { showToast("בחר נושא", "alert-circle"); return; }
+                    }
+                    if (step === 2) {
+                        const unitEl = document.getElementById('wz-unit');
+                        createData.unit = unitEl ? unitEl.value : (userUnits[0] || '');
+                        if (!createData.role) { showToast("בחר גורם מטפל", "alert-circle"); return; }
+                        if (!createData.unit) { showToast("בחר יחידה", "alert-circle"); return; }
+                    }
+                    createStep++; window._wizardInit = true; renderPage();
+                };
+                window.wizardSubmit = async (btn) => {
+                    const title = document.getElementById('wz-title')?.value?.trim();
+                    const desc = document.getElementById('wz-desc')?.value?.trim();
+                    if (!title) { showToast("הכנס כותרת", "alert-circle"); return; }
+                    const insertData = { ticket_number: await getNextNum(), title, description: desc||'', topic: createData.topic||'אחר', unit: createData.unit||(userUnits[0]||''), assigned_role: createData.role||availableRoles[0], status: "OPEN", is_hamal_down: createData.hamalDown||false, created_by_user_id: currentUser.id, created_by_name: currentUser.fullName };
+                    if (currentUser.role === 'HATAP' && insertData.assigned_role === 'HR') insertData.forwarded_by_hatap_name = currentUser.fullName;
+                    await withBtnLoader(btn, async () => {
                         const { data: t, error } = await supabase.from("tickets").insert(insertData).select().single();
                         if (error) throw error;
                         await loadData();
                         pushTicketShort({ userIds: getNotifyUserIdsForTicket(t, currentUser.id), ticketId: t.ticket_number, title: t.is_hamal_down ? "🚨 חמ״ל מושבת!" : "✨ תקלה חדשה", message: t.title });
+                        window._wizardInit = false; createStep = 1; createData = {};
                         nav("DETAILS", t.id);
                     });
                 };
@@ -1227,10 +1592,11 @@ ${list.length===0?'<div style="text-align:center;padding:48px 20px;opacity:0.4;"
     <span>חמ"ל מושבת!</span>
   </div>` : ''}
 
-  <!-- Title -->
+  <!-- Title + Stepper -->
   <div class="card details-title-card">
     <div class="details-title">${escapeHtml(t.title)}</div>
     ${t.isBumped ? `<div class="details-bump-row"><i data-lucide="flame"></i> הוקפץ ${t.bumpCount} פעם</div>` : ''}
+    <div style="margin-top:16px;">${buildStatusStepper(t.status)}</div>
   </div>
 
   <!-- Meta grid -->
@@ -1273,8 +1639,14 @@ ${list.length===0?'<div style="text-align:center;padding:48px 20px;opacity:0.4;"
     <div class="details-desc">${escapeHtml(t.description)}</div>
   </div>` : ''}
 
-  ${isAllowed ? `
-  <!-- Status update -->
+  ${(() => {
+    const isOwner = currentUser.role === 'OWNER';
+    const isCreator = t.createdByUserId === currentUser.id;
+    const isHandler = t.assignedRole === currentUser.role || currentUser.isManager;
+    const canClose = (isOwner || isCreator) && !t.isClosed;
+    const canChangeStatus = (isHandler || isOwner) && !t.isClosed;
+    if (!canChangeStatus && !canClose) return '';
+    return `
   <div class="card" style="margin-bottom:14px;">
     <div class="details-section-title"><i data-lucide="settings-2"></i> עדכן סטטוס</div>
     <div class="details-status-row">
@@ -1282,11 +1654,13 @@ ${list.length===0?'<div style="text-align:center;padding:48px 20px;opacity:0.4;"
         <option value="OPEN" ${t.status==='OPEN'?'selected':''}>פתוח</option>
         <option value="IN_PROGRESS" ${t.status==='IN_PROGRESS'?'selected':''}>בטיפול</option>
         <option value="RESOLVED" ${t.status==='RESOLVED'?'selected':''}>טופל</option>
-        <option value="CLOSED" ${t.status==='CLOSED'?'selected':''}>סגור</option>
+        ${canClose ? `<option value="CLOSED" ${t.status==='CLOSED'?'selected':''}>סגור</option>` : ''}
       </select>
       <button class="btn btn-primary" onclick="updateTicket('${t.id}')"><i data-lucide="check"></i> שמור</button>
     </div>
-  </div>` : ''}
+    ${!canClose && canChangeStatus ? `<div style="font-size:0.72rem;color:var(--text-soft);margin-top:8px;display:flex;align-items:center;gap:5px;"><i data-lucide="info" style="width:12px;height:12px;"></i> רק פותח התקלה או הבעלים יכולים לסגור אותה</div>` : ''}
+  </div>`;
+  })()}
 
   ${canTake ? `
   <button class="btn btn-primary" style="width:100%;margin-bottom:14px;justify-content:center;" onclick="takeTicket('${t.id}')">
@@ -1372,6 +1746,7 @@ ${list.length===0?'<div style="text-align:center;padding:48px 20px;opacity:0.4;"
                 main.innerHTML = `<div class="page-header"><div class="page-title">דשבורד אנליטיקה</div></div><div class="date-control-bar"><div style="display:flex;gap:5px;"><button class="view-toggle-btn ${analyticsView==='WEEK'?'active':''}" onclick="setView('WEEK')">שבוע</button><button class="view-toggle-btn ${analyticsView==='MONTH'?'active':''}" onclick="setView('MONTH')">חודש</button></div><div style="display:flex;align-items:center;gap:15px;font-weight:700;"><button class="date-nav-btn" onclick="moveDate(-1)"><i data-lucide="chevron-right"></i></button><span style="min-width:150px;text-align:center;">${dateLabel}</span><button class="date-nav-btn" onclick="moveDate(1)"><i data-lucide="chevron-left"></i></button></div></div><div class="grid-dashboard-compact"><div class="stat-card-compact"><div class="stat-val-compact" style="color:#ec4899;">${open}</div><div class="stat-lbl-compact">פתוחות</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#10b981;">${closed}</div><div class="stat-lbl-compact">סגורות</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#f59e0b;">${total}</div><div class="stat-lbl-compact">סה"כ לתקופה</div></div><div class="stat-card-compact"><div class="stat-val-compact" style="color:#ef4444;">${hamalCount}</div><div class="stat-lbl-compact">תקלות משביתות</div></div></div><div class="card" style="margin-top:16px;"><div class="card-title">פילוח נתונים</div><div class="analytics-filter-toggle">${[{k:"STATUS",l:"סטטוס"},{k:"ROLE",l:"תפקיד"},{k:"TOPIC",l:"נושא"},{k:"UNIT",l:"חטיבה"}].map(x=>`<button class="analytics-filter-chip ${analyticsDim===x.k?'active':''}" onclick="setDim('${x.k}')">${x.l}</button>`).join("")}</div><div class="chart-grid-2"><div style="display:flex;align-items:center;justify-content:center;min-height:200px;">${total>0?`<svg viewBox="-5 -5 110 110" style="width:180px;overflow:visible;transform:rotate(-90deg);">${paths}</svg>`:'<div style="opacity:0.5;">אין נתונים לתקופה זו</div>'}</div><div style="display:flex;flex-direction:column;justify-content:center;">${sorted.map(([l,v],i)=>`<div style="margin-bottom:12px;"><div style="display:flex;align-items:center;justify-content:space-between;font-size:0.85rem;margin-bottom:4px;"><div style="display:flex;align-items:center;gap:8px;"><div style="width:10px;height:10px;border-radius:3px;background:${colors[i%colors.length]}"></div><span>${escapeHtml(l)}</span></div><strong>${v}</strong></div><div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${(v/total)*100}%;background:${colors[i%colors.length]};border-radius:3px;"></div></div></div>`).join("")}</div></div></div>`;
                 window.setDim = (d) => { analyticsDim = d; render(); };
                 lucide.createIcons();
+                setTimeout(animateCounters, 100);
             }
 
             if (activePage === "NOTIFICATIONS") {
@@ -1400,17 +1775,229 @@ ${list.length===0?'<div style="text-align:center;padding:48px 20px;opacity:0.4;"
 
         window.toggleUnitsDropdown = (e) => { e.stopPropagation(); const list=document.getElementById('units-dropdown-list'); const isVisible=list.classList.contains('show'); document.querySelectorAll('.dropdown-options').forEach(el=>el.classList.remove('show')); if (!isVisible) { list.classList.add('show'); document.addEventListener('click',function closeMenu(event){if(!event.target.closest('.custom-multiselect')){list.classList.remove('show');document.removeEventListener('click',closeMenu);}}); } };
         window.updateSelectedUnitsText = () => { const checked=Array.from(document.querySelectorAll('input[name="unit_choice"]:checked')).map(el=>el.value); const textEl=document.getElementById('selected-units-text'); if(checked.length===0){textEl.innerText="בחר יחידות...";}else if(checked.length<=2){textEl.innerText=checked.join(', ');}else{textEl.innerText=`${checked[0]} + עוד ${checked.length-1}`;} };
-        window.nav = async (p, id = null) => { haptic('light'); activePage = p; if (id) selectedTicketId = id; render(); };
+        window.nav = async (p, id = null) => { haptic('light'); if (p !== 'CREATE') { window._wizardInit = false; createStep = 1; createData = {}; } activePage = p; if (id) selectedTicketId = id; render(); };
         window.toggleClosed = () => { showClosed = !showClosed; render(); };
         window.takeTicket = async (tid) => { const t=tickets.find(x=>x.id==tid); if(!t)return; if(t.assignedRole!==currentUser.role && currentUser.role!=='OWNER'){alert("אין הרשאה");return;} await withLoader(document.body,async()=>{await supabase.from("tickets").update({assigned_user_id:currentUser.id,status:"IN_PROGRESS"}).eq("id",tid);await loadData();render();showToast("התקלה שויכה אליך");}); };
         window.requestManager = async () => { await supabase.from('users').update({requested_manager:true}).eq('id',currentUser.id); await loadData(); render(); showToast("הבקשה נשלחה"); };
         window.toggleFreeze = async (uid, state) => { await supabase.from("users").update({is_frozen:state}).eq("id",uid); await loadData(); showToast(state?"משתמש הוקפא":"משתמש הופשר"); };
         window.toggleManager = async (uid, state) => { await supabase.from("users").update({is_manager:state,requested_manager:false}).eq("id",uid); await loadData(); showToast("הרשאות עודכנו"); };
         window.approveRole = async (uid, role) => { await supabase.from("users").update({role:role,role_status:"Approved",requested_role:null}).eq("id",uid); await loadData(); render(); showToast("המשתמש אושר"); };
-        window.updateTicket = async (tid) => { const t=tickets.find(x=>x.id==tid); if(!t)return; const isAllowed=currentUser.role==='OWNER'||currentUser.isManager||t.assignedRole===currentUser.role; if(!isAllowed){alert("אין הרשאה");return;} const st=document.getElementById("upd-status").value; const isClosed=(st==='RESOLVED'||st==='CLOSED'); await withLoader(document.querySelector(".main"),async()=>{await supabase.from("tickets").update({status:st,is_closed:isClosed,updated_at:new Date().toISOString()}).eq("id",tid);await loadData();render();showToast("הסטטוס עודכן");}); };
+        window.updateTicket = async (tid) => {
+            const t = tickets.find(x => x.id == tid);
+            if (!t) return;
+            const isOwner = currentUser.role === 'OWNER';
+            const isCreator = t.createdByUserId === currentUser.id;
+            const isHandler = t.assignedRole === currentUser.role || currentUser.isManager;
+            const st = document.getElementById("upd-status").value;
+            // Closing requires being the creator or owner
+            if (st === 'CLOSED' && !isOwner && !isCreator) {
+                showToast("רק פותח התקלה או הבעלים יכולים לסגור", "alert-circle"); return;
+            }
+            // Changing any status requires being the handler, owner, or manager
+            if (!isOwner && !isHandler && !isCreator) {
+                showToast("אין הרשאה לעדכן סטטוס", "alert-circle"); return;
+            }
+            const isClosed = (st === 'RESOLVED' || st === 'CLOSED');
+            await withLoader(document.querySelector(".main"), async () => {
+                await supabase.from("tickets").update({ status: st, is_closed: isClosed, updated_at: new Date().toISOString() }).eq("id", tid);
+                await loadData();
+                render();
+                if (st === 'CLOSED') {
+                    showToast("🎉 התקלה נסגרה!", "check-circle");
+                    setTimeout(launchConfetti, 300);
+                } else if (st === 'RESOLVED') {
+                    showToast("✅ התקלה טופלה!", "check");
+                } else {
+                    showToast("הסטטוס עודכן", "check");
+                }
+            });
+        };
         window.postComment = async (e, tid) => { e.preventDefault(); await supabase.from("ticket_comments").insert({ticket_id:tid,content:e.target.txt.value,author_user_id:currentUser.id,author_name:currentUser.fullName,author_role:currentUser.role}); e.target.reset(); const {data}=await supabase.from("ticket_comments").select("*").eq("ticket_id",tid).order("created_at"); if(data){comments=data.map(c=>({id:c.id,ticketId:c.ticket_id,content:c.content,authorName:c.author_name,authorRole:c.author_role,createdAt:c.created_at}));} render(); };
         window.doLogout = async () => { try { if("serviceWorker" in navigator){const reg=await navigator.serviceWorker.ready;const sub=await reg.pushManager.getSubscription();if(sub && currentUser){await fetch(`${PUSH_WORKER_BASE}/unsubscribe`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({userId:String(currentUser.id)})});await sub.unsubscribe();}} }catch(e){console.error(e);} localStorage.clear();sessionStorage.clear();await supabase.auth.signOut();window.location.reload(); };
         window.enableNotificationsManual = async () => { try { if(!("serviceWorker" in navigator)){alert("❌ הדפדפן לא תומך");return;} if(!("PushManager" in window)){alert("❌ לא זוהתה תמיכה");return;} const permission=await Notification.requestPermission(); if(permission!=='granted'){alert("⚠️ לא אושר.");return;} const reg=await navigator.serviceWorker.ready; let sub=await reg.pushManager.getSubscription(); if(!sub){const res=await fetch(`${PUSH_WORKER_BASE}/publicKey`);if(!res.ok)throw new Error("שגיאה בהבאת מפתח");const{publicKey}=await res.json();sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:urlBase64ToUint8Array(publicKey)});} const saveRes=await fetch(`${PUSH_WORKER_BASE}/subscribe`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({userId:String(currentUser.id),subscription:sub})}); if(saveRes.ok)alert("🎉 המכשיר רשום");else alert("❌ שגיאה: "+saveRes.status); }catch(err){alert("שגיאה: "+err.message);} };
+
+        /* ══════════════════════════════════════════
+           CONFETTI
+        ══════════════════════════════════════════ */
+        function launchConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            if (!canvas) return;
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const ctx = canvas.getContext('2d');
+            const colors = ['#ec4899','#8b5cf6','#3b82f6','#10b981','#f59e0b','#ef4444','#fbbf24'];
+            const particles = Array.from({length: 120}, () => ({
+                x: Math.random() * canvas.width, y: -20 - Math.random() * 100,
+                vx: (Math.random() - 0.5) * 5, vy: 3 + Math.random() * 4,
+                r: 5 + Math.random() * 6, color: colors[Math.floor(Math.random() * colors.length)],
+                angle: Math.random() * Math.PI * 2, spin: (Math.random() - 0.5) * 0.2,
+                shape: Math.random() > 0.5 ? 'rect' : 'circle'
+            }));
+            let frame = 0;
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.angle += p.spin;
+                    ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.angle);
+                    ctx.fillStyle = p.color; ctx.globalAlpha = Math.max(0, 1 - frame / 180);
+                    if (p.shape === 'rect') { ctx.fillRect(-p.r/2, -p.r/4, p.r, p.r/2); }
+                    else { ctx.beginPath(); ctx.arc(0, 0, p.r/2, 0, Math.PI*2); ctx.fill(); }
+                    ctx.restore();
+                });
+                frame++;
+                if (frame < 200) requestAnimationFrame(draw);
+                else ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            draw();
+        }
+
+        /* ══════════════════════════════════════════
+           COMMAND PALETTE
+        ══════════════════════════════════════════ */
+        let cmdSelectedIndex = 0;
+        function openCmdPalette() {
+            const el = document.getElementById('cmd-palette');
+            if (!el) return;
+            el.style.display = 'block';
+            lucide.createIcons();
+            setTimeout(() => { const inp = document.getElementById('cmd-input'); if (inp) inp.focus(); }, 50);
+            renderCmdResults();
+        }
+        function closeCmdPalette() {
+            const el = document.getElementById('cmd-palette');
+            if (el) el.style.display = 'none';
+        }
+        function getCmdItems(query) {
+            const q = query.toLowerCase().trim();
+            const pages = [
+                { icon: 'layout-grid', title: 'דשבורד', sub: 'עמוד ראשי', action: () => nav('HOME') },
+                { icon: 'list', title: 'התקלות שלי', sub: 'תקלות שנפתחו ממך', action: () => nav('MY_TICKETS') },
+                { icon: 'plus-circle', title: 'פתיחת תקלה חדשה', sub: 'צור קריאה חדשה', action: () => nav('CREATE') },
+                { icon: 'layers', title: 'כל התקלות', sub: 'כל הקריאות במערכת', action: () => nav('ALL_TICKETS') },
+                { icon: 'bar-chart-3', title: 'אנליטיקה', sub: 'נתונים וסטטיסטיקות', action: () => nav('ANALYTICS') },
+                { icon: 'user-circle', title: 'פרופיל', sub: 'הגדרות חשבון', action: () => nav('PROFILE') },
+                { icon: 'keyboard', title: 'קיצורי מקלדת', sub: 'הצג את כל הקיצורים', action: () => { closeCmdPalette(); document.getElementById('shortcuts-modal').style.display='block'; } },
+            ];
+            const matchPages = !q ? pages : pages.filter(p => p.title.includes(q) || p.sub.includes(q));
+            const matchTickets = !tickets ? [] : tickets.filter(t => !q || t.title?.toLowerCase().includes(q) || String(t.ticketNumber).includes(q)).slice(0, 6);
+            return { pages: matchPages, tickets: matchTickets };
+        }
+        function renderCmdResults() {
+            const q = (document.getElementById('cmd-input')?.value || '');
+            const { pages, tickets: tks } = getCmdItems(q);
+            const res = document.getElementById('cmd-results');
+            if (!res) return;
+            let html = '';
+            if (pages.length) {
+                html += `<div class="cmd-section-label">עמודים ופעולות</div>`;
+                pages.forEach((p, i) => {
+                    html += `<div class="cmd-item ${cmdSelectedIndex === i ? 'cmd-selected' : ''}" onclick="execCmdItem(${i}, 'page')">
+                        <div class="cmd-item-icon"><i data-lucide="${p.icon}"></i></div>
+                        <div><div class="cmd-item-title">${p.title}</div><div class="cmd-item-sub">${p.sub}</div></div>
+                    </div>`;
+                });
+            }
+            if (tks.length) {
+                html += `<div class="cmd-section-label">תקלות</div>`;
+                tks.forEach((t, i) => {
+                    const idx = pages.length + i;
+                    html += `<div class="cmd-item ${cmdSelectedIndex === idx ? 'cmd-selected' : ''}" onclick="execCmdItem(${idx}, 'ticket', '${t.id}')">
+                        <div class="cmd-item-icon" style="font-family:'Space Mono',monospace;font-size:0.7rem;color:var(--text-soft);">#${t.ticketNumber}</div>
+                        <div style="flex:1;min-width:0;"><div class="cmd-item-title">${escapeHtml(t.title)}</div><div class="cmd-item-sub">${escapeHtml(t.unit||'')} · ${STATUS_LABEL[t.status]||t.status}</div></div>
+                        <span class="cmd-item-badge badge-${t.status}">${STATUS_LABEL[t.status]}</span>
+                    </div>`;
+                });
+            }
+            if (!pages.length && !tks.length) html = `<div class="cmd-empty">לא נמצאו תוצאות</div>`;
+            res.innerHTML = html;
+            lucide.createIcons();
+        }
+        window.execCmdItem = (idx, type, ticketId) => {
+            closeCmdPalette();
+            const q = document.getElementById('cmd-input')?.value || '';
+            const { pages } = getCmdItems(q);
+            if (type === 'page') { pages[idx]?.action(); }
+            else if (type === 'ticket') { nav('DETAILS', ticketId); }
+        };
+        function handleCmdKey(e) {
+            const q = document.getElementById('cmd-input')?.value || '';
+            const { pages, tickets: tks } = getCmdItems(q);
+            const total = pages.length + tks.length;
+            if (e.key === 'ArrowDown') { e.preventDefault(); cmdSelectedIndex = (cmdSelectedIndex + 1) % total; renderCmdResults(); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); cmdSelectedIndex = (cmdSelectedIndex - 1 + total) % total; renderCmdResults(); }
+            else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (cmdSelectedIndex < pages.length) { execCmdItem(cmdSelectedIndex, 'page'); }
+                else { const t = tks[cmdSelectedIndex - pages.length]; if (t) execCmdItem(cmdSelectedIndex, 'ticket', t.id); }
+            }
+            else if (e.key === 'Escape') { closeCmdPalette(); }
+        }
+        window.openCmdPalette = openCmdPalette;
+        window.closeCmdPalette = closeCmdPalette;
+        window.renderCmdResults = renderCmdResults;
+        window.handleCmdKey = handleCmdKey;
+
+        /* ══════════════════════════════════════════
+           KEYBOARD SHORTCUTS
+        ══════════════════════════════════════════ */
+        (function initKeyboardShortcuts() {
+            let gPressed = false, gTimer = null;
+            document.addEventListener('keydown', (e) => {
+                const tag = document.activeElement?.tagName;
+                const isTyping = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+                const cmdPaletteOpen = document.getElementById('cmd-palette')?.style.display !== 'none';
+                // Cmd+K / Ctrl+K → command palette
+                if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                    e.preventDefault();
+                    cmdPaletteOpen ? closeCmdPalette() : openCmdPalette();
+                    return;
+                }
+                if (cmdPaletteOpen) return;
+                // Escape → go back / close modals
+                if (e.key === 'Escape') {
+                    document.getElementById('shortcuts-modal').style.display = 'none';
+                    if (activePage === 'DETAILS' || activePage === 'CREATE') nav('HOME');
+                    return;
+                }
+                if (isTyping) return;
+                // ? → show shortcuts
+                if (e.key === '?') { document.getElementById('shortcuts-modal').style.display = 'block'; return; }
+                // / → open command palette
+                if (e.key === '/') { e.preventDefault(); openCmdPalette(); return; }
+                // G+X navigation
+                if (e.key.toLowerCase() === 'g') { gPressed = true; clearTimeout(gTimer); gTimer = setTimeout(() => { gPressed = false; }, 800); return; }
+                if (gPressed) {
+                    gPressed = false; clearTimeout(gTimer);
+                    if (!currentUser) return;
+                    if (e.key.toLowerCase() === 'h') nav('HOME');
+                    else if (e.key.toLowerCase() === 'c') nav('CREATE');
+                    else if (e.key.toLowerCase() === 't') nav('MY_TICKETS');
+                    else if (e.key.toLowerCase() === 'a') nav('ANALYTICS');
+                    else if (e.key.toLowerCase() === 'p') nav('PROFILE');
+                }
+            });
+        })();
+
+        /* ══════════════════════════════════════════
+           STATUS STEPPER HELPER
+        ══════════════════════════════════════════ */
+        function buildStatusStepper(currentStatus) {
+            const steps = [
+                { key: 'OPEN', label: 'פתוח', color: '#60a5fa', icon: 'circle' },
+                { key: 'IN_PROGRESS', label: 'בטיפול', color: '#fbbf24', icon: 'loader' },
+                { key: 'RESOLVED', label: 'טופל', color: '#4ade80', icon: 'check-circle' },
+                { key: 'CLOSED', label: 'סגור', color: '#94a3b8', icon: 'lock' },
+            ];
+            const currentIdx = steps.findIndex(s => s.key === currentStatus);
+            return `<div class="status-stepper">${steps.map((s, i) => {
+                const isDone = i <= currentIdx;
+                const isActive = i === currentIdx;
+                return `<div class="stepper-step ${isDone ? 'step-done' : ''} ${isActive ? 'step-active' : ''}" style="--sc:${s.color}">
+                    <div class="stepper-dot"><i data-lucide="${isDone ? (isActive ? s.icon : 'check') : s.icon}"></i></div>
+                    <div class="stepper-label">${s.label}</div>
+                </div>`;
+            }).join('')}</div>`;
+        }
 
         async function getNextNum() { const {data}=await supabase.from("counters").select("value").eq("name","ticketNumber").single(); const next=(data?.value||1000)+1; await supabase.from("counters").upsert({name:"ticketNumber",value:next}); return next; }
         function urlBase64ToUint8Array(base64String) { const padding="=".repeat((4-(base64String.length%4))%4); const base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/"); const rawData=atob(base64); return Uint8Array.from([...rawData].map(c=>c.charCodeAt(0))); }
