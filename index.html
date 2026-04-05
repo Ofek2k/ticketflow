@@ -647,6 +647,9 @@
             /* Cards on mobile */
             .card { padding: 20px; border-radius: 20px; }
 
+            /* Ticket list items - add side spacing on mobile */
+            .list-item { margin-inline: 4px; }
+
             /* Bigger touch targets */
             .btn { min-height: 48px; padding: 14px 20px; border-radius: 16px; }
             .btn-primary { font-size: 1rem; }
@@ -673,6 +676,33 @@
             }
         }
         .neon-modal-border { border: 1px solid var(--accent) !important; box-shadow: 0 0 20px rgba(236,72,153,0.4) !important; border-radius: 28px !important; }
+
+        /* ── TICKET DETAILS PAGE ── */
+        .details-header { display:flex; align-items:center; gap:10px; margin-bottom:20px; }
+        .details-back-btn { width:40px; height:40px; min-height:40px; padding:0; border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+        .details-ticket-num { font-family:'Space Mono',monospace; font-size:0.85rem; opacity:0.45; flex:1; }
+        .details-hamal-banner { display:flex; align-items:center; justify-content:center; gap:10px; background:linear-gradient(135deg,rgba(239,68,68,0.25),rgba(239,68,68,0.08)); border:2px solid #ef4444; border-radius:16px; padding:14px; margin-bottom:16px; color:#ef4444; font-weight:800; font-size:1rem; animation:pulseRed 2s infinite; }
+        .details-hamal-banner svg { width:20px; height:20px; }
+        .details-title-card { margin-bottom:14px; }
+        .details-title { font-size:1.15rem; font-weight:800; line-height:1.45; }
+        .details-bump-row { display:flex; align-items:center; gap:6px; margin-top:8px; color:#f97316; font-size:0.78rem; font-weight:600; }
+        .details-bump-row svg { width:14px; height:14px; }
+        .details-meta-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+        .details-meta-item { background:rgba(255,255,255,0.04); border:1px solid var(--glass-border); border-radius:14px; padding:12px 14px; }
+        .details-meta-item.full { grid-column:1 / -1; background:rgba(59,130,246,0.07); border-color:rgba(96,165,250,0.3); }
+        .details-meta-label { font-size:0.65rem; color:var(--text-soft); text-transform:uppercase; letter-spacing:0.6px; display:flex; align-items:center; gap:4px; margin-bottom:5px; }
+        .details-meta-label svg { width:11px; height:11px; }
+        .details-meta-value { font-size:0.88rem; font-weight:600; }
+        .details-section-title { display:flex; align-items:center; gap:8px; font-size:0.85rem; font-weight:700; color:var(--text-soft); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:14px; }
+        .details-section-title svg { width:15px; height:15px; color:var(--accent); }
+        .details-desc { font-size:0.9rem; color:rgba(255,255,255,0.75); white-space:pre-wrap; line-height:1.7; }
+        .details-status-row { display:flex; gap:10px; }
+        .details-status-row .select { flex:1; }
+        .details-comment-avatar { width:28px; height:28px; border-radius:8px; background:linear-gradient(135deg,#ec4899,#8b5cf6); display:flex; align-items:center; justify-content:center; font-size:0.78rem; font-weight:700; flex-shrink:0; }
+        .details-comment-form { display:flex; gap:10px; margin-top:16px; }
+        .details-comment-form .textarea { flex:1; min-height:56px; resize:none; }
+        .details-comment-form .btn { align-self:flex-end; padding:14px 16px; }
+        .details-empty-comments { color:var(--text-soft); font-size:0.85rem; text-align:center; padding:20px 0; opacity:0.7; }
         .swal2-confirm { box-shadow: 0 0 10px rgba(59,130,246,0.5); text-shadow: 0 0 5px rgba(255,255,255,0.2); }
         .swal2-cancel { border: 1px solid var(--glass-border) !important; font-family: 'Heebo', sans-serif !important; }
         .custom-multiselect { position: relative; width: 100%; }
@@ -1177,9 +1207,142 @@ ${list.length===0?'<div style="text-align:center;padding:48px 20px;opacity:0.4;"
             if (activePage === "DETAILS") {
                 const t = tickets.find(x => x.id == selectedTicketId);
                 if (!t) return nav("HOME");
-                const forwardedByHtml = t.forwarded_by_hatap_name ? `<div style="background:rgba(59,130,246,0.1);border:1px solid #3b82f6;padding:10px;border-radius:10px;margin-bottom:15px;font-size:0.9rem;"><span style="color:#60a5fa;font-weight:bold;">ℹ️ הועבר ע"י:</span> ${escapeHtml(t.forwarded_by_hatap_name)}</div>` : "";
-                main.innerHTML = `<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;"><button class="btn" onclick="nav('HOME')"><i data-lucide="chevron-left"></i></button><div class="page-title">תקלה #${t.ticketNumber}</div></div>${t.isHamalDown ? '<div style="background:#ef4444;color:white;padding:15px;border-radius:12px;margin-bottom:20px;font-weight:bold;text-align:center;">🚨 חמ"ל מושבת</div>' : ''}${forwardedByHtml}<div class="card"><div style="font-size:1.2rem;font-weight:700;margin-bottom:10px;">${escapeHtml(t.title)}</div><div style="color:var(--text-soft);margin-bottom:20px;white-space:pre-wrap;">${escapeHtml(t.description)}</div><div class="grid-2cols" style="background:rgba(255,255,255,0.05);padding:15px;border-radius:12px;"><div><span class="label">נפתח ע״י</span>${escapeHtml(t.createdByName||'לא ידוע')}</div><div><span class="label">יחידה</span>${escapeHtml(t.unit||'-')}</div><div><span class="label">נושא</span>${escapeHtml(t.topic)}</div><div><span class="label">אחראי</span>${roleLabel(t.assignedRole)}</div><div><span class="label">סטטוס</span>${STATUS_LABEL[t.status]}</div></div></div>`;
+                const isAllowed = currentUser.role === 'OWNER' || currentUser.isManager || t.assignedRole === currentUser.role;
+                const canTake = !t.isClosed && (t.assignedRole === currentUser.role || currentUser.role === 'OWNER');
+                const elapsed = t.createdAt ? Math.floor((new Date() - new Date(t.createdAt)) / 60000) : 0;
+                const elapsedStr = elapsed < 60 ? `${elapsed} דק'` : elapsed < 1440 ? `${Math.floor(elapsed/60)} שע'` : `${Math.floor(elapsed/1440)} ימים`;
+                const ticketComments = comments.filter(c => c.ticketId == t.id);
+                main.innerHTML = `
+<div class="page-animate">
+  <!-- Header -->
+  <div class="details-header">
+    <button class="btn details-back-btn" onclick="nav('HOME')"><i data-lucide="arrow-right"></i></button>
+    <span class="details-ticket-num">#${t.ticketNumber}</span>
+    <span class="badge badge-${t.status}">${STATUS_LABEL[t.status]}</span>
+  </div>
+
+  ${t.isHamalDown ? `
+  <div class="details-hamal-banner">
+    <i data-lucide="alert-triangle"></i>
+    <span>חמ"ל מושבת!</span>
+  </div>` : ''}
+
+  <!-- Title -->
+  <div class="card details-title-card">
+    <div class="details-title">${escapeHtml(t.title)}</div>
+    ${t.isBumped ? `<div class="details-bump-row"><i data-lucide="flame"></i> הוקפץ ${t.bumpCount} פעם</div>` : ''}
+  </div>
+
+  <!-- Meta grid -->
+  <div class="details-meta-grid">
+    <div class="details-meta-item">
+      <div class="details-meta-label"><i data-lucide="user"></i> נפתח ע"י</div>
+      <div class="details-meta-value">${escapeHtml(t.createdByName || 'לא ידוע')}</div>
+    </div>
+    <div class="details-meta-item">
+      <div class="details-meta-label"><i data-lucide="building-2"></i> יחידה</div>
+      <div class="details-meta-value">${escapeHtml(t.unit || '-')}</div>
+    </div>
+    <div class="details-meta-item">
+      <div class="details-meta-label"><i data-lucide="tag"></i> נושא</div>
+      <div class="details-meta-value">${escapeHtml(t.topic || '-')}</div>
+    </div>
+    <div class="details-meta-item">
+      <div class="details-meta-label"><i data-lucide="shield"></i> גורם מטפל</div>
+      <div class="details-meta-value">${roleLabel(t.assignedRole)}</div>
+    </div>
+    <div class="details-meta-item">
+      <div class="details-meta-label"><i data-lucide="clock"></i> זמן פתיחה</div>
+      <div class="details-meta-value">${formatDate(t.createdAt)}</div>
+    </div>
+    <div class="details-meta-item">
+      <div class="details-meta-label"><i data-lucide="timer"></i> פתוח כבר</div>
+      <div class="details-meta-value" style="${elapsed > 60 && !t.isClosed ? 'color:#f97316;' : ''}">${elapsedStr}</div>
+    </div>
+    ${t.forwardedByHatapName ? `
+    <div class="details-meta-item full">
+      <div class="details-meta-label"><i data-lucide="corner-down-right"></i> הועבר ע"י חט"פ</div>
+      <div class="details-meta-value" style="color:#60a5fa;">${escapeHtml(t.forwardedByHatapName)}</div>
+    </div>` : ''}
+  </div>
+
+  ${t.description ? `
+  <!-- Description -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="details-section-title"><i data-lucide="file-text"></i> פירוט</div>
+    <div class="details-desc">${escapeHtml(t.description)}</div>
+  </div>` : ''}
+
+  ${isAllowed ? `
+  <!-- Status update -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="details-section-title"><i data-lucide="settings-2"></i> עדכן סטטוס</div>
+    <div class="details-status-row">
+      <select class="select" id="upd-status">
+        <option value="OPEN" ${t.status==='OPEN'?'selected':''}>פתוח</option>
+        <option value="IN_PROGRESS" ${t.status==='IN_PROGRESS'?'selected':''}>בטיפול</option>
+        <option value="RESOLVED" ${t.status==='RESOLVED'?'selected':''}>טופל</option>
+        <option value="CLOSED" ${t.status==='CLOSED'?'selected':''}>סגור</option>
+      </select>
+      <button class="btn btn-primary" onclick="updateTicket('${t.id}')"><i data-lucide="check"></i> שמור</button>
+    </div>
+  </div>` : ''}
+
+  ${canTake ? `
+  <button class="btn btn-primary" style="width:100%;margin-bottom:14px;justify-content:center;" onclick="takeTicket('${t.id}')">
+    <i data-lucide="hand"></i> קח אחריות על התקלה
+  </button>` : ''}
+
+  <!-- Comments -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="details-section-title"><i data-lucide="message-circle"></i> הערות</div>
+    <div id="comments-list">
+      ${ticketComments.length === 0
+        ? '<div class="details-empty-comments">אין הערות עדיין</div>'
+        : ticketComments.map(c => `
+      <div class="chat-bubble">
+        <div class="chat-meta">
+          <div class="details-comment-avatar">${escapeHtml(c.authorName||'?').charAt(0)}</div>
+          <span style="font-weight:600;">${escapeHtml(c.authorName)}</span>
+          <span style="opacity:0.3;">·</span>
+          <span>${roleLabel(c.authorRole)}</span>
+          <span style="opacity:0.3;margin-right:auto;">·</span>
+          <span style="font-size:0.75rem;">${formatDate(c.createdAt)}</span>
+        </div>
+        <div style="font-size:0.9rem;line-height:1.6;white-space:pre-wrap;">${escapeHtml(c.content)}</div>
+      </div>`).join('')}
+    </div>
+    <form class="details-comment-form" onsubmit="postComment(event,'${t.id}')">
+      <textarea class="textarea" name="txt" required placeholder="כתוב הערה..."></textarea>
+      <button class="btn btn-primary" type="submit"><i data-lucide="send"></i></button>
+    </form>
+  </div>
+</div>`;
                 lucide.createIcons();
+                // Load comments async without blocking render
+                (async () => {
+                    const { data } = await supabase.from("ticket_comments").select("*").eq("ticket_id", t.id).order("created_at");
+                    if (!data) return;
+                    comments = data.map(c => ({ id:c.id, ticketId:c.ticket_id, content:c.content, authorName:c.author_name, authorRole:c.author_role, createdAt:c.created_at }));
+                    const list = document.getElementById("comments-list");
+                    if (!list) return;
+                    const loaded = comments.filter(c => c.ticketId == t.id);
+                    list.innerHTML = loaded.length === 0
+                        ? '<div class="details-empty-comments">אין הערות עדיין</div>'
+                        : loaded.map(c => `
+                    <div class="chat-bubble">
+                        <div class="chat-meta">
+                            <div class="details-comment-avatar">${escapeHtml(c.authorName||'?').charAt(0)}</div>
+                            <span style="font-weight:600;">${escapeHtml(c.authorName)}</span>
+                            <span style="opacity:0.3;">·</span>
+                            <span>${roleLabel(c.authorRole)}</span>
+                            <span style="opacity:0.3;margin-right:auto;">·</span>
+                            <span style="font-size:0.75rem;">${formatDate(c.createdAt)}</span>
+                        </div>
+                        <div style="font-size:0.9rem;line-height:1.6;white-space:pre-wrap;">${escapeHtml(c.content)}</div>
+                    </div>`).join('');
+                    lucide.createIcons();
+                })();
             }
 
             if (activePage === "MANAGE_USERS") {
