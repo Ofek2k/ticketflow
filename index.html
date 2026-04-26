@@ -1526,7 +1526,7 @@
                 height: auto;
                 background: transparent !important;
                 border: none !important;
-                padding: 0 12px calc(12px + env(safe-area-inset-bottom)) 12px;
+                padding: 0;
                 z-index: 9999;
                 flex-direction: row;
                 align-items: flex-end;
@@ -1535,25 +1535,27 @@
                 backdrop-filter: none !important;
             }
 
-            /* The pill container */
+            /* Hide search button on mobile */
+            .nav-item[onclick*="openCmdPalette"] {
+                display: none !important;
+            }
+
+            /* The full-width bottom bar */
             .nav-group {
                 display: flex;
                 flex-direction: row;
                 align-items: center;
                 justify-content: space-around;
-                background: rgba(10, 15, 35, 0.92);
+                background: rgba(10, 15, 35, 0.95);
                 backdrop-filter: blur(24px);
                 -webkit-backdrop-filter: blur(24px);
-                border: 1px solid rgba(255, 255, 255, 0.12);
-                border-radius: 26px;
-                padding: 8px 6px;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 0;
+                padding: 8px 6px calc(8px + env(safe-area-inset-bottom)) 6px;
                 width: 100%;
-                max-width: 500px;
-                margin: 0 auto;
-                box-shadow:
-                    0 8px 32px rgba(0, 0, 0, 0.6),
-                    0 0 0 1px rgba(236, 72, 153, 0.08),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+                max-width: 100%;
+                margin: 0;
+                box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
             }
 
             /* second nav-group hidden */
