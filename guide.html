@@ -1,0 +1,1304 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>מדריך למשתמש – TicketFlow</title>
+<style>
+  :root {
+    --bg: #020617;
+    --bg2: #0f172a;
+    --bg3: #1e293b;
+    --accent: #ec4899;
+    --accent2: #8b5cf6;
+    --accent3: #06b6d4;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --text: #f1f5f9;
+    --text-soft: #94a3b8;
+    --border: rgba(255,255,255,0.08);
+    --glass: rgba(15,23,42,0.7);
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 20%, rgba(139,92,246,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(236,72,153,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 50% 50%, rgba(6,182,212,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    position: fixed;
+    top: 0; right: 0;
+    width: 260px;
+    height: 100vh;
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border-left: 1px solid var(--border);
+    padding: 28px 20px;
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-logo .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .sidebar-logo span { font-weight: 800; font-size: 1.1rem; }
+  .sidebar-logo small { display: block; font-size: 0.7rem; color: var(--text-soft); font-weight: 400; }
+
+  .nav-section-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-soft);
+    text-transform: uppercase;
+    margin: 16px 0 6px 0;
+    padding: 0 8px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    color: var(--text-soft);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none; background: none; width: 100%; text-align: right;
+  }
+  .nav-item:hover, .nav-item.active {
+    background: rgba(236,72,153,0.1);
+    color: var(--text);
+  }
+  .nav-item.active { color: var(--accent); }
+  .nav-item .nav-icon { font-size: 16px; min-width: 20px; text-align: center; }
+
+  /* ── MAIN ── */
+  .main {
+    margin-right: 260px;
+    min-height: 100vh;
+    position: relative; z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 32px 80px;
+  }
+  .section, .hero, .divider {
+    width: 100%;
+    max-width: 780px;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    text-align: center;
+    padding: 64px 0 56px;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(236,72,153,0.1);
+    border: 1px solid rgba(236,72,153,0.3);
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    color: var(--accent);
+    margin-bottom: 24px;
+    animation: fadeInDown 0.5s ease;
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 900;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    animation: fadeInUp 0.5s 0.1s ease both;
+  }
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p {
+    color: var(--text-soft);
+    font-size: 1.1rem;
+    max-width: 500px;
+    margin: 0 auto 40px;
+    line-height: 1.7;
+    animation: fadeInUp 0.5s 0.2s ease both;
+  }
+  .hero-roles {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;
+    animation: fadeInUp 0.5s 0.3s ease both;
+  }
+  .role-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 16px;
+    border-radius: 100px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .role-pill:hover { transform: translateY(-2px); }
+  .rp-user { border-color: rgba(6,182,212,0.4); color: var(--accent3); background: rgba(6,182,212,0.08); }
+  .rp-hatap { border-color: rgba(236,72,153,0.4); color: var(--accent); background: rgba(236,72,153,0.08); }
+  .rp-hr { border-color: rgba(139,92,246,0.4); color: var(--accent2); background: rgba(139,92,246,0.08); }
+  .rp-tech { border-color: rgba(245,158,11,0.4); color: var(--yellow); background: rgba(245,158,11,0.08); }
+  .rp-owner { border-color: rgba(16,185,129,0.4); color: var(--green); background: rgba(16,185,129,0.08); }
+
+  /* ── SECTION ── */
+  .section {
+    margin-bottom: 64px;
+    animation: fadeInUp 0.4s ease both;
+  }
+  .section-header {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 28px;
+  }
+  .section-icon {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .si-pink { background: rgba(236,72,153,0.15); }
+  .si-purple { background: rgba(139,92,246,0.15); }
+  .si-cyan { background: rgba(6,182,212,0.15); }
+  .si-green { background: rgba(16,185,129,0.15); }
+  .si-yellow { background: rgba(245,158,11,0.15); }
+  .si-red { background: rgba(239,68,68,0.15); }
+
+  .section-header h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+  }
+  .section-header p { color: var(--text-soft); font-size: 0.9rem; margin-top: 2px; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--glass);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── STEPS ── */
+  .steps { display: flex; flex-direction: column; gap: 0; }
+  .step {
+    display: flex; gap: 16px;
+    position: relative;
+  }
+  .step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    right: 19px; top: 40px;
+    width: 2px;
+    height: calc(100% - 8px);
+    background: linear-gradient(to bottom, var(--accent), transparent);
+    opacity: 0.3;
+  }
+  .step-num {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.9rem;
+    flex-shrink: 0;
+    box-shadow: 0 0 16px rgba(236,72,153,0.3);
+  }
+  .step-body { padding-bottom: 24px; flex: 1; }
+  .step-body h4 { font-weight: 700; margin-bottom: 4px; font-size: 0.95rem; }
+  .step-body p { color: var(--text-soft); font-size: 0.875rem; line-height: 1.6; }
+
+  /* ── GRID ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  /* ── ROLE CARD ── */
+  .role-card {
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    transition: all 0.2s;
+    cursor: default;
+  }
+  .role-card:hover { transform: translateY(-3px); border-color: rgba(236,72,153,0.3); }
+  .role-card .rc-icon { font-size: 28px; margin-bottom: 10px; }
+  .role-card .rc-name { font-weight: 800; font-size: 1rem; margin-bottom: 6px; }
+  .role-card .rc-desc { color: var(--text-soft); font-size: 0.82rem; line-height: 1.6; }
+  .role-card .rc-badge {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  /* ── FEATURE ROW ── */
+  .feature-row {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .feature-row:last-child { border-bottom: none; }
+  .feature-row .fr-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: rgba(236,72,153,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .feature-row h4 { font-size: 0.9rem; font-weight: 700; margin-bottom: 3px; }
+  .feature-row p { color: var(--text-soft); font-size: 0.82rem; line-height: 1.6; }
+
+  /* ── ALERT BOX ── */
+  .alert {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 14px 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    font-size: 0.875rem;
+    line-height: 1.6;
+  }
+  .alert-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+  .alert-info { background: rgba(6,182,212,0.1); border: 1px solid rgba(6,182,212,0.25); color: #67e8f9; }
+  .alert-warn { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); color: #fcd34d; }
+  .alert-success { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25); color: #6ee7b7; }
+  .alert-danger { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .badge-pink { background: rgba(236,72,153,0.15); color: var(--accent); }
+  .badge-purple { background: rgba(139,92,246,0.15); color: var(--accent2); }
+  .badge-cyan { background: rgba(6,182,212,0.15); color: var(--accent3); }
+  .badge-green { background: rgba(16,185,129,0.15); color: var(--green); }
+  .badge-yellow { background: rgba(245,158,11,0.15); color: var(--yellow); }
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--red); }
+
+  /* ── ACCORDION ── */
+  .accordion { margin-bottom: 8px; }
+  .accordion-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .accordion-header:hover { border-color: rgba(236,72,153,0.3); }
+  .accordion-header.open { border-radius: 12px 12px 0 0; border-color: rgba(236,72,153,0.4); color: var(--accent); }
+  .accordion-header .acc-arrow { transition: transform 0.3s; font-size: 12px; color: var(--text-soft); }
+  .accordion-header.open .acc-arrow { transform: rotate(180deg); }
+  .accordion-body {
+    background: rgba(15,23,42,0.5);
+    border: 1px solid rgba(236,72,153,0.2);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 16px 18px;
+    font-size: 0.875rem;
+    color: var(--text-soft);
+    line-height: 1.7;
+    display: none;
+  }
+  .accordion-body.open { display: block; animation: slideDown 0.2s ease; }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow {
+    display: flex; align-items: center; flex-wrap: wrap;
+    gap: 0;
+    padding: 20px 0;
+  }
+  .flow-node {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .flow-arrow {
+    color: var(--text-soft);
+    font-size: 18px;
+    padding: 0 6px;
+  }
+  .fn-pink { border-color: rgba(236,72,153,0.4); color: var(--accent); background: rgba(236,72,153,0.08); }
+  .fn-purple { border-color: rgba(139,92,246,0.4); color: var(--accent2); background: rgba(139,92,246,0.08); }
+  .fn-cyan { border-color: rgba(6,182,212,0.4); color: var(--accent3); background: rgba(6,182,212,0.08); }
+  .fn-green { border-color: rgba(16,185,129,0.4); color: var(--green); background: rgba(16,185,129,0.08); }
+  .fn-yellow { border-color: rgba(245,158,11,0.4); color: var(--yellow); background: rgba(245,158,11,0.08); }
+
+  /* ── STATUS DEMO ── */
+  .status-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.875rem;
+  }
+  .status-row:last-child { border-bottom: none; }
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .sd-open { background: var(--accent3); box-shadow: 0 0 8px var(--accent3); }
+  .sd-progress { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+  .sd-done { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .sd-closed { background: var(--text-soft); }
+  .status-row strong { min-width: 90px; }
+
+  /* ── SHORTCUT ── */
+  .shortcut-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .shortcut-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg3);
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+  }
+  .shortcut-key {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(to left, transparent, var(--border), transparent);
+    margin: 48px 0;
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(236,72,153,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(236,72,153,0); }
+  }
+
+  /* ── PROGRESS BAR ── */
+  .sla-demo {
+    background: var(--bg3);
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 10px;
+  }
+  .sla-label { font-size: 0.78rem; color: var(--text-soft); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .sla-bar { height: 6px; background: var(--bg); border-radius: 100px; overflow: hidden; }
+  .sla-fill { height: 100%; border-radius: 100px; transition: width 1s ease; }
+  .sla-ok { background: linear-gradient(to left, var(--green), #34d399); }
+  .sla-warn { background: linear-gradient(to left, var(--yellow), #fcd34d); }
+  .sla-over { background: linear-gradient(to left, var(--red), #f87171); }
+
+  /* ── NOTIFICATION DEMO ── */
+  .notif-demo {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex; gap: 12px; align-items: flex-start;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+  .notif-demo::before {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--accent), var(--accent2));
+  }
+  .notif-icon { font-size: 22px; }
+  .notif-title { font-weight: 700; font-size: 0.88rem; margin-bottom: 2px; }
+  .notif-body { font-size: 0.8rem; color: var(--text-soft); }
+  .notif-time { font-size: 0.72rem; color: var(--text-soft); margin-top: 4px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { margin-right: 0; padding: 24px 20px 60px; }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .shortcut-grid { grid-template-columns: 1fr; }
+    .flow { gap: 6px; }
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 100px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* progress indicator */
+  #progress-bar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 3px;
+    background: linear-gradient(to right, var(--accent), var(--accent2));
+    width: 0%;
+    z-index: 999;
+    transition: width 0.1s;
+  }
+</style>
+</head>
+<body>
+
+<div id="progress-bar"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🎫</div>
+    <div>
+      <span>TicketFlow</span>
+      <small>מדריך למשתמש</small>
+    </div>
+  </div>
+
+  <span class="nav-section-title">התחלה</span>
+  <a class="nav-item" onclick="navTo('hero',this)"><span class="nav-icon">🏠</span> ברוכים הבאים</a>
+  <a class="nav-item" onclick="navTo('start',this)"><span class="nav-icon">🚀</span> התחלה מהירה</a>
+  <a class="nav-item" onclick="navTo('roles',this)"><span class="nav-icon">👤</span> תפקידים במערכת</a>
+
+  <span class="nav-section-title">לפי תפקיד</span>
+  <a class="nav-item" onclick="navTo('user-guide',this)"><span class="nav-icon">🙋</span> משתמש רגיל</a>
+  <a class="nav-item" onclick="navTo('hatap-guide',this)"><span class="nav-icon">🛡️</span> חט"פ</a>
+  <a class="nav-item" onclick="navTo('hr-guide',this)"><span class="nav-icon">👥</span> מש"א</a>
+  <a class="nav-item" onclick="navTo('tech-guide',this)"><span class="nav-icon">💻</span> גורמים טכניים</a>
+  <a class="nav-item" onclick="navTo('manager-guide',this)"><span class="nav-icon">📊</span> מפקד</a>
+
+  <span class="nav-section-title">פיצ'רים</span>
+  <a class="nav-item" onclick="navTo('tickets',this)"><span class="nav-icon">🎫</span> תקלות וסטטוסים</a>
+  <a class="nav-item" onclick="navTo('notifications',this)"><span class="nav-icon">🔔</span> התראות Push</a>
+  <a class="nav-item" onclick="navTo('realtime',this)"><span class="nav-icon">⚡</span> זמן אמת</a>
+  <a class="nav-item" onclick="navTo('tips',this)"><span class="nav-icon">💡</span> טיפים וקיצורים</a>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- HERO -->
+  <section id="hero" class="hero">
+    <div class="hero-badge">📋 מדריך מלא למערכת TicketFlow</div>
+    <h1>ברוכים הבאים<br/>ל-<span>TicketFlow</span></h1>
+    <p>מערכת ניהול תקלות חכמה, מהירה ומאובטחת. כאן תמצאו הכל – מהרשמה ועד ניהול מתקדם.</p>
+    <div class="hero-roles">
+      <div class="role-pill rp-user">🙋 משתמש רגיל</div>
+      <div class="role-pill rp-hatap">🛡️ חט"פ</div>
+      <div class="role-pill rp-hr">👥 מש"א</div>
+      <div class="role-pill rp-tech">💻 גורמים טכניים</div>
+      <div class="role-pill rp-owner">📊 מפקד</div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- START -->
+  <section id="start" class="section">
+    <div class="section-header">
+      <div class="section-icon si-pink">🚀</div>
+      <div>
+        <h2>התחלה מהירה</h2>
+        <p>מהרשמה ועד פתיחת תקלה ראשונה</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📝 הרשמה למערכת</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>כנסו לאתר ולחצו "הרשמה"</h4>
+            <p>הכניסו אימייל וסיסמה (לפחות 6 תווים).</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>מלאו פרופיל אישי</h4>
+            <p>שם מלא, מספר טלפון, והיחידה שאתם שייכים אליה.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>ממתינים לאישור מנהל</h4>
+            <p>החשבון שלכם ייכנס למצב "ממתין לאישור". מנהל המערכת יאשר ויעניק תפקיד.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h4>התחברות ושימוש</h4>
+            <p>לאחר האישור – נכנסים ומתחילים לעבוד.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-warn">
+      <span class="alert-icon">⚠️</span>
+      <div><strong>שכחתם סיסמה?</strong> לחצו "שכחתי סיסמה" בעמוד הכניסה. תקבלו מייל עם קישור לאיפוס.</div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ROLES -->
+  <section id="roles" class="section">
+    <div class="section-header">
+      <div class="section-icon si-purple">👤</div>
+      <div>
+        <h2>תפקידים במערכת</h2>
+        <p>כל תפקיד רואה ומנהל חלק אחר מהמערכת</p>
+      </div>
+    </div>
+
+    <div class="grid3" style="margin-bottom:16px;">
+      <div class="role-card">
+        <div class="rc-icon">🙋</div>
+        <div class="rc-name">משתמש רגיל</div>
+        <div class="rc-desc">פותח תקלות ומעקב אחר סטטוס. רואה רק תקלות שפתח או שפתוחות עבורו.</div>
+        <span class="rc-badge badge badge-cyan">USER</span>
+      </div>
+      <div class="role-card">
+        <div class="rc-icon">🛡️</div>
+        <div class="rc-name">חט"פ</div>
+        <div class="rc-desc">מטפל בתקלות היחידה שלו. יכול להעביר לגורמים נוספים ולפתוח תקלות בעצמו.</div>
+        <span class="rc-badge badge badge-pink">HATAP</span>
+      </div>
+      <div class="role-card">
+        <div class="rc-icon">👥</div>
+        <div class="rc-name">מש"א</div>
+        <div class="rc-desc">מקבל תקלות שהועברו מהחט"פ. מטפל בנושאי כוח אדם ומנהלה.</div>
+        <span class="rc-badge badge badge-purple">HR</span>
+      </div>
+      <div class="role-card">
+        <div class="rc-icon">💻</div>
+        <div class="rc-name">ממר"ם / רשת / אפליקציה</div>
+        <div class="rc-desc">גורמים טכניים המטפלים בתקלות הרלוונטיות לתחומם בלבד.</div>
+        <span class="rc-badge badge badge-yellow">MAMRAM / NETWORK / APP</span>
+      </div>
+      <div class="role-card">
+        <div class="rc-icon">📊</div>
+        <div class="rc-name">מפקד</div>
+        <div class="rc-desc">רואה את תקלות היחידה שלו ואנליטיקה. יכול לנהל משתמשים.</div>
+        <span class="rc-badge badge badge-green">מפקד</span>
+      </div>
+      <div class="role-card">
+        <div class="rc-icon">👑</div>
+        <div class="rc-name">בעלים</div>
+        <div class="rc-desc">גישה מלאה לכל המערכת – כל התקלות, כל המשתמשים, כל האנליטיקה.</div>
+        <span class="rc-badge badge badge-pink">OWNER</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔄 שרשרת הטיפול בתקלה</div>
+      <div class="flow">
+        <div class="flow-node fn-cyan">🙋 משתמש</div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-node fn-pink">🛡️ חט"פ</div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-node fn-purple">👥 מש"א</div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-node fn-yellow">💻 טכני</div>
+        <div class="flow-arrow">←</div>
+        <div class="flow-node fn-green">✅ סגירה</div>
+      </div>
+      <p style="font-size:0.8rem;color:var(--text-soft);margin-top:8px;">תקלה עוברת בשרשרת עד לסגירתה. כל גורם רואה רק את שלב הטיפול שלו.</p>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- USER GUIDE -->
+  <section id="user-guide" class="section">
+    <div class="section-header">
+      <div class="section-icon si-cyan">🙋</div>
+      <div>
+        <h2>משתמש רגיל</h2>
+        <p>כיצד לפתוח ולעקוב אחר תקלות</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎫 פתיחת תקלה חדשה</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>לחצו על כפתור "+" (FAB)</h4>
+            <p>הכפתור הוורוד הצף בפינה הימנית התחתונה – זה קיצור הדרך לפתיחת תקלה.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>בחרו נושא</h4>
+            <p>מחשב, רשת, אפליקציה, אמצעים, עמדה דלה, או אחר. סמנו 🚨 חמ"ל מושבת רק במקרה חירום.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>בחרו יחידה ומי יטפל</h4>
+            <p>אם יש לכם יחידה מוגדרת – בחרו אותה. התקלה תועבר לחט"פ של היחידה.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <h4>הכניסו כותרת ופירוט</h4>
+            <p>ספרו מה הבעיה. ככל שיותר מפורט – הטיפול מהיר יותר.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <h4>שליחה ומעקב</h4>
+            <p>התקלה נפתחת. תוכלו לעקוב אחרי הסטטוס, להוסיף הערות, ולקבל התראות בזמן אמת.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📬 מה אני רואה?</div>
+      <div class="feature-row">
+        <div class="fr-icon">📋</div>
+        <div>
+          <h4>התקלות שלי</h4>
+          <p>תקלות שפתחתם בעצמכם + תקלות שהועברו לטיפולכם.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">💬</div>
+        <div>
+          <h4>הערות ועדכונים</h4>
+          <p>בכל תקלה ניתן להוסיף הערות ולראות תגובות של הגורם המטפל.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">🔄</div>
+        <div>
+          <h4>שינוי סטטוס</h4>
+          <p>רק פותח התקלה יכול לסגור אותה. כאשר הגורם המטפל פותר – הוא יעדכן ויבקש סגירה.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- HATAP GUIDE -->
+  <section id="hatap-guide" class="section">
+    <div class="section-header">
+      <div class="section-icon si-pink">🛡️</div>
+      <div>
+        <h2>חט"פ (HATAP)</h2>
+        <p>ניהול תקלות היחידה ועברתן לגורמים</p>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      <span class="alert-icon">ℹ️</span>
+      <div>חט"פ הוא <strong>שכבת הסינון הראשית</strong> – מקבל תקלות מהמשתמשים ומחליט לאן להעביר אותן.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👁️ מה חט"פ רואה?</div>
+      <div class="feature-row">
+        <div class="fr-icon">🏘️</div>
+        <div>
+          <h4>תקלות היחידה שלי בלבד</h4>
+          <p>חט"פ רואה רק תקלות מהיחידות שהוגדרו לו. אם הוגדרו יחידות מרובות – רואה את כולן.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">🔗</div>
+        <div>
+          <h4>תת-יחידות</h4>
+          <p>אם יחידה היא "חטיבת אפרים" – תקלות מ-יקיר, בארותיים וצופים ייראו גם הן.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚡ פעולות עיקריות</div>
+      <div class="feature-row">
+        <div class="fr-icon">📥</div>
+        <div>
+          <h4>לקיחת תקלה לטיפול</h4>
+          <p>לחצו "קח לטיפול" בפרטי התקלה. הסטטוס ישתנה ל"בטיפול".</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">📤</div>
+        <div>
+          <h4>העברה לגורם אחר</h4>
+          <p>בעת פתיחת תקלה חדשה – בחרו מש"א, ממר"ם, רשת וכו'. שמכם יירשם כ"הועבר ע"י חט"פ".</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">📌</div>
+        <div>
+          <h4>Bump (דחיפה)</h4>
+          <p>לחצו Bump כדי לסמן תקלה דחופה שממתינה יותר מדי זמן ולהתריע בפני המטפל.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- HR GUIDE -->
+  <section id="hr-guide" class="section">
+    <div class="section-header">
+      <div class="section-icon si-purple">👥</div>
+      <div>
+        <h2>מש"א (HR)</h2>
+        <p>דרג ג׳ – ריכוז כלל התקלות הארגוניות</p>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      <span class="alert-icon">ℹ️</span>
+      <div>מש"א הוא <strong>דרג ג׳</strong> במערכת – מרכזים את כלל התקלות הארגוניות שהועברו מהחט"פ ומשמשים כגורם הטיפול הבכיר.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📥 מה מש"א מקבל?</div>
+      <div class="feature-row">
+        <div class="fr-icon">🔗</div>
+        <div>
+          <h4>תקלות שהועברו מחט"פ</h4>
+          <p>כל תקלה שחט"פ העביר למש"א מגיעה לתור הטיפול. ניתן לראות מי מהחט"פ שלח ומאיזו יחידה.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">🗂️</div>
+        <div>
+          <h4>ריכוז כלל התקלות הארגוניות</h4>
+          <p>מש"א רואה בדף "כל התקלות" את מלוא התקלות שמוקצות לתפקיד – מכל היחידות.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">📊</div>
+        <div>
+          <h4>דרג ג׳ – סמכות בכירה</h4>
+          <p>מש"א מהווה את שכבת הטיפול הגבוהה ביותר לפני הסגירה. אחראי על מעקב, תיעוד וסגירת תקלות מורכבות.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-success">
+      <span class="alert-icon">✅</span>
+      <div>לאחר טיפול – עדכנו סטטוס ל"נפתר". המשתמש שפתח יקבל התראה ויוכל לסגור את התקלה.</div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- TECH GUIDE -->
+  <section id="tech-guide" class="section">
+    <div class="section-header">
+      <div class="section-icon si-yellow">💻</div>
+      <div>
+        <h2>גורמים טכניים</h2>
+        <p>ממר"ם / רשת / אפליקציה / פלח"ק</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎯 תחומי אחריות</div>
+      <div class="grid2">
+        <div style="background:var(--bg3);border-radius:12px;padding:14px;">
+          <div style="font-size:20px;margin-bottom:6px;">💻</div>
+          <div style="font-weight:700;margin-bottom:4px;">ממר"ם (MAMRAM)</div>
+          <div style="color:var(--text-soft);font-size:0.82rem;">מחשבים, שרתים, תשתיות IT</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:12px;padding:14px;">
+          <div style="font-size:20px;margin-bottom:6px;">🌐</div>
+          <div style="font-weight:700;margin-bottom:4px;">רשת (NETWORK)</div>
+          <div style="color:var(--text-soft);font-size:0.82rem;">חיבורי רשת, VPN, תקשורת</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:12px;padding:14px;">
+          <div style="font-size:20px;margin-bottom:6px;">📱</div>
+          <div style="font-weight:700;margin-bottom:4px;">אפליקציה (APP)</div>
+          <div style="color:var(--text-soft);font-size:0.82rem;">מערכות, תוכנות, אפליקציות</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:12px;padding:14px;">
+          <div style="font-size:20px;margin-bottom:6px;">🗺️</div>
+          <div style="font-weight:700;margin-bottom:4px;">פלח"ק (PLHIK)</div>
+          <div style="color:var(--text-soft);font-size:0.82rem;">פעילות מבצעית ולוגיסטיקה</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📬 קבלת תקלות</div>
+      <p style="color:var(--text-soft);font-size:0.875rem;line-height:1.7;">תקלות מגיעות לגורם טכני ישירות מהחט"פ בהתאם לנושא. גורם טכני רואה <strong>רק תקלות שמוקצות לתפקיד שלו</strong>. לאחר טיפול – לחצו "נפתר" כדי לעדכן את המשתמש.</p>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- MANAGER GUIDE -->
+  <section id="manager-guide" class="section">
+    <div class="section-header">
+      <div class="section-icon si-green">📊</div>
+      <div>
+        <h2>מפקד</h2>
+        <p>ניהול יחידה ואנליטיקה מורחבת</p>
+      </div>
+    </div>
+
+    <div class="alert alert-info">
+      <span class="alert-icon">ℹ️</span>
+      <div>מפקד הוא <strong>דגל על חשבון קיים</strong> – לא תפקיד נפרד. אפשר לבקש הרשאת מפקד מדף הפרופיל, ומנהל המערכת מאשר.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👁️ נראות מורחבת</div>
+      <div class="feature-row">
+        <div class="fr-icon">📋</div>
+        <div>
+          <h4>כל התקלות של היחידה</h4>
+          <p>בדף "כל התקלות" – מפקד רואה את כל תקלות היחידה שלו (כולל תת-יחידות).</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">📊</div>
+        <div>
+          <h4>דשבורד אנליטיקה</h4>
+          <p>נתונים סטטיסטיים, פילוח לפי נושא/תפקיד/סטטוס, ניווט לפי שבוע וחודש.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">👥</div>
+        <div>
+          <h4>ניהול משתמשים</h4>
+          <p>אישור חשבונות חדשים, שינוי תפקידים, הקפאת חשבונות, הגדרת יחידות.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">👮 בקשת הרשאת מפקד</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>כנסו לפרופיל אישי</h4>
+            <p>לחצו על האיקון שלכם בתחתית הסרגל הצדדי.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>לחצו "בקש הרשאת מפקד"</h4>
+            <p>הכפתור יופיע אם עדיין אין לכם הרשאת מפקד.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>ממתינים לאישור OWNER</h4>
+            <p>מנהל המערכת יאשר ותקבלו גישה מורחבת.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <div class="divider"></div>
+
+  <!-- TICKETS -->
+  <section id="tickets" class="section">
+    <div class="section-header">
+      <div class="section-icon si-cyan">🎫</div>
+      <div>
+        <h2>תקלות וסטטוסים</h2>
+        <p>מחזור חיים של תקלה</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔴 סטטוסים אפשריים</div>
+      <div class="status-row">
+        <div class="status-dot sd-open"></div>
+        <strong>OPEN</strong>
+        <span style="color:var(--text-soft)">התקלה נפתחה ומחכה לטיפול</span>
+      </div>
+      <div class="status-row">
+        <div class="status-dot sd-progress"></div>
+        <strong>IN_PROGRESS</strong>
+        <span style="color:var(--text-soft)">גורם מטפל לקח לטיפול פעיל</span>
+      </div>
+      <div class="status-row">
+        <div class="status-dot sd-done"></div>
+        <strong>RESOLVED</strong>
+        <span style="color:var(--text-soft)">הגורם המטפל פתר – ממתין לסגירה ע"י הפותח</span>
+      </div>
+      <div class="status-row">
+        <div class="status-dot sd-closed"></div>
+        <strong>CLOSED</strong>
+        <span style="color:var(--text-soft)">נסגרה ועברה לארכיון</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⏱️ SLA – פס הזמן</div>
+      <p style="color:var(--text-soft);font-size:0.875rem;margin-bottom:14px;">בתחתית כל תקלה מוצג פס שמראה כמה מהזמן המוקצה חלף.</p>
+      <div class="sla-demo">
+        <div class="sla-label"><span>תקלה A – 25% מהזמן עבר</span><span style="color:var(--green)">✅ תקין</span></div>
+        <div class="sla-bar"><div class="sla-fill sla-ok" style="width:25%"></div></div>
+      </div>
+      <div class="sla-demo">
+        <div class="sla-label"><span>תקלה B – 75% מהזמן עבר</span><span style="color:var(--yellow)">⚠️ שים לב</span></div>
+        <div class="sla-bar"><div class="sla-fill sla-warn" style="width:75%"></div></div>
+      </div>
+      <div class="sla-demo">
+        <div class="sla-label"><span>תקלה C – חריגה מהזמן</span><span style="color:var(--red)">🚨 חריגה</span></div>
+        <div class="sla-bar"><div class="sla-fill sla-over" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🚨 חמ"ל מושבת</div>
+      <div class="alert alert-danger" style="margin-bottom:0;">
+        <span class="alert-icon">🚨</span>
+        <div>סימון "חמ"ל מושבת" שולח <strong>התראת חירום לכל המשתמשים</strong> ומציג מסגרת אדומה בוהקת. השתמשו רק במקרה חירום אמיתי.</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- NOTIFICATIONS -->
+  <section id="notifications" class="section">
+    <div class="section-header">
+      <div class="section-icon si-yellow">🔔</div>
+      <div>
+        <h2>התראות Push</h2>
+        <p>קבלו עדכונים גם כשהדפדפן סגור</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚡ הפעלת התראות</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <h4>כנסו לפרופיל אישי</h4>
+            <p>לחצו על האיקון שלכם בסרגל הצדדי.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <h4>לחצו "הפעל התראות"</h4>
+            <p>הדפדפן יבקש אישור – לחצו "אפשר".</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <h4>מכשיר רשום!</h4>
+            <p>תתחילו לקבל התראות על תקלות חדשות, עדכונים וחריגות זמן.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📬 סוגי התראות</div>
+      <div class="notif-demo">
+        <div class="notif-icon">✨</div>
+        <div>
+          <div class="notif-title">תקלה חדשה – #1042</div>
+          <div class="notif-body">מחשב לא עולה ביחידת בארותיים</div>
+          <div class="notif-time">עכשיו</div>
+        </div>
+      </div>
+      <div class="notif-demo">
+        <div class="notif-icon">🚨</div>
+        <div>
+          <div class="notif-title">חמ"ל מושבת!</div>
+          <div class="notif-body">חמ"ל בנימין מושבת לחלוטין</div>
+          <div class="notif-time">לפני 2 דקות</div>
+        </div>
+      </div>
+      <div class="notif-demo">
+        <div class="notif-icon">⏰</div>
+        <div>
+          <div class="notif-title">חריגת זמן – #1039</div>
+          <div class="notif-body">תקלה ממתינה לטיפול מעל שעה</div>
+          <div class="notif-time">לפני 5 דקות</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⚙️ הגדרות התראות</div>
+      <p style="color:var(--text-soft);font-size:0.875rem;line-height:1.7;margin-bottom:14px;">בדף ההגדרות תוכלו לשלוט מה תקבלו:</p>
+
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAcc(this)">
+          🔕 כיבוי התראות תקלות חדשות
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="accordion-body">
+          ניתן לכבות "התראה על תקלות חדשות" – לא תקבלו עדכון כאשר נפתחת תקלה חדשה. שימושי אם אתם מפקד שרוצים שקט.
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAcc(this)">
+          ⏰ התראות חריגת זמן (Overdue)
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="accordion-body">
+          הפעילו "התראה על חריגת זמן" וקבעו סף בדקות. המערכת תבדוק כל דקה ותשלח התראה אם תקלה שלכם חרגה מהסף.
+        </div>
+      </div>
+
+      <div class="accordion">
+        <div class="accordion-header" onclick="toggleAcc(this)">
+          📱 ריבוי מכשירים
+          <span class="acc-arrow">▼</span>
+        </div>
+        <div class="accordion-body">
+          ניתן להפעיל התראות על מספר מכשירים (טלפון + מחשב). כל מכשיר שמפעיל התראות ירשם בנפרד ויקבל עדכונים.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- REALTIME -->
+  <section id="realtime" class="section">
+    <div class="section-header">
+      <div class="section-icon si-green">⚡</div>
+      <div>
+        <h2>זמן אמת</h2>
+        <p>המערכת מתעדכנת ללא רענון</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="feature-row">
+        <div class="fr-icon">🔔</div>
+        <div>
+          <h4>Toast אוטומטי</h4>
+          <p>כאשר מישהו אחר מעדכן תקלה, תופיע הודעה קטנה "הנתונים התעדכנו" ורשימת התקלות תתרענן.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">💬</div>
+        <div>
+          <h4>הערות בזמן אמת</h4>
+          <p>הערות חדשות מתקלה שפתוחה נטענות מיידית – אין צורך לרענן את הדף.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">🔄</div>
+        <div>
+          <h4>שינויי סטטוס</h4>
+          <p>שינוי סטטוס תקלה על ידי גורם מטפל מתעדכן אצלכם תוך שניות.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- TIPS -->
+  <section id="tips" class="section">
+    <div class="section-header">
+      <div class="section-icon si-purple">💡</div>
+      <div>
+        <h2>טיפים וקיצורי דרך</h2>
+        <p>שימוש מהיר ויעיל</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">⌨️ קיצורי מקלדת</div>
+      <div class="shortcut-grid">
+        <div class="shortcut-item">
+          <span>פתח Command Palette</span>
+          <span class="shortcut-key">⌘K / Ctrl+K</span>
+        </div>
+        <div class="shortcut-item">
+          <span>חזרה לדף הבית</span>
+          <span class="shortcut-key">Escape</span>
+        </div>
+        <div class="shortcut-item">
+          <span>פתיחת תקלה חדשה</span>
+          <span class="shortcut-key">N</span>
+        </div>
+        <div class="shortcut-item">
+          <span>ארכיון / תקלות סגורות</span>
+          <span class="shortcut-key">A</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎯 טיפים שימושיים</div>
+      <div class="feature-row">
+        <div class="fr-icon">🔍</div>
+        <div>
+          <h4>חיפוש מהיר</h4>
+          <p>השתמשו בחיפוש החי לפי כותרת או מספר תקלה. הסינון מתעדכן בזמן אמת תוך כדי הקלדה.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">📦</div>
+        <div>
+          <h4>ארכיון</h4>
+          <p>תקלות סגורות עוברות לארכיון. לחצו "ארכיון" בדף התקלות כדי לראות היסטוריה.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">📱</div>
+        <div>
+          <h4>Mobile-Friendly</h4>
+          <p>המערכת מותאמת לנייד. בסרגל תחתון קצר ניווט מהיר לכל הדפים העיקריים.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="fr-icon">🔔</div>
+        <div>
+          <h4>הפעילו התראות</h4>
+          <p>מומלץ מאוד להפעיל התראות Push – לא תפספסו שום עדכון גם כשהדפדפן ברקע.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-success">
+      <span class="alert-icon">🎉</span>
+      <div>עכשיו אתם מוכנים! אם יש שאלות – פנו למנהל המערכת. בהצלחה!</div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // Accordion toggle
+  function toggleAcc(header) {
+    const body = header.nextElementSibling;
+    const isOpen = header.classList.contains('open');
+    header.classList.toggle('open', !isOpen);
+    body.classList.toggle('open', !isOpen);
+  }
+
+  // Scroll to section
+  function navTo(id, el) {
+    const target = document.getElementById(id);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.closest('.nav-item')?.classList.add('active');
+  }
+
+  // Progress bar
+  window.addEventListener('scroll', () => {
+    const doc = document.documentElement;
+    const pct = (doc.scrollTop / (doc.scrollHeight - doc.clientHeight)) * 100;
+    document.getElementById('progress-bar').style.width = pct + '%';
+  });
+
+  // Active nav highlight on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navItems = document.querySelectorAll('.nav-item');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navItems.forEach(n => n.classList.remove('active'));
+        const active = document.querySelector(`.nav-item[onclick="navTo('${entry.target.id}',this)"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { threshold: 0.4 });
+  sections.forEach(s => observer.observe(s));
+
+  // Animate SLA bars on load
+  setTimeout(() => {
+    document.querySelectorAll('.sla-fill').forEach(bar => {
+      const w = bar.style.width;
+      bar.style.width = '0%';
+      setTimeout(() => { bar.style.width = w; }, 100);
+    });
+  }, 300);
+</script>
+</body>
+</html>
