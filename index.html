@@ -2357,7 +2357,7 @@
 
         @media(max-width:900px) {
             .fab {
-                display: flex;
+                display: none !important;
                 position: fixed;
                 bottom: calc(90px + env(safe-area-inset-bottom));
                 left: 50%;
@@ -2953,6 +2953,7 @@
             }
 
             function showGuidePrompt() {
+                localStorage.setItem('tf_guide_seen', '1');
                 const el = document.createElement('div');
                 el.id = 'guide-prompt';
                 el.innerHTML = `
