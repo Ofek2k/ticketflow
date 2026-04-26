@@ -2727,6 +2727,13 @@
         .stat-card:hover::before {
             opacity: 0.8;
         }
+
+        /* Guide first-visit prompt */
+        #guide-prompt { position: fixed; inset: 0; z-index: 99998; display: flex; align-items: flex-end; justify-content: center; padding-bottom: env(safe-area-inset-bottom, 20px); pointer-events: none; opacity: 0; transition: opacity 0.3s ease; }
+        #guide-prompt.show { opacity: 1; pointer-events: all; }
+        #guide-prompt-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); }
+        #guide-prompt-card { position: relative; background: linear-gradient(160deg, #1e1b4b 0%, #0f172a 100%); border: 1px solid rgba(139,92,246,0.35); border-radius: 24px 24px 0 0; padding: 32px 24px 36px; width: 100%; max-width: 480px; text-align: center; transform: translateY(40px); transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1); box-shadow: 0 -8px 40px rgba(139,92,246,0.2); }
+        #guide-prompt.show #guide-prompt-card { transform: translateY(0); }
     </style>
 </head>
 
@@ -2939,7 +2946,47 @@
                 ws.classList.add('exit');
                 setTimeout(() => {
                     if (ws.parentNode) ws.parentNode.removeChild(ws);
+                    if (!localStorage.getItem('tf_guide_seen')) showGuidePrompt();
                 }, 950);
+            }
+
+            function showGuidePrompt() {
+                const el = document.createElement('div');
+                el.id = 'guide-prompt';
+                el.innerHTML = `
+                <div id="guide-prompt-backdrop"></div>
+                <div id="guide-prompt-card">
+                    <div style="font-size:2.2rem;margin-bottom:10px;">📖</div>
+                    <div style="font-weight:800;font-size:1.15rem;margin-bottom:8px;">ברוך הבא ל-TicketFlow!</div>
+                    <div style="color:rgba(255,255,255,0.55);font-size:0.88rem;margin-bottom:24px;line-height:1.6;">האם תרצה לצפות במדריך המשתמש לפני שמתחילים?</div>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <button id="guide-yes-btn" style="background:linear-gradient(135deg,#ec4899,#8b5cf6);border:none;color:white;padding:13px;border-radius:12px;font-size:0.95rem;font-weight:700;cursor:pointer;font-family:inherit;">כן, קח אותי למדריך 🚀</button>
+                        <button id="guide-no-btn" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);padding:12px;border-radius:12px;font-size:0.88rem;cursor:pointer;font-family:inherit;">לא תודה, אני כבר מכיר</button>
+                    </div>
+                </div>`;
+                document.body.appendChild(el);
+                requestAnimationFrame(() => el.classList.add('show'));
+
+                document.getElementById('guide-yes-btn').onclick = () => {
+                    localStorage.setItem('tf_guide_seen', '1');
+                    closeGuidePrompt();
+                    window.open('guide.html', '_blank');
+                };
+                document.getElementById('guide-no-btn').onclick = () => {
+                    localStorage.setItem('tf_guide_seen', '1');
+                    closeGuidePrompt();
+                };
+                document.getElementById('guide-prompt-backdrop').onclick = () => {
+                    localStorage.setItem('tf_guide_seen', '1');
+                    closeGuidePrompt();
+                };
+            }
+
+            function closeGuidePrompt() {
+                const el = document.getElementById('guide-prompt');
+                if (!el) return;
+                el.classList.remove('show');
+                setTimeout(() => el.remove(), 350);
             }
         })();
 
@@ -3199,7 +3246,7 @@
             const isManager = currentUser.isManager || isOwner;
             const pendingManagerRequests = users.filter(u => u.requestedManager).length;
             const root = document.getElementById("root");
-            root.innerHTML = `<div class="app-root"><aside class="sidebar"><div class="brand"><img src="logo.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/906/906343.png'"><div><div class="brand-title">TicketFlow</div><div style="font-size:1rem;color:#94a3b8;">Yanai</div></div></div><div class="nav-item" onclick="openCmdPalette()" style="margin-bottom:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);justify-content:space-between;"><div style="display:flex;align-items:center;gap:12px;"><i data-lucide="search"></i><span style="color:var(--text-soft);">חיפוש מהיר...</span></div><span class="cmd-key" style="font-size:0.62rem;">⌘K</span></div><div class="nav-group"><div class="nav-label">ראשי</div><div class="nav-item ${activePage === 'HOME' ? 'active' : ''}" onclick="nav('HOME')"><i data-lucide="layout-grid"></i><span>דשבורד</span></div><div class="nav-item ${activePage === 'MY_TICKETS' ? 'active' : ''}" onclick="nav('MY_TICKETS')"><i data-lucide="list"></i><span>התקלות שלי</span></div><div class="nav-item ${activePage === 'CREATE' ? 'active' : ''}" onclick="nav('CREATE')"><i data-lucide="plus-circle"></i><span>פתיחת תקלה</span></div>${isManager ? `<div class="nav-item ${activePage === 'ALL_TICKETS' ? 'active' : ''}" onclick="nav('ALL_TICKETS')"><i data-lucide="layers"></i><span>כל התקלות</span></div>` : ''}<div class="nav-item ${activePage === 'PROFILE' ? 'active' : ''}" onclick="nav('PROFILE')"><i data-lucide="user-circle"></i><span>פרופיל</span></div></div><div class="nav-group"><div class="nav-label">ניהול</div>${isManager ? `<div class="nav-item ${activePage === 'ANALYTICS' ? 'active' : ''}" onclick="nav('ANALYTICS')"><i data-lucide="bar-chart-3"></i><span>אנליטיקה</span></div>` : ''}${isManager ? `<div class="nav-item ${activePage === 'NOTIFICATIONS' ? 'active' : ''}" onclick="nav('NOTIFICATIONS')"><i data-lucide="bell-ring"></i><span>התראות</span></div>` : ''}${isOwner ? `<div class="nav-item ${activePage === 'MANAGE_USERS' ? 'active' : ''}" onclick="nav('MANAGE_USERS')"><i data-lucide="users"></i><span>משתמשים</span> ${pendingManagerRequests > 0 ? `<span class="notification-dot"></span>` : ''}</div>` : ''}${isOwner ? `<div class="nav-item ${activePage === 'ROLE_APPROVAL' ? 'active' : ''}" onclick="nav('ROLE_APPROVAL')"><i data-lucide="shield-check"></i><span>אישורים</span></div>` : ''}${isOwner ? `<div class="nav-item ${activePage === 'SYSTEM_CHECK' ? 'active' : ''}" onclick="nav('SYSTEM_CHECK')"><i data-lucide="activity"></i><span>מערכת</span></div>` : ''}</div><div class="user-card"><div class="avatar">${(currentUser.fullName?.[0] || 'U')}</div><div class="user-info"><div class="user-name">${escapeHtml(currentUser.fullName)}</div><div class="user-role" style="font-size:0.7rem;opacity:0.8;">${roleLabel(currentUser.role)} • ${Array.isArray(currentUser.unit) && currentUser.unit.length > 0 ? currentUser.unit[0] + (currentUser.unit.length > 1 ? ' +' + (currentUser.unit.length - 1) : '') : 'ללא יחידה'}</div></div><button class="logout-btn" onclick="doLogout()"><i data-lucide="log-out"></i></button></div></aside><main class="main" id="main-content"></main></div>`;
+            root.innerHTML = `<div class="app-root"><aside class="sidebar"><div class="brand"><img src="logo.png" onerror="this.src='https://cdn-icons-png.flaticon.com/512/906/906343.png'"><div><div class="brand-title">TicketFlow</div><div style="font-size:1rem;color:#94a3b8;">Yanai</div></div></div><div class="nav-item" onclick="openCmdPalette()" style="margin-bottom:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);justify-content:space-between;"><div style="display:flex;align-items:center;gap:12px;"><i data-lucide="search"></i><span style="color:var(--text-soft);">חיפוש מהיר...</span></div><span class="cmd-key" style="font-size:0.62rem;">⌘K</span></div><div class="nav-group"><div class="nav-label">ראשי</div><div class="nav-item ${activePage === 'HOME' ? 'active' : ''}" onclick="nav('HOME')"><i data-lucide="layout-grid"></i><span>דשבורד</span></div><div class="nav-item ${activePage === 'MY_TICKETS' ? 'active' : ''}" onclick="nav('MY_TICKETS')"><i data-lucide="list"></i><span>התקלות שלי</span></div><div class="nav-item ${activePage === 'CREATE' ? 'active' : ''}" onclick="nav('CREATE')"><i data-lucide="plus-circle"></i><span>פתיחת תקלה</span></div>${isManager ? `<div class="nav-item ${activePage === 'ALL_TICKETS' ? 'active' : ''}" onclick="nav('ALL_TICKETS')"><i data-lucide="layers"></i><span>כל התקלות</span></div>` : ''}<div class="nav-item ${activePage === 'PROFILE' ? 'active' : ''}" onclick="nav('PROFILE')"><i data-lucide="user-circle"></i><span>פרופיל</span></div><a href="guide.html" target="_blank" class="nav-item" style="text-decoration:none;"><i data-lucide="book-open"></i><span>מדריך</span></a></div>${isManager || isOwner ? `<div class="nav-group"><div class="nav-label">ניהול</div>${isManager ? `<div class="nav-item ${activePage === 'ANALYTICS' ? 'active' : ''}" onclick="nav('ANALYTICS')"><i data-lucide="bar-chart-3"></i><span>אנליטיקה</span></div>` : ''}${isManager ? `<div class="nav-item ${activePage === 'NOTIFICATIONS' ? 'active' : ''}" onclick="nav('NOTIFICATIONS')"><i data-lucide="bell-ring"></i><span>התראות</span></div>` : ''}${isOwner ? `<div class="nav-item ${activePage === 'MANAGE_USERS' ? 'active' : ''}" onclick="nav('MANAGE_USERS')"><i data-lucide="users"></i><span>משתמשים</span> ${pendingManagerRequests > 0 ? `<span class="notification-dot"></span>` : ''}</div>` : ''}${isOwner ? `<div class="nav-item ${activePage === 'ROLE_APPROVAL' ? 'active' : ''}" onclick="nav('ROLE_APPROVAL')"><i data-lucide="shield-check"></i><span>אישורים</span></div>` : ''}${isOwner ? `<div class="nav-item ${activePage === 'SYSTEM_CHECK' ? 'active' : ''}" onclick="nav('SYSTEM_CHECK')"><i data-lucide="activity"></i><span>מערכת</span></div>` : ''}</div>` : ''}<div class="user-card"><div class="avatar">${(currentUser.fullName?.[0] || 'U')}</div><div class="user-info"><div class="user-name">${escapeHtml(currentUser.fullName)}</div><div class="user-role" style="font-size:0.7rem;opacity:0.8;">${roleLabel(currentUser.role)} • ${Array.isArray(currentUser.unit) && currentUser.unit.length > 0 ? currentUser.unit[0] + (currentUser.unit.length > 1 ? ' +' + (currentUser.unit.length - 1) : '') : 'ללא יחידה'}</div></div><button class="logout-btn" onclick="doLogout()"><i data-lucide="log-out"></i></button></div></aside><main class="main" id="main-content"></main></div>`;
             renderPage();
             lucide.createIcons();
         }
@@ -3746,7 +3793,7 @@ ${list.length === 0 ? `<div class="empty-state">
             });
         };
         window.postComment = async (e, tid) => { e.preventDefault(); await supabase.from("ticket_comments").insert({ ticket_id: tid, content: e.target.txt.value, author_user_id: currentUser.id, author_name: currentUser.fullName, author_role: currentUser.role }); e.target.reset(); const { data } = await supabase.from("ticket_comments").select("*").eq("ticket_id", tid).order("created_at"); if (data) { comments = data.map(c => ({ id: c.id, ticketId: c.ticket_id, content: c.content, authorName: c.author_name, authorRole: c.author_role, createdAt: c.created_at })); } render(); };
-        window.doLogout = async () => { try { if ("serviceWorker" in navigator) { const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription(); if (sub && currentUser) { await fetch(`${PUSH_WORKER_BASE}/unsubscribe`, { method: "POST", headers: { "content-type": "application/json", "x-app-secret": PUSH_SECRET }, body: JSON.stringify({ userId: String(currentUser.id) }) }); await sub.unsubscribe(); } } } catch (e) { console.error(e); } localStorage.clear(); sessionStorage.clear(); await supabase.auth.signOut(); window.location.reload(); };
+        window.doLogout = async () => { try { if ("serviceWorker" in navigator) { const reg = await navigator.serviceWorker.ready; const sub = await reg.pushManager.getSubscription(); if (sub && currentUser) { await fetch(`${PUSH_WORKER_BASE}/unsubscribe`, { method: "POST", headers: { "content-type": "application/json", "x-app-secret": PUSH_SECRET }, body: JSON.stringify({ userId: String(currentUser.id) }) }); await sub.unsubscribe(); } } } catch (e) { console.error(e); } const guideSeen = localStorage.getItem('tf_guide_seen'); localStorage.clear(); if (guideSeen) localStorage.setItem('tf_guide_seen', guideSeen); sessionStorage.clear(); await supabase.auth.signOut(); window.location.reload(); };
         window.enableNotificationsManual = async () => { try { if (!("serviceWorker" in navigator)) { alert("❌ הדפדפן לא תומך"); return; } if (!("PushManager" in window)) { alert("❌ לא זוהתה תמיכה"); return; } const permission = await Notification.requestPermission(); if (permission !== 'granted') { alert("⚠️ לא אושר."); return; } const reg = await navigator.serviceWorker.ready; let sub = await reg.pushManager.getSubscription(); if (!sub) { const res = await fetch(`${PUSH_WORKER_BASE}/publicKey`); if (!res.ok) throw new Error("שגיאה בהבאת מפתח"); const { publicKey } = await res.json(); sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) }); } const saveRes = await fetch(`${PUSH_WORKER_BASE}/subscribe`, { method: "POST", headers: { "content-type": "application/json", "x-app-secret": PUSH_SECRET }, body: JSON.stringify({ userId: String(currentUser.id), subscription: sub }) }); if (saveRes.ok) alert("🎉 המכשיר רשום"); else alert("❌ שגיאה: " + saveRes.status); } catch (err) { alert("שגיאה: " + err.message); } };
 
         /* ══════════════════════════════════════════
