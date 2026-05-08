@@ -3162,7 +3162,7 @@
                     } else if (u.unit) { cleanUnits = [String(u.unit).trim()]; }
                     return { id: u.id, authUserId: u.auth_user_id, fullName: u.full_name, email: u.email, phone: u.phone, role: u.role, isManager: u.is_manager, requestedManager: u.requested_manager, unit: cleanUnits, unitId: u.unit_id || null, requestedRole: u.requested_role, roleStatus: u.role_status, isFrozen: u.is_frozen, settings: parsedSettings };
                 });
-                tickets = (tRes.data || []).map(t => ({ id: t.id, ticketNumber: t.ticket_number, title: t.title, description: t.description, topic: t.topic, unit: String(t.unit || "").trim(), status: t.status, assignedRole: t.assigned_role, createdByUserId: t.created_by_user_id, createdByName: t.created_by_name, forwardedByHatapName: t.forwarded_by_hatap_name, createdAt: t.created_at, isClosed: !!t.is_closed, isHamalDown: !!t.is_hamal_down, isBumped: !!t.is_bumped, bumpCount: t.bump_count }));
+                tickets = (tRes.data || []).map(t => ({ id: t.id, ticketNumber: t.ticket_number, title: t.title, description: t.description, topic: t.topic, unit: String(t.unit || "").trim(), status: t.status, assignedRole: t.assigned_role, createdByUserId: t.created_by_user_id, createdByName: t.created_by_name, forwardedByHatapName: t.forwarded_by_hatap_name, createdAt: t.created_at, isClosed: !!t.is_closed, isHamalDown: !!t.is_hamal_down, isBumped: !!t.is_bumped, bumpCount: t.bump_count, attachments: Array.isArray(t.attachments) ? t.attachments : [] }));
                 units = unRes.data || [];
                 currentUser = users.find(u => u.authUserId === user.id);
                 if (currentUser && currentUser.isFrozen) { console.warn("נחסמה גישה"); await supabase.auth.signOut(); alert("החשבון שלך הוקפא."); window.location.reload(); return null; }
@@ -3487,6 +3487,15 @@ ${list.length === 0 ? `<div class="empty-state">
                     stepBody = `
                     <div class="field-group"><label class="label">כותרת הבעיה</label><input class="input" id="wz-title" placeholder="מה הבעיה בקצרה?" value="${escapeHtml(createData.title || '')}" style="font-size:1rem;" /></div>
                     <div class="field-group"><label class="label">פירוט</label><textarea class="textarea" id="wz-desc" placeholder="תאר את הבעיה בפירוט..." style="min-height:130px;">${escapeHtml(createData.desc || '')}</textarea></div>
+                    <div class="field-group">
+                      <label class="label">תמונות / סרטונים <span style="opacity:0.45;font-weight:400;">(אופציונלי)</span></label>
+                      <label id="attach-label" style="display:flex;align-items:center;gap:10px;padding:12px 16px;border:1.5px dashed rgba(139,92,246,0.35);border-radius:12px;cursor:pointer;color:var(--text-soft);transition:border-color 0.2s;" onmouseover="this.style.borderColor='rgba(139,92,246,0.7)'" onmouseout="this.style.borderColor='rgba(139,92,246,0.35)'">
+                        <i data-lucide="image-plus" style="width:20px;height:20px;color:#8b5cf6;flex-shrink:0;"></i>
+                        <span style="font-size:0.88rem;">לחץ לצירוף קבצים</span>
+                        <input type="file" id="wz-attachments" multiple accept="image/*,video/*" style="display:none;" onchange="previewAttachments(this)">
+                      </label>
+                      <div id="attachment-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
+                    </div>
                     <div class="wizard-nav">
                         <button class="btn btn-ghost" onclick="wizardBack()">← חזרה</button>
                         <button class="btn btn-primary" id="wz-submit" onclick="wizardSubmit(this)" style="flex:2;">🚀 שלח קריאה</button>
@@ -3511,13 +3520,41 @@ ${list.length === 0 ? `<div class="empty-state">
                     }
                     createStep++; window._wizardInit = true; renderPage();
                 };
+                window.previewAttachments = (input) => {
+                    const preview = document.getElementById('attachment-preview');
+                    if (!preview) return;
+                    preview.innerHTML = '';
+                    Array.from(input.files).forEach(file => {
+                        const url = URL.createObjectURL(file);
+                        const isVideo = file.type.startsWith('video');
+                        const el = document.createElement(isVideo ? 'video' : 'img');
+                        el.src = url;
+                        if (isVideo) { el.controls = true; el.muted = true; }
+                        el.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid rgba(255,255,255,0.1);';
+                        preview.appendChild(el);
+                    });
+                };
                 window.wizardSubmit = async (btn) => {
                     const title = document.getElementById('wz-title')?.value?.trim();
                     const desc = document.getElementById('wz-desc')?.value?.trim();
                     if (!title) { showToast("הכנס כותרת", "alert-circle"); return; }
-                    const insertData = { ticket_number: await getNextNum(), title, description: desc || '', topic: createData.topic || 'אחר', unit: createData.unit || (userUnits[0] || ''), assigned_role: createData.role || availableRoles[0], status: "OPEN", is_hamal_down: createData.hamalDown || false, created_by_user_id: currentUser.id, created_by_name: currentUser.fullName };
-                    if (currentUser.role === 'HATAP' && insertData.assigned_role === 'HR') insertData.forwarded_by_hatap_name = currentUser.fullName;
                     await withBtnLoader(btn, async () => {
+                        // העלאת קבצים
+                        const files = document.getElementById('wz-attachments')?.files;
+                        const attachments = [];
+                        if (files && files.length > 0) {
+                            for (const file of files) {
+                                const ext = file.name.split('.').pop();
+                                const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+                                const { data: uploaded, error: upErr } = await supabase.storage.from('attachments').upload(fileName, file, { upsert: false });
+                                if (!upErr) {
+                                    const { data: urlData } = supabase.storage.from('attachments').getPublicUrl(uploaded.path);
+                                    attachments.push({ url: urlData.publicUrl, type: file.type, name: file.name });
+                                }
+                            }
+                        }
+                        const insertData = { ticket_number: await getNextNum(), title, description: desc || '', topic: createData.topic || 'אחר', unit: createData.unit || (userUnits[0] || ''), assigned_role: createData.role || availableRoles[0], status: "OPEN", is_hamal_down: createData.hamalDown || false, created_by_user_id: currentUser.id, created_by_name: currentUser.fullName, attachments };
+                        if (currentUser.role === 'HATAP' && insertData.assigned_role === 'HR') insertData.forwarded_by_hatap_name = currentUser.fullName;
                         const { data: t, error } = await supabase.from("tickets").insert(insertData).select().single();
                         if (error) throw error;
                         await loadData();
@@ -3599,6 +3636,18 @@ ${list.length === 0 ? `<div class="empty-state">
   <div class="card" style="margin-bottom:14px;">
     <div class="details-section-title"><i data-lucide="file-text"></i> פירוט</div>
     <div class="details-desc">${escapeHtml(t.description)}</div>
+  </div>` : ''}
+
+  ${t.attachments && t.attachments.length > 0 ? `
+  <!-- Attachments -->
+  <div class="card" style="margin-bottom:14px;">
+    <div class="details-section-title"><i data-lucide="paperclip"></i> קבצים מצורפים</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;">
+      ${t.attachments.map(a => a.type && a.type.startsWith('video')
+        ? `<video src="${a.url}" controls muted playsinline style="max-width:100%;max-height:220px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:#000;"></video>`
+        : `<img src="${a.url}" alt="${escapeHtml(a.name||'')}" onclick="window.open('${a.url}','_blank')" style="max-height:220px;max-width:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.08);cursor:zoom-in;object-fit:cover;">`
+      ).join('')}
+    </div>
   </div>` : ''}
 
   ${(() => {
