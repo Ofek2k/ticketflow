@@ -3268,7 +3268,7 @@
             }
 
             if (activePage === "HOME") {
-                if (!isManager && !isOwner) return nav('MY_TICKETS');
+                if (!currentUser.isManager && currentUser.role !== 'OWNER') return nav('MY_TICKETS');
                 const myOpen = tickets.filter(t => !t.isClosed && (t.createdByUserId === currentUser.id)).length;
                 const totalOpen = tickets.filter(t => !t.isClosed).length;
                 const totalClosed = tickets.filter(t => t.isClosed).length;
