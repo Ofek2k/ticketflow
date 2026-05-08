@@ -1558,9 +1558,15 @@
                 box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
             }
 
-            /* second nav-group hidden */
-            .nav-group+.nav-group {
-                display: none;
+            /* all nav-groups visible, scrollable row */
+            .sidebar {
+                overflow-x: auto;
+                scrollbar-width: none;
+            }
+            .sidebar::-webkit-scrollbar { display: none; }
+
+            .nav-group {
+                flex-shrink: 0;
             }
 
             .sidebar .brand,
