@@ -3169,7 +3169,7 @@
                     } else if (u.unit) { cleanUnits = [String(u.unit).trim()]; }
                     return { id: u.id, authUserId: u.auth_user_id, fullName: u.full_name, email: u.email, phone: u.phone, role: u.role, isManager: u.is_manager, requestedManager: u.requested_manager, unit: cleanUnits, unitId: u.unit_id || null, requestedRole: u.requested_role, roleStatus: u.role_status, isFrozen: u.is_frozen, settings: parsedSettings };
                 });
-                tickets = (tRes.data || []).map(t => ({ id: t.id, ticketNumber: t.ticket_number, title: t.title, description: t.description, topic: t.topic, unit: String(t.unit || "").trim(), status: t.status, assignedRole: t.assigned_role, createdByUserId: t.created_by_user_id, createdByName: t.created_by_name, forwardedByHatapName: t.forwarded_by_hatap_name, createdAt: t.created_at, isClosed: !!t.is_closed, isHamalDown: !!t.is_hamal_down, isBumped: !!t.is_bumped, bumpCount: t.bump_count, attachments: Array.isArray(t.attachments) ? t.attachments : [] }));
+                tickets = (tRes.data || []).map(t => ({ id: t.id, ticketNumber: t.ticket_number, title: t.title, description: t.description, topic: t.topic, unit: String(t.unit || "").trim(), status: t.status, assignedRole: t.assigned_role, createdByUserId: t.created_by_user_id, createdByName: t.created_by_name, forwardedByHatapName: t.forwarded_by_hatap_name, createdAt: t.created_at, isClosed: !!t.is_closed, isHamalDown: !!t.is_hamal_down, isBumped: !!t.is_bumped, bumpCount: t.bump_count, attachments: Array.isArray(t.attachments) ? t.attachments : [], recurringOf: t.recurring_of || null }));
                 units = unRes.data || [];
                 currentUser = users.find(u => u.authUserId === user.id);
                 if (currentUser && currentUser.isFrozen) { console.warn("נחסמה גישה"); await supabase.auth.signOut(); alert("החשבון שלך הוקפא."); window.location.reload(); return null; }
@@ -3526,6 +3526,19 @@ ${list.length === 0 ? `<div class="empty-state">
                       </label>
                       <div id="attachment-preview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
                     </div>
+                    <div class="field-group">
+                      <label class="label">תקלה חוזרת <span style="opacity:0.45;font-weight:400;">(אופציונלי)</span></label>
+                      ${createData.recurringOf
+                        ? `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(139,92,246,0.12);border:1.5px solid rgba(139,92,246,0.45);border-radius:12px;">
+                             <i data-lucide="repeat-2" style="width:16px;height:16px;color:#a78bfa;flex-shrink:0;"></i>
+                             <span style="flex:1;font-size:0.88rem;color:#a78bfa;font-weight:600;">#${createData.recurringOfNumber} — ${escapeHtml(createData.recurringOfTitle || '')}</span>
+                             <button type="button" onclick="createData.recurringOf=null;createData.recurringOfNumber=null;createData.recurringOfTitle=null;window._wizardInit=true;renderPage();" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:1.1rem;padding:0;line-height:1;">✕</button>
+                           </div>`
+                        : `<button type="button" class="btn btn-ghost" style="width:100%;justify-content:center;border:1.5px dashed rgba(139,92,246,0.35);color:#a78bfa;gap:8px;" onclick="openRecurringModal()">
+                             <i data-lucide="repeat-2" style="width:16px;height:16px;"></i> סמן כתקלה חוזרת
+                           </button>`
+                      }
+                    </div>
                     <div class="wizard-nav">
                         <button class="btn btn-ghost" onclick="wizardBack()">← חזרה</button>
                         <button class="btn btn-primary" id="wz-submit" onclick="wizardSubmit(this)" style="flex:2;">🚀 שלח קריאה</button>
@@ -3564,6 +3577,56 @@ ${list.length === 0 ? `<div class="empty-state">
                         preview.appendChild(el);
                     });
                 };
+                window.openRecurringModal = () => {
+                    let showClosed = false;
+                    const renderModal = () => {
+                        const myTickets = tickets.filter(t =>
+                            t.createdByUserId === currentUser.id &&
+                            (showClosed ? t.isClosed : !t.isClosed)
+                        );
+                        document.getElementById('modal-root').innerHTML = `
+                        <div class="modal-overlay" onclick="if(event.target===this)document.getElementById('modal-root').innerHTML=''">
+                          <div class="modal" style="max-width:480px;width:92%;padding:24px;text-align:right;max-height:80vh;display:flex;flex-direction:column;">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                              <div style="font-size:1.1rem;font-weight:800;">🔁 בחר תקלה קודמת</div>
+                              <button onclick="document.getElementById('modal-root').innerHTML=''" style="background:none;border:none;color:#64748b;cursor:pointer;font-size:1.3rem;padding:4px;line-height:1;">✕</button>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-bottom:14px;">
+                              <button class="btn ${!showClosed ? 'btn-primary' : 'btn-ghost'}" style="flex:1;justify-content:center;font-size:0.82rem;" onclick="window._recurringShowClosed(false)">פתוחות</button>
+                              <button class="btn ${showClosed ? 'btn-primary' : 'btn-ghost'}" style="flex:1;justify-content:center;font-size:0.82rem;" onclick="window._recurringShowClosed(true)">סגורות</button>
+                            </div>
+                            <div style="overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px;">
+                              ${myTickets.length === 0
+                                ? `<div style="text-align:center;padding:32px;color:#64748b;">אין תקלות ${showClosed ? 'סגורות' : 'פתוחות'}</div>`
+                                : myTickets.map(tk => `
+                                  <div onclick="window._selectRecurring(${tk.id},${tk.ticketNumber},${JSON.stringify(escapeHtml(tk.title))})"
+                                    style="padding:12px 14px;border:1px solid rgba(255,255,255,0.08);border-radius:12px;cursor:pointer;transition:all 0.15s;"
+                                    onmouseover="this.style.background='rgba(139,92,246,0.12)';this.style.borderColor='rgba(139,92,246,0.4)'"
+                                    onmouseout="this.style.background='';this.style.borderColor='rgba(255,255,255,0.08)'">
+                                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                                      <span style="font-size:0.75rem;color:#94a3b8;font-weight:700;">#${tk.ticketNumber}</span>
+                                      <span class="badge badge-${tk.status}" style="font-size:0.65rem;padding:2px 7px;">${STATUS_LABEL[tk.status]}</span>
+                                    </div>
+                                    <div style="font-size:0.88rem;font-weight:600;">${escapeHtml(tk.title)}</div>
+                                    <div style="font-size:0.75rem;color:#64748b;margin-top:3px;">${escapeHtml(tk.topic || '')} · ${formatDate(tk.createdAt)}</div>
+                                  </div>`).join('')
+                              }
+                            </div>
+                          </div>
+                        </div>`;
+                        lucide.createIcons();
+                    };
+                    window._recurringShowClosed = (val) => { showClosed = val; renderModal(); };
+                    window._selectRecurring = (id, number, title) => {
+                        createData.recurringOf = id;
+                        createData.recurringOfNumber = number;
+                        createData.recurringOfTitle = title;
+                        document.getElementById('modal-root').innerHTML = '';
+                        window._wizardInit = true;
+                        renderPage();
+                    };
+                    renderModal();
+                };
                 window.wizardSubmit = async (btn) => {
                     const title = document.getElementById('wz-title')?.value?.trim();
                     const desc = document.getElementById('wz-desc')?.value?.trim();
@@ -3583,7 +3646,7 @@ ${list.length === 0 ? `<div class="empty-state">
                                 }
                             }
                         }
-                        const insertData = { ticket_number: await getNextNum(), title, description: desc || '', topic: createData.topic || 'אחר', unit: createData.unit || (userUnits[0] || ''), assigned_role: createData.role || availableRoles[0], status: "OPEN", is_hamal_down: createData.hamalDown || false, created_by_user_id: currentUser.id, created_by_name: currentUser.fullName, attachments };
+                        const insertData = { ticket_number: await getNextNum(), title, description: desc || '', topic: createData.topic || 'אחר', unit: createData.unit || (userUnits[0] || ''), assigned_role: createData.role || availableRoles[0], status: "OPEN", is_hamal_down: createData.hamalDown || false, created_by_user_id: currentUser.id, created_by_name: currentUser.fullName, attachments, recurring_of: createData.recurringOf || null };
                         if (currentUser.role === 'HATAP' && insertData.assigned_role === 'HR') insertData.forwarded_by_hatap_name = currentUser.fullName;
                         const { data: t, error } = await supabase.from("tickets").insert(insertData).select().single();
                         if (error) throw error;
@@ -3660,6 +3723,23 @@ ${list.length === 0 ? `<div class="empty-state">
       <div class="details-meta-value" style="color:#60a5fa;">${escapeHtml(t.forwardedByHatapName)}</div>
     </div>` : ''}
   </div>
+
+  ${t.recurringOf ? (() => {
+    const parent = tickets.find(x => x.id == t.recurringOf);
+    return `<div class="card" style="margin-bottom:14px;border-color:rgba(139,92,246,0.4);background:rgba(139,92,246,0.06);">
+      <div class="details-section-title" style="color:#a78bfa;"><i data-lucide="repeat-2"></i> תקלה חוזרת</div>
+      ${parent
+        ? `<div onclick="nav('DETAILS','${parent.id}')" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:10px;cursor:pointer;margin-top:8px;" onmouseover="this.style.background='rgba(139,92,246,0.18)'" onmouseout="this.style.background='rgba(139,92,246,0.1)'">
+             <div style="flex:1;">
+               <div style="font-size:0.75rem;color:#94a3b8;font-weight:700;">#${parent.ticketNumber} · ${escapeHtml(parent.topic || '')}</div>
+               <div style="font-size:0.88rem;font-weight:600;margin-top:2px;">${escapeHtml(parent.title)}</div>
+             </div>
+             <i data-lucide="chevron-left" style="width:16px;height:16px;color:#a78bfa;flex-shrink:0;"></i>
+           </div>`
+        : `<div style="color:#64748b;font-size:0.85rem;margin-top:6px;">תקלה קודמת מקושרת</div>`
+      }
+    </div>`;
+  })() : ''}
 
   ${t.description ? `
   <!-- Description -->
