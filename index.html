@@ -3939,7 +3939,7 @@ ${list.length === 0 ? `<div class="empty-state">
             if (!isOwner && !isHandler && !isCreator) {
                 showToast("אין הרשאה לעדכן סטטוס", "alert-circle"); return;
             }
-            const isClosed = (st === 'RESOLVED' || st === 'CLOSED');
+            const isClosed = st === 'CLOSED';
             await withLoader(document.querySelector(".main"), async () => {
                 await supabase.from("tickets").update({ status: st, is_closed: isClosed, updated_at: new Date().toISOString() }).eq("id", tid);
                 await loadData();
@@ -3949,6 +3949,17 @@ ${list.length === 0 ? `<div class="empty-state">
                     setTimeout(launchConfetti, 300);
                 } else if (st === 'RESOLVED') {
                     showToast("✅ התקלה טופלה!", "check");
+                } else if (st === 'OPEN') {
+                    showToast("🔄 התקלה הוחזרה לפתוחה", "refresh-cw");
+                    const handlerIds = users
+                        .filter(u => u.role === t.assignedRole && !u.isFrozen && u.id !== currentUser.id)
+                        .map(u => u.id);
+                    if (handlerIds.length) pushTicketShort({
+                        userIds: handlerIds,
+                        ticketId: t.ticketNumber,
+                        title: "🔄 תקלה הוחזרה לטיפול",
+                        message: t.title,
+                    });
                 } else {
                     showToast("הסטטוס עודכן", "check");
                 }
