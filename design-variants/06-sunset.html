@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TicketFlow · Sunset Warm</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&display=swap');
+  :root{
+    --ink:#2b1810; --mut:#8c6f5e; --dim:#c7a892;
+    --surface:#fffbf6; --bg:#fff5ec;
+    --o1:#fb923c; --o2:#f97316; --coral:#fb7185; --peach:#fda4af;
+    --rose:#e11d48; --amber:#f59e0b; --gn:#10b981; --terr:#dc2626;
+    --line:#f5e6d3; --paper:#fffefb;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;color:var(--ink);font:15px/1.55 Heebo,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg)}
+  body{
+    background:
+      radial-gradient(900px 600px at 100% 0%, #fed7aa 0%, transparent 55%),
+      radial-gradient(700px 500px at -10% 40%, #fecaca 0%, transparent 55%),
+      radial-gradient(800px 600px at 60% 100%, #fde68a 0%, transparent 55%),
+      var(--bg);
+    min-height:100vh;
+  }
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+
+  .app{max-width:1380px;margin:0 auto;padding:20px;display:grid;grid-template-columns:240px 1fr;gap:18px;min-height:100vh}
+  @media (max-width:900px){.app{grid-template-columns:1fr;padding:14px}}
+
+  .side{position:sticky;top:20px;align-self:start;background:rgba(255,255,255,.75);backdrop-filter:blur(24px);
+    border:1px solid rgba(255,255,255,.9);box-shadow:0 24px 60px -20px rgba(251,113,133,.35);
+    border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:5px;height:fit-content}
+  @media (max-width:900px){.side{position:static}}
+  .brand{display:flex;align-items:center;gap:12px;padding:6px 10px 18px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .brand .logo{width:38px;height:38px;border-radius:12px;
+    background:linear-gradient(135deg,#fb923c 0%,#fb7185 50%,#f97316 100%);
+    box-shadow:0 10px 24px -4px rgba(251,113,133,.55), inset 0 2px 4px rgba(255,255,255,.4)}
+  .brand b{font-weight:800;font-size:16px;letter-spacing:-.01em;color:var(--ink)}
+  .brand small{display:block;color:var(--mut);font-size:11px;font-weight:500;margin-top:2px}
+  .nav-link{display:flex;align-items:center;gap:11px;padding:12px;border-radius:14px;color:var(--mut);
+    font-size:13.5px;font-weight:600;min-height:44px;transition:.18s}
+  .nav-link:hover{background:rgba(251,146,60,.1);color:var(--ink)}
+  .nav-link.on{background:linear-gradient(135deg,#fb923c,#fb7185);color:#fff;
+    box-shadow:0 10px 24px -6px rgba(251,113,133,.55)}
+  .nav-link .ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+  .nav-link .badge{margin-right:auto;font-size:10.5px;background:#fff;color:var(--o2);padding:2px 8px;border-radius:999px;font-weight:800}
+  .nav-link.on .badge{background:rgba(255,255,255,.25);color:#fff}
+  .nav-divider{font-size:10px;letter-spacing:.18em;color:var(--dim);padding:14px 10px 6px;font-weight:700;text-transform:uppercase}
+  .side-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;font-size:12.5px}
+  .avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#fb7185,#fb923c);flex-shrink:0;display:grid;place-items:center;font-weight:800;color:#fff;font-size:15px;box-shadow:0 6px 14px -2px rgba(251,113,133,.5)}
+
+  main{display:flex;flex-direction:column;gap:18px;min-width:0}
+  .topbar{background:rgba(255,255,255,.7);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.9);
+    border-radius:20px;padding:12px 16px;display:flex;align-items:center;gap:12px;
+    box-shadow:0 14px 36px -14px rgba(251,113,133,.25)}
+  .search{flex:1;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);
+    border-radius:14px;padding:11px 16px;min-height:44px;flex-direction:row-reverse}
+  .search:focus-within{border-color:var(--o2);box-shadow:0 0 0 4px rgba(249,115,22,.15)}
+  .search input{flex:1;background:none;border:0;outline:0;color:inherit;font:inherit;font-size:14px;text-align:right}
+  .kbd{font-size:10.5px;color:var(--mut);background:var(--bg);padding:3px 7px;border-radius:6px;font-family:ui-monospace,monospace;border:1px solid var(--line)}
+  .iconbtn{width:44px;height:44px;border-radius:14px;background:#fff;border:1px solid var(--line);
+    display:grid;place-items:center;color:var(--mut);position:relative;transition:.15s}
+  .iconbtn:hover{color:var(--o2);border-color:var(--o2)}
+  .iconbtn .ping{position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--terr);box-shadow:0 0 0 2.5px #fff}
+  .add-btn{background:linear-gradient(135deg,#fb923c,#fb7185);color:#fff;padding:0 20px;height:44px;border-radius:14px;
+    font-weight:700;display:flex;align-items:center;gap:8px;font-size:14px;box-shadow:0 12px 28px -4px rgba(251,113,133,.6)}
+  .add-btn:hover{transform:translateY(-2px)}
+
+  .step-nav{display:flex;gap:6px;background:rgba(255,255,255,.7);backdrop-filter:blur(24px);
+    border:1px solid rgba(255,255,255,.9);border-radius:18px;padding:6px;
+    box-shadow:0 12px 30px -12px rgba(251,113,133,.2)}
+  .step-nav a{flex:1;text-align:center;padding:11px 14px;border-radius:12px;font-size:13px;font-weight:600;color:var(--mut);min-height:42px;display:flex;align-items:center;justify-content:center;gap:8px}
+  .step-nav a:hover:not(.on){color:var(--ink)}
+  .step-nav a.on{background:#fff;color:var(--o2);box-shadow:0 6px 14px -4px rgba(249,115,22,.3)}
+  .step-nav a .num{width:22px;height:22px;border-radius:7px;background:var(--bg);font-size:11px;display:grid;place-items:center;font-weight:700}
+  .step-nav a.on .num{background:linear-gradient(135deg,#fb923c,#fb7185);color:#fff}
+
+  section{scroll-margin-top:20px}
+  .section-head{margin-bottom:14px;display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .section-head h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.025em;color:var(--ink)}
+  .section-head h1 .grad{background:linear-gradient(135deg,#fb923c,#fb7185,#e11d48);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .section-head p{margin:4px 0 0;color:var(--mut);font-size:14px}
+  .section-head .meta{display:flex;gap:8px;flex-wrap:wrap}
+  .section-head .meta span{padding:7px 12px;background:#fff;border:1px solid var(--line);border-radius:999px;color:var(--mut);font-weight:500;font-size:12px}
+  .live{color:var(--gn)!important;background:rgba(16,185,129,.1)!important;border-color:rgba(16,185,129,.3)!important;display:inline-flex;align-items:center;gap:6px}
+  .live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--gn);box-shadow:0 0 8px var(--gn);animation:pulse 1.6s infinite}
+  @keyframes pulse{50%{opacity:.4}}
+
+  .bento{display:grid;grid-template-columns:repeat(6,1fr);gap:16px;grid-auto-rows:minmax(120px,auto)}
+  @media (max-width:900px){.bento{grid-template-columns:repeat(2,1fr)}}
+  .tile{background:var(--paper);border:1px solid rgba(255,255,255,.9);border-radius:22px;padding:22px;
+    position:relative;overflow:hidden;transition:.2s;
+    box-shadow:0 18px 44px -18px rgba(251,113,133,.2)}
+  .tile:hover{transform:translateY(-3px);box-shadow:0 26px 54px -18px rgba(251,113,133,.3)}
+  .tile h3{font-size:16px;font-weight:700;margin:0}
+  .tile .lbl{font-size:11px;color:var(--mut);letter-spacing:.1em;font-weight:700;text-transform:uppercase}
+
+  .t-hero{grid-column:span 4;grid-row:span 2;
+    background:
+      radial-gradient(circle at 100% 0%, #fde68a 0%, transparent 50%),
+      linear-gradient(135deg,#fb923c 0%,#f97316 30%,#fb7185 65%,#e11d48 100%);
+    color:#fff;min-height:260px;display:flex;flex-direction:column;justify-content:space-between;
+    box-shadow:0 30px 70px -16px rgba(225,29,72,.5)}
+  .t-hero::after{content:"";position:absolute;right:-120px;bottom:-100px;width:340px;height:340px;border-radius:50%;
+    background:radial-gradient(circle,rgba(254,215,170,.5),transparent 70%);pointer-events:none}
+  .t-hero .lbl{color:rgba(255,255,255,.9)!important;position:relative;font-weight:800}
+  .t-hero h2{font-size:34px;font-weight:800;margin:0;letter-spacing:-.03em;line-height:1.05;max-width:14ch;position:relative}
+  .t-hero .row{display:flex;gap:24px;align-items:center;flex-wrap:wrap;position:relative}
+  .t-hero .row > div{font-size:12.5px;color:rgba(255,255,255,.78)}
+  .t-hero .row b{display:block;color:#fff;font-weight:700;font-size:16px;margin-bottom:2px}
+  .t-hero .cta{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--ink);
+    padding:13px 22px;border-radius:14px;font-weight:700;font-size:14.5px;align-self:flex-start;
+    min-height:46px;position:relative;transition:.2s;box-shadow:0 12px 28px -6px rgba(0,0,0,.22)}
+  .t-hero .cta:hover{transform:translateY(-2px)}
+
+  .t-stat{grid-column:span 2;display:flex;flex-direction:column;gap:8px}
+  .t-stat .big{font-size:42px;font-weight:800;letter-spacing:-.03em;line-height:1;font-feature-settings:"tnum"}
+  .t-stat .delta{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;margin-top:2px;padding:4px 10px;border-radius:999px;align-self:flex-start}
+  .delta.up{background:rgba(251,113,133,.12);color:#e11d48}
+  .delta.down{background:rgba(16,185,129,.12);color:#059669}
+  .delta.warn{background:rgba(220,38,38,.12);color:#dc2626}
+  .spark{height:34px;margin-top:auto}
+  .spark svg{width:100%;height:100%}
+
+  .t-stat.peach{background:linear-gradient(135deg,#fff7ed,#fffefb)}
+  .t-stat.peach .big{background:linear-gradient(135deg,#fb923c,#f97316);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .t-stat.rose{background:linear-gradient(135deg,#fff1f2,#fffefb)}
+  .t-stat.rose .big{background:linear-gradient(135deg,#fb7185,#e11d48);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .t-stat.mint{background:linear-gradient(135deg,#ecfdf5,#fffefb)}
+  .t-stat.mint .big{background:linear-gradient(135deg,#10b981,#34d399);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+  .t-list{grid-column:span 6}
+  .ev-list{display:flex;flex-direction:column;gap:8px}
+  .ev{display:grid;grid-template-columns:60px 1fr auto auto auto;gap:14px;align-items:center;padding:14px;
+    border-radius:16px;background:#fff;border:1px solid var(--line);transition:.15s;cursor:pointer}
+  .ev:hover{border-color:var(--o2);box-shadow:0 10px 24px -8px rgba(249,115,22,.25);transform:translateX(-2px)}
+  .ev.hot{background:linear-gradient(135deg,#fff1f2,#fff);border-color:rgba(225,29,72,.3)}
+  .ev .num-box{text-align:center;background:var(--bg);border-radius:12px;padding:10px 6px;border:1px solid var(--line);font-family:ui-monospace,monospace;font-size:11px;color:var(--mut);font-weight:700}
+  .ev .t b{display:block;font-size:14.5px;font-weight:700;margin-bottom:2px;color:var(--ink)}
+  .ev .t span{font-size:12.5px;color:var(--mut)}
+  .ev .tag{font-size:11px;padding:5px 11px;border-radius:999px;font-weight:700}
+  .tag-amts{background:rgba(251,146,60,.18);color:#c2410c}
+  .tag-mch{background:rgba(225,29,72,.12);color:#be123c}
+  .tag-tks{background:rgba(245,158,11,.18);color:#92400e}
+  .tag-pwr{background:rgba(220,38,38,.12);color:#991b1b}
+  .ev .time{font-size:11.5px;color:var(--mut);font-feature-settings:"tnum"}
+  .badge{font-size:11px;padding:5px 12px;border-radius:999px;font-weight:700;border:1px solid transparent}
+  .badge.OPEN{background:rgba(220,38,38,.12);color:#dc2626;border-color:rgba(220,38,38,.25)}
+  .badge.IN_PROGRESS{background:rgba(245,158,11,.18);color:#b45309;border-color:rgba(245,158,11,.35)}
+  .badge.RESOLVED{background:rgba(16,185,129,.15);color:#059669;border-color:rgba(16,185,129,.3)}
+  .badge.CLOSED{background:var(--bg);color:var(--mut)}
+
+  .filters{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .f-search{flex:1;min-width:220px;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:11px 16px;min-height:44px;flex-direction:row-reverse}
+  .f-search input{flex:1;background:none;border:0;outline:0;color:inherit;font:inherit;font-size:13.5px;text-align:right}
+  .select{padding:11px 16px;background:#fff;border:1px solid var(--line);border-radius:14px;color:var(--ink);font:inherit;font-size:13px;min-height:44px;cursor:pointer}
+  .chip{padding:10px 18px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:13px;color:var(--mut);min-height:40px;cursor:pointer;font-weight:600}
+  .chip.on{background:linear-gradient(135deg,#fb923c,#fb7185);color:#fff;border-color:transparent;box-shadow:0 8px 20px -4px rgba(251,113,133,.5)}
+
+  .tbl{padding:0;overflow:hidden}
+  .tbl-head{display:grid;grid-template-columns:80px 1fr 110px 110px 100px 90px;gap:14px;padding:14px 20px;background:var(--bg);font-size:11px;color:var(--mut);font-weight:700;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--line)}
+  @media (max-width:900px){.tbl-head{grid-template-columns:60px 1fr 90px;gap:10px;padding:12px}.tbl-head .col-hide{display:none}}
+  .tbl-row{display:grid;grid-template-columns:80px 1fr 110px 110px 100px 90px;gap:14px;padding:16px 20px;border-bottom:1px solid var(--line);align-items:center;cursor:pointer;transition:.15s}
+  @media (max-width:900px){.tbl-row{grid-template-columns:60px 1fr 90px;gap:10px;padding:14px}.tbl-row .col-hide{display:none}}
+  .tbl-row:last-child{border:0}
+  .tbl-row:hover{background:#fffaf3}
+  .tbl-row.hot{background:linear-gradient(135deg,#fff1f2,transparent);border-right:3px solid var(--terr)}
+  .tn{font-family:ui-monospace,monospace;font-size:12.5px;color:var(--mut);font-feature-settings:"tnum"}
+  .tt b{display:block;font-weight:700;font-size:14.5px;margin-bottom:2px;color:var(--ink)}
+  .tt small{color:var(--mut);font-size:12.5px}
+
+  .two{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-top:0}
+  @media (max-width:900px){.two{grid-template-columns:1fr}}
+  .card{padding:30px}
+  .card h2{margin:0 0 4px;font-size:26px;font-weight:800;letter-spacing:-.02em}
+  .meta-line{color:var(--mut);font-size:13.5px;margin-bottom:22px}
+  .desc{font-size:15px;line-height:1.75;color:#4a3525;padding:20px 22px;
+    background:linear-gradient(135deg,rgba(251,146,60,.08),rgba(251,113,133,.05));
+    border-radius:16px;margin-bottom:24px;border:1px solid rgba(251,146,60,.18)}
+
+  .timeline{padding:0;margin:0;list-style:none}
+  .tl-item{position:relative;padding:0 24px 22px 0;border-right:2px solid var(--line)}
+  .tl-item::before{content:"";position:absolute;right:-7px;top:6px;width:12px;height:12px;border-radius:50%;
+    background:linear-gradient(135deg,#fb923c,#fb7185);box-shadow:0 0 14px rgba(251,113,133,.55),0 0 0 4px #fff}
+  .tl-item:last-child{border-color:transparent}
+  .tl-item time{font-size:11.5px;color:var(--mut);font-feature-settings:"tnum"}
+  .tl-item b{display:block;margin-top:2px;font-size:14px;font-weight:700}
+  .tl-item p{margin:3px 0 0;font-size:12.5px;color:var(--mut)}
+
+  .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+  .meta-cell{padding:16px;background:#fff;border:1px solid var(--line);border-radius:14px;transition:.18s}
+  .meta-cell:hover{border-color:var(--o2);transform:translateY(-1px);box-shadow:0 8px 20px -8px rgba(249,115,22,.25)}
+  .meta-cell .lbl{font-size:10.5px;color:var(--mut);letter-spacing:.08em;font-weight:700;margin-bottom:6px;text-transform:uppercase}
+  .meta-cell b{font-size:15px;font-weight:700;display:block;color:var(--ink)}
+  .meta-cell small{color:var(--mut);font-size:11.5px;display:block;margin-top:2px}
+  .meta-cell.urgent{background:linear-gradient(135deg,#fff1f2,#fff);border-color:rgba(225,29,72,.3)}
+  .meta-cell.urgent b{color:var(--rose)}
+
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12px;color:var(--mut);font-weight:600;margin-bottom:7px}
+  .field input,.field textarea,.field select{width:100%;padding:14px 16px;background:#fff;border:1px solid var(--line);
+    border-radius:14px;color:var(--ink);font:inherit;font-size:14.5px;min-height:50px;transition:.15s}
+  .field input::placeholder,.field textarea::placeholder{color:var(--dim)}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:0;border-color:var(--o2);box-shadow:0 0 0 4px rgba(249,115,22,.15)}
+  .field textarea{min-height:120px;resize:vertical;font-family:inherit}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .toggle{display:flex;align-items:center;gap:14px;padding:18px;background:linear-gradient(135deg,rgba(220,38,38,.08),rgba(251,113,133,.04));
+    border:1px solid rgba(220,38,38,.25);border-radius:16px;margin-bottom:20px;cursor:pointer}
+  .toggle b{color:var(--terr);font-weight:700;display:block;font-size:14.5px}
+  .toggle small{color:var(--mut);font-size:12.5px}
+  .toggle input{margin-right:auto;width:46px;height:28px;appearance:none;background:#fff;border:1px solid var(--line);border-radius:999px;position:relative;cursor:pointer;flex-shrink:0;transition:.18s}
+  .toggle input:checked{background:linear-gradient(135deg,#dc2626,#fb7185);border-color:transparent}
+  .toggle input::after{content:"";position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.18s;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+  .toggle input:checked::after{right:22px}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    background:linear-gradient(135deg,#fb923c,#fb7185);color:#fff;
+    padding:16px;border-radius:16px;font-weight:700;min-height:54px;font-size:15px;
+    box-shadow:0 14px 32px -6px rgba(251,113,133,.55);transition:.2s}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 18px 40px -6px rgba(251,113,133,.7)}
+  .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line);box-shadow:none}
+  .btn-ghost:hover{background:var(--bg);border-color:var(--o2);transform:none}
+  .btn-ok{background:linear-gradient(135deg,#10b981,#34d399);box-shadow:0 14px 32px -6px rgba(16,185,129,.5)}
+
+  .h4{margin:0 0 12px;font-size:12px;color:var(--mut);font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo"></div><div><b>TicketFlow</b><small>גדוד 891 · Sunset</small></div></div>
+    <a class="nav-link on" href="#home"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 11L12 4l9 7M5 10v9h14v-9"/></svg></span>דשבורד</a>
+    <a class="nav-link" href="#tickets"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 14h4"/></svg></span>כל התקלות <span class="badge">23</span></a>
+    <a class="nav-link" href="#detail"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>התקלות שלי</a>
+    <a class="nav-link" href="#create"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span>תקלה חדשה</a>
+    <div class="nav-divider">ניהול</div>
+    <a class="nav-link" href="#"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-9"/></svg></span>אנליטיקה</a>
+    <a class="nav-link" href="#"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg></span>משתמשים</a>
+    <a class="nav-link" href="#"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 12l4-4 4 4 4-6 6 8"/></svg></span>דוח תקינות</a>
+    <div class="nav-divider">מערכת</div>
+    <a class="nav-link" href="#"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4 12H1M23 12h-3"/></svg></span>הגדרות</a>
+    <div class="side-foot"><div class="avatar">י</div><div><b style="display:block;font-weight:700">ינאי כהן</b><span style="color:var(--mut);font-size:11.5px">מ"פ · OWNER</span></div></div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div class="search"><input placeholder="חפש תקלה, יחידה או משתמש…"/>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8c6f5e" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <span class="kbd">⌘ K</span>
+      </div>
+      <button class="iconbtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9a6 6 0 1112 0c0 7 3 7 3 9H3c0-2 3-2 3-9z"/><path d="M10 21a2 2 0 004 0"/></svg><span class="ping"></span></button>
+      <button class="add-btn">＋ תקלה חדשה</button>
+    </div>
+
+    <div class="step-nav">
+      <a href="#home" class="on"><span class="num">1</span>דשבורד</a>
+      <a href="#tickets"><span class="num">2</span>כל התקלות</a>
+      <a href="#detail"><span class="num">3</span>פרטי תקלה</a>
+      <a href="#create"><span class="num">4</span>פתיחת תקלה</a>
+    </div>
+
+    <section id="home">
+      <div class="section-head">
+        <div><h1>בוקר טוב <span class="grad">ינאי ✨</span></h1><p>תמונת מצב חיה של היחידה · עדכון לפני 12 שניות</p></div>
+        <div class="meta"><span class="live">מערכת פעילה</span><span>☀️ 14 יוני</span></div>
+      </div>
+
+      <div class="bento">
+        <a class="tile t-hero" href="#detail">
+          <span class="lbl">🚨 חמ"ל מושבת — דורש טיפול מיידי</span>
+          <h2>חמ"ל ב' — אין תקשורת</h2>
+          <div class="row">
+            <div><b>14 דקות</b>פתוח</div>
+            <div><b>פלוגה ב'</b>גדוד 891</div>
+            <div><b>ממר"ם</b>מטפל</div>
+            <div><b>SLA: 30ד</b>חורג בעוד 16ד</div>
+          </div>
+          <span class="cta">לטיפול מיידי ←</span>
+        </a>
+
+        <div class="tile t-stat rose"><span class="lbl">שלי</span><div class="big">7</div><span class="delta up">▲ 2 מאתמול</span>
+          <div class="spark"><svg viewBox="0 0 100 30" preserveAspectRatio="none">
+            <defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#fb7185"/><stop offset="100%" stop-color="#fb7185" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0 18 L15 14 L30 20 L45 10 L60 14 L75 6 L90 10 L100 4" stroke="#fb7185" stroke-width="2" fill="none"/>
+            <path d="M0 18 L15 14 L30 20 L45 10 L60 14 L75 6 L90 10 L100 4 L100 30 L0 30 Z" fill="url(#g1)" opacity=".45"/>
+          </svg></div>
+        </div>
+        <div class="tile t-stat peach"><span class="lbl">סה"כ פתוחות</span><div class="big">23</div><span class="delta down">▼ 5 השבוע</span>
+          <div class="spark"><svg viewBox="0 0 100 30" preserveAspectRatio="none">
+            <defs><linearGradient id="g2" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#fb923c"/><stop offset="100%" stop-color="#fb923c" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0 10 L15 14 L30 8 L45 16 L60 11 L75 18 L90 13 L100 20" stroke="#fb923c" stroke-width="2" fill="none"/>
+            <path d="M0 10 L15 14 L30 8 L45 16 L60 11 L75 18 L90 13 L100 20 L100 30 L0 30 Z" fill="url(#g2)" opacity=".45"/>
+          </svg></div>
+        </div>
+        <div class="tile t-stat mint"><span class="lbl">טופלו השבוע</span><div class="big">41</div><span class="delta down">▲ 18% מהממוצע</span>
+          <div class="spark"><svg viewBox="0 0 100 30" preserveAspectRatio="none">
+            <defs><linearGradient id="g3" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#10b981"/><stop offset="100%" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0 22 L15 18 L30 20 L45 12 L60 14 L75 8 L90 10 L100 4" stroke="#10b981" stroke-width="2" fill="none"/>
+            <path d="M0 22 L15 18 L30 20 L45 12 L60 14 L75 8 L90 10 L100 4 L100 30 L0 30 Z" fill="url(#g3)" opacity=".45"/>
+          </svg></div>
+        </div>
+
+        <div class="tile t-list">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <h3>⚡ עדכונים אחרונים</h3>
+            <a href="#tickets" style="font-size:13px;color:var(--o2);font-weight:700">לכל התקלות ←</a>
+          </div>
+          <div class="ev-list">
+            <a class="ev hot" href="#detail"><div class="num-box">#2853</div><div class="t"><b>🚨 חמ"ל ב' — אין תקשורת</b><span>פלוגה ב' · רס"ב פרץ</span></div><span class="tag tag-amts">תקשורת</span><span class="time">14ד</span><span class="badge OPEN">פתוח</span></a>
+            <a class="ev" href="#detail"><div class="num-box">#2852</div><div class="t"><b>החלפת מצברים — רכב 7</b><span>מסע"ר · רס"ר אבי לוי</span></div><span class="tag tag-amts">אמצעים</span><span class="time">12ד</span><span class="badge OPEN">פתוח</span></a>
+            <a class="ev" href="#detail"><div class="num-box">#2851</div><div class="t"><b>מקרן בכיתה 4 לא דולק</b><span>בה"ד 1 · סמ"ר נועה דנון</span></div><span class="tag tag-mch">מחשב</span><span class="time">38ד</span><span class="badge IN_PROGRESS">בטיפול</span></a>
+            <a class="ev hot" href="#detail"><div class="num-box">#2849</div><div class="t"><b>תקלה ביציאת VPN במגדל 3</b><span>מגדל 3 · סמל אבי בנדה</span></div><span class="tag tag-mch">מחשב</span><span class="time">1ש 42ד</span><span class="badge OPEN">פתוח</span></a>
+            <a class="ev" href="#detail"><div class="num-box">#2848</div><div class="t"><b>החלפת UPS בחדר שרתים</b><span>חדר שרתים · סא"ל יוסף כהן</span></div><span class="tag tag-pwr">חשמל</span><span class="time">2ש</span><span class="badge RESOLVED">טופל</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tickets">
+      <div class="section-head"><div><h1>כל <span class="grad">התקלות</span></h1><p>23 פתוחות · 41 נסגרו השבוע</p></div><div class="meta"><span class="live">סנכרון פעיל</span></div></div>
+      <div class="filters">
+        <div class="f-search"><input placeholder="חפש לפי כותרת או מספר…"/><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c6f5e" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
+        <select class="select"><option>כל הנושאים</option><option>אמצעים</option><option>מחשב</option><option>תקשורת</option></select>
+        <select class="select"><option>כל התפקידים</option><option>חט"פ</option><option>ממר"ם</option><option>אפליקציה</option></select>
+        <button class="chip on">פתוחות</button>
+        <button class="chip">ארכיון</button>
+      </div>
+
+      <div class="tile tbl">
+        <div class="tbl-head"><span>מס׳</span><span>תקלה</span><span class="col-hide">נושא</span><span class="col-hide">יחידה</span><span class="col-hide">מטפל</span><span>סטטוס</span></div>
+        <div class="tbl-row hot"><span class="tn">#2853</span><div class="tt"><b>🚨 חמ"ל ב' — אין תקשורת</b><small>לפני 14 ד · רס"ב פרץ</small></div><span class="tag tag-amts col-hide">תקשורת</span><span class="col-hide" style="font-size:13px;color:var(--mut)">פלוגה ב'</span><span class="tag tag-amts col-hide">ממר"ם</span><span class="badge OPEN">פתוח</span></div>
+        <div class="tbl-row"><span class="tn">#2852</span><div class="tt"><b>החלפת מצברים — רכב 7</b><small>לפני 12 ד · רס"ר לוי</small></div><span class="tag tag-amts col-hide">אמצעים</span><span class="col-hide" style="font-size:13px;color:var(--mut)">מסע"ר</span><span class="tag tag-mch col-hide">חט"פ</span><span class="badge OPEN">פתוח</span></div>
+        <div class="tbl-row"><span class="tn">#2851</span><div class="tt"><b>מקרן בכיתה 4 לא דולק</b><small>לפני 38 ד · סמ"ר דנון</small></div><span class="tag tag-mch col-hide">מחשב</span><span class="col-hide" style="font-size:13px;color:var(--mut)">בה"ד 1</span><span class="tag tag-tks col-hide">אפליקציה</span><span class="badge IN_PROGRESS">בטיפול</span></div>
+        <div class="tbl-row hot"><span class="tn">#2849</span><div class="tt"><b>תקלה ביציאת VPN במגדל 3</b><small>לפני 1ש 42ד · סמל בנדה</small></div><span class="tag tag-mch col-hide">מחשב</span><span class="col-hide" style="font-size:13px;color:var(--mut)">מגדל 3</span><span class="tag tag-amts col-hide">ממר"ם</span><span class="badge OPEN">פתוח</span></div>
+        <div class="tbl-row"><span class="tn">#2847</span><div class="tt"><b>מערכת ROOK לא עולה</b><small>לפני 1ש 22ד · רס"ב פרץ</small></div><span class="tag tag-mch col-hide">מחשב</span><span class="col-hide" style="font-size:13px;color:var(--mut)">חמ"ל פיקודי</span><span class="tag tag-mch col-hide">חט"פ</span><span class="badge IN_PROGRESS">בטיפול</span></div>
+        <div class="tbl-row"><span class="tn">#2848</span><div class="tt"><b>החלפת UPS בחדר שרתים</b><small>נסגר לפני 2ש · סא"ל כהן</small></div><span class="tag tag-pwr col-hide">חשמל</span><span class="col-hide" style="font-size:13px;color:var(--mut)">חדר שרתים</span><span class="tag tag-amts col-hide">ממר"ם</span><span class="badge RESOLVED">טופל</span></div>
+      </div>
+    </section>
+
+    <section id="detail">
+      <div class="section-head"><div><h1>חמ"ל ב' <span class="grad">אין תקשורת</span></h1><p>#2853 · נפתח לפני 14 דקות</p></div><div class="meta"><span class="live">בטיפול חי</span><span style="color:var(--terr);background:rgba(220,38,38,.1);border-color:rgba(220,38,38,.3)">⏱ SLA: 16 ד'</span></div></div>
+
+      <div class="two">
+        <article class="tile card">
+          <h2>חמ"ל ב' — אין תקשורת</h2>
+          <div class="meta-line">תקלה #2853 · רס"ב גלית פרץ · פלוגה ב', גדוד 891</div>
+          <p class="desc">בחמ"ל פלוגה ב' אין מענה למכשירי קשר ולמערכת ROOK. נבדק חיבור פיזי לכל המכשירים ונראה תקין. ייתכן ושרת התקשורת המקומי קרס.</p>
+          <h4 class="h4">היסטוריית טיפול</h4>
+          <ul class="timeline">
+            <li class="tl-item"><time>14:32 · עכשיו</time><b>הסטטוס עודכן ל: בטיפול</b><p>סמ"ר עומר בן-דוד · ממר"ם</p></li>
+            <li class="tl-item"><time>14:28 · לפני 4 ד</time><b>הוקצה ל: ממר"ם</b><p>אוטומטית — לפי נושא תקלה</p></li>
+            <li class="tl-item"><time>14:18 · לפני 14 ד</time><b>🚨 תקלה נפתחה ומסומנת כחמ"ל מושבת</b><p>רס"ב גלית פרץ</p></li>
+          </ul>
+          <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap">
+            <button class="btn btn-ok">✓ סגור תקלה</button>
+            <button class="btn btn-ghost">＋ הוסף הערה</button>
+          </div>
+        </article>
+
+        <aside>
+          <h4 class="h4">פרטים מרכזיים</h4>
+          <div class="meta-grid">
+            <div class="meta-cell"><div class="lbl">סטטוס</div><b style="color:#b45309">בטיפול</b><small>14 ד' בסטטוס</small></div>
+            <div class="meta-cell urgent"><div class="lbl">חומרה</div><b>חמ"ל ↓</b><small>SLA: 30 ד'</small></div>
+            <div class="meta-cell"><div class="lbl">יחידה</div><b>פלוגה ב'</b><small>גדוד 891</small></div>
+            <div class="meta-cell"><div class="lbl">נושא</div><b>תקשורת</b><small>שרת מקומי</small></div>
+            <div class="meta-cell"><div class="lbl">פותח</div><b>רס"ב פרץ</b><small>חמ"ל</small></div>
+            <div class="meta-cell"><div class="lbl">מטפל</div><b>סמ"ר בן-דוד</b><small>ממר"ם</small></div>
+          </div>
+          <h4 class="h4">פעולות מהירות</h4>
+          <button class="btn btn-ghost" style="margin-bottom:8px">→ העברה ליחידה אחרת</button>
+          <button class="btn btn-ghost" style="margin-bottom:8px">⟲ שינוי תפקיד מטפל</button>
+          <button class="btn btn-ghost">📌 הצמדת תקלה</button>
+        </aside>
+      </div>
+    </section>
+
+    <section id="create">
+      <div class="section-head"><div><h1>פתיחת <span class="grad">תקלה חדשה</span></h1><p>תארו את התקלה בקצרה</p></div></div>
+      <div class="two">
+        <form class="tile card" onsubmit="event.preventDefault()">
+          <label class="toggle"><input type="checkbox"/><div><b>🚨 חמ"ל מושבת</b><small>סמן רק אם החמ"ל אינו פעיל לחלוטין</small></div></label>
+          <div class="field"><label>כותרת התקלה</label><input placeholder="לדוגמה: מקרן בכיתה 4 לא דולק"/></div>
+          <div class="field-row">
+            <div class="field"><label>נושא</label><select><option>אמצעים</option><option>מחשב</option><option>תקשורת</option></select></div>
+            <div class="field"><label>יחידה</label><select><option>פלוגה ב'</option><option>פלוגה א'</option><option>מטה החטיבה</option></select></div>
+          </div>
+          <div class="field"><label>תיאור מפורט</label><textarea placeholder="פרט מתי החל, מה נוסה עד כה, ומי דיווח על התקלה…"></textarea></div>
+          <div class="field-row">
+            <div class="field"><label>הקצאה</label><select><option>אוטומטית (לפי נושא)</option><option>חט"פ</option><option>ממר"ם</option></select></div>
+            <div class="field"><label>חזרתיות</label><select><option>חד-פעמית</option><option>חוזרת — שבועית</option></select></div>
+          </div>
+          <button type="submit" class="btn">פתח תקלה ←</button>
+        </form>
+        <aside>
+          <h4 class="h4">הנחיות פתיחה</h4>
+          <div class="tile" style="padding:22px;font-size:14px;line-height:1.7;margin-bottom:16px;background:linear-gradient(135deg,rgba(251,146,60,.08),rgba(251,113,133,.04))">
+            <p style="margin:0 0 10px"><b style="color:var(--o2)">✓ כותרת קצרה ומדויקת</b><br><span style="color:var(--mut)">קל לזהות את התקלה ברשימה.</span></p>
+            <p style="margin:0 0 10px"><b style="color:var(--o2)">✓ ניתן לצרף תמונה</b><br><span style="color:var(--mut)">לאחר פתיחת התקלה.</span></p>
+            <p style="margin:0"><b style="color:var(--o2)">✓ סימון חמ"ל</b><br><span style="color:var(--mut)">דחיפה לראש התור והתראה מיידית.</span></p>
+          </div>
+          <h4 class="h4">דומות שטופלו</h4>
+          <div class="tile" style="padding:10px">
+            <div class="ev"><div class="num-box" style="background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.3);color:#059669">✓</div><div class="t"><b>מקרן בכיתה 2 לא דולק</b><span>נסגר לפני 3 ימים</span></div></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  const links=document.querySelectorAll('.step-nav a, .nav-link[href^="#"]');
+  const secs=['home','tickets','detail','create'].map(id=>document.getElementById(id));
+  const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id))})},{rootMargin:'-40% 0px -55% 0px'});
+  secs.forEach(s=>io.observe(s));
+</script>
+</body>
+</html>

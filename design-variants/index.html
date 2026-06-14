@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TicketFlow · גרסאות עיצוב</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;800;900&display=swap');
+  :root{--bg:#0b0d12;--fg:#e8eaf0;--mut:#9aa3b2;--card:#151823;--ac:#ec4899;--ac2:#8b5cf6}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 Heebo,-apple-system,BlinkMacSystemFont,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:56px 24px 80px}
+  h1{font-size:clamp(28px,4vw,44px);margin:0 0 8px;letter-spacing:-.02em;font-weight:800}
+  p.lead{color:var(--mut);margin:0 0 40px;max-width:62ch}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  a.card{display:block;padding:24px;background:var(--card);border:1px solid #232838;border-radius:18px;color:var(--fg);text-decoration:none;transition:.18s ease}
+  a.card:hover{transform:translateY(-3px);border-color:var(--ac);box-shadow:0 14px 38px -12px rgba(236,72,153,.4)}
+  .tag{display:inline-block;font-size:11px;letter-spacing:.08em;color:var(--ac);margin-bottom:8px;font-weight:700}
+  h3{margin:0 0 6px;font-size:18px;font-weight:800}
+  small{color:var(--mut)}
+  .swatch{display:flex;gap:6px;margin-top:14px}
+  .swatch i{display:block;width:18px;height:18px;border-radius:5px}
+  footer{margin-top:48px;color:var(--mut);font-size:13px}
+  code{background:#1a1f2e;padding:2px 6px;border-radius:4px;font-size:13px}
+  .original{margin-top:24px;display:inline-block;padding:10px 18px;background:#1a1f2e;border:1px solid #2a2f3e;border-radius:10px;color:var(--mut);text-decoration:none;font-size:14px}
+  .original:hover{color:var(--fg);border-color:var(--ac)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>TicketFlow — 4 כיוונים עיצוביים</h1>
+  <p class="lead">ארבע גרסאות עיצוב חלופיות למערכת ניהול התקלות. אותו תוכן, אותם מסכים (דשבורד, רשימה, פרטי תקלה) — אסתטיקה שונה לחלוטין. הקובץ המקורי <code>index.html</code> לא נגע בו.</p>
+
+  <div class="grid">
+    <a class="card" href="01-minimal.html">
+      <span class="tag">01 · Minimal</span>
+      <h3>מינימליסטי שקט</h3>
+      <small>טיפוגרפיה גדולה, רווחים נדיבים, אקצנט יחיד. תחושת מערכת אדמין בוגרת.</small>
+      <div class="swatch"><i style="background:#fafaf7;outline:1px solid #ddd"></i><i style="background:#111"></i><i style="background:#ec4899"></i><i style="background:#f1f1ea"></i></div>
+    </a>
+    <a class="card" href="02-glass.html">
+      <span class="tag">02 · Glass</span>
+      <h3>זכוכית ניאון</h3>
+      <small>כרטיסי גלאס מטושטשים מעל גרדיאנט סגול-ורוד, בסגנון command center.</small>
+      <div class="swatch"><i style="background:linear-gradient(135deg,#8b5cf6,#ec4899)"></i><i style="background:rgba(255,255,255,.15);outline:1px solid #555"></i><i style="background:#0b0420"></i><i style="background:#22d3ee"></i></div>
+    </a>
+    <a class="card" href="03-brutal.html">
+      <span class="tag">03 · Brutal</span>
+      <h3>חמ"ל ברוטאלי</h3>
+      <small>טיפוגרפיה כבדה, גבולות עבים, צהוב/שחור. תחושת terminal מבצעי.</small>
+      <div class="swatch"><i style="background:#fff200"></i><i style="background:#000"></i><i style="background:#ef4444"></i><i style="background:#fff"></i></div>
+    </a>
+    <a class="card" href="04-bento.html">
+      <span class="tag">04 · Bento</span>
+      <h3>בנטו דשבורד</h3>
+      <small>גריד מודולרי כהה, sidebar, sparklines וכרטיסי מטריקה בסגנון SaaS.</small>
+      <div class="swatch"><i style="background:#0a0a0f"></i><i style="background:#161824"></i><i style="background:#8b5cf6"></i><i style="background:#22d3ee"></i></div>
+    </a>
+  </div>
+
+  <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap">
+    <a class="original" href="../index-bento.html" style="background:linear-gradient(135deg,#8b5cf6,#ec4899);color:#fff;border-color:transparent;font-weight:600">★ אתר מלא בעיצוב בנטו (כל הפיצ'רים) →</a>
+    <a class="original" href="../index.html">← לפתיחת המערכת המקורית</a>
+  </div>
+
+  <footer style="margin-top:32px">
+    כל הקבצים standalone (HTML+CSS+JS פנימי). תוכן לדוגמה בלבד — אין חיבור ל-Supabase, נועד להמחיש את כיוון העיצוב.
+  </footer>
+</div>
+</body>
+</html>

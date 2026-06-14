@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TicketFlow · מינימליסטי</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&display=swap');
+  :root{
+    --bg:#fafaf7; --surface:#fff; --ink:#0f0f10; --mut:#6b6b66;
+    --line:#e7e5dd; --soft:#f1f1ea; --ac:#ec4899;
+    --open:#ef4444; --prog:#f59e0b; --done:#10b981; --hamal:#dc2626;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:15.5px/1.55 Heebo,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+
+  /* nav */
+  .nav{position:sticky;top:0;background:rgba(250,250,247,.9);backdrop-filter:blur(12px);
+    border-bottom:1px solid var(--line);z-index:10}
+  .nav-in{max-width:1240px;margin:0 auto;padding:16px 28px;display:flex;align-items:center;gap:24px}
+  .brand{font-weight:900;font-size:20px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+  .brand i{width:10px;height:10px;border-radius:50%;background:var(--ac);box-shadow:0 0 12px var(--ac)}
+  .steps{display:flex;gap:4px;margin-right:auto;font-size:13.5px}
+  .steps a{padding:8px 16px;border-radius:999px;color:var(--mut);min-height:40px;display:inline-flex;align-items:center;transition:.15s;font-weight:500}
+  .steps a.on{background:var(--ink);color:#fff}
+  .steps a:hover:not(.on){background:var(--soft);color:var(--ink)}
+  .me{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mut)}
+  .me .av{width:34px;height:34px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:700}
+
+  .wrap{max-width:1240px;margin:0 auto;padding:0 28px}
+  section{padding:64px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border:0;padding-bottom:120px}
+  .eyebrow{font-size:11px;letter-spacing:.18em;color:var(--mut);font-weight:700;margin-bottom:14px}
+  .display{font-size:clamp(34px,5vw,56px);line-height:1.05;margin:0 0 12px;letter-spacing:-.025em;font-weight:800;max-width:18ch}
+  .display em{color:var(--ac);font-style:normal}
+  .sub{color:var(--mut);max-width:55ch;font-size:17px}
+  .row-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:32px}
+
+  /* stat cards */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+    border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:48px}
+  @media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--surface);padding:28px;cursor:pointer;transition:.15s;text-align:right}
+  .stat:hover{background:var(--soft)}
+  .stat .lbl{font-size:12px;color:var(--mut);font-weight:600;letter-spacing:.04em;margin-bottom:8px}
+  .stat .val{font-size:44px;line-height:1;font-weight:800;letter-spacing:-.03em;color:var(--ink)}
+  .stat .delta{font-size:12px;color:var(--mut);margin-top:8px;display:flex;align-items:center;gap:6px}
+  .stat.urgent .val{color:var(--hamal)}
+  .stat.urgent{background:rgba(220,38,38,.04)}
+  .stat .ac{color:var(--ac)}
+
+  .urgent-banner{background:var(--ink);color:#fff;border-radius:8px;padding:24px 28px;margin-bottom:36px}
+  .urgent-banner h3{margin:0 0 14px;font-size:14px;letter-spacing:.06em;color:#fff;font-weight:700;display:flex;align-items:center;gap:8px}
+  .urgent-banner .dot{width:8px;height:8px;border-radius:50%;background:var(--hamal);box-shadow:0 0 10px var(--hamal);animation:p 1.4s infinite}
+  @keyframes p{50%{opacity:.35}}
+  .urgent-banner .item{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.1);cursor:pointer}
+  .urgent-banner .item:last-child{border:0}
+  .urgent-banner .item:hover{opacity:.8}
+  .urgent-banner .item b{display:block;font-size:15px;font-weight:600}
+  .urgent-banner .item small{color:rgba(255,255,255,.55);font-size:12.5px}
+  .urgent-banner .time{font-size:12px;color:rgba(255,255,255,.6);font-feature-settings:"tnum"}
+
+  /* recent list */
+  .list{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .list-head{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid var(--line)}
+  .list-head h3{margin:0;font-weight:700;font-size:16px}
+  .list-head a{font-size:13px;color:var(--mut)}
+  .list-head a:hover{color:var(--ac)}
+  .item{display:grid;grid-template-columns:42px 1fr auto auto;gap:14px;align-items:center;padding:16px 24px;border-bottom:1px solid var(--line);cursor:pointer;transition:.15s}
+  .item:last-child{border:0}
+  .item:hover{background:var(--soft)}
+  .icon-box{width:42px;height:42px;border-radius:10px;background:var(--soft);display:grid;place-items:center;font-size:18px}
+  .item.hot .icon-box{background:rgba(220,38,38,.1);color:var(--hamal)}
+  .item b{display:block;font-weight:600;font-size:15px;margin-bottom:3px}
+  .item small{color:var(--mut);font-size:12.5px}
+  .item .num{font-size:12px;color:var(--mut);font-feature-settings:"tnum"}
+  .badge{font-size:11px;padding:5px 10px;border-radius:999px;font-weight:600;letter-spacing:.02em}
+  .badge.OPEN{background:rgba(239,68,68,.1);color:var(--open)}
+  .badge.IN_PROGRESS{background:rgba(245,158,11,.12);color:var(--prog)}
+  .badge.RESOLVED{background:rgba(16,185,129,.12);color:var(--done)}
+  .badge.CLOSED{background:var(--soft);color:var(--mut)}
+
+  /* filters */
+  .filters{display:flex;gap:14px;align-items:center;margin-bottom:24px;flex-wrap:wrap}
+  .search{flex:1;min-width:220px;position:relative}
+  .search input{width:100%;padding:13px 44px 13px 16px;border:1px solid var(--line);border-radius:6px;
+    font:inherit;font-size:14.5px;background:var(--surface);min-height:46px;color:var(--ink)}
+  .search input:focus{outline:0;border-color:var(--ink)}
+  .search::before{content:"⌕";position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--mut)}
+  .select{padding:11px 14px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font:inherit;font-size:13.5px;min-height:46px;cursor:pointer;color:var(--ink)}
+  .chip{padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;color:var(--mut);min-height:38px;cursor:pointer;font-weight:500}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip:hover:not(.on){border-color:var(--ink);color:var(--ink)}
+
+  /* table-style list */
+  .tbl{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+  .tbl-row{display:grid;grid-template-columns:80px 1fr 130px 130px 110px 90px;gap:16px;padding:16px 24px;border-bottom:1px solid var(--line);align-items:center;cursor:pointer;transition:.15s}
+  @media (max-width:900px){.tbl-row{grid-template-columns:60px 1fr 90px;gap:10px;padding:14px}.tbl-row .col-hide{display:none}}
+  .tbl-row:last-child{border:0}
+  .tbl-row:hover{background:var(--soft)}
+  .tbl-row.hot{background:rgba(220,38,38,.04)}
+  .tbl-row.hot:hover{background:rgba(220,38,38,.08)}
+  .tn{font-family:ui-monospace,monospace;font-size:13px;color:var(--mut);font-feature-settings:"tnum"}
+  .tt b{display:block;font-weight:600;font-size:15px;margin-bottom:3px}
+  .tt small{color:var(--mut);font-size:12.5px}
+  .tag-pill{font-size:11.5px;color:var(--mut);background:var(--soft);padding:4px 10px;border-radius:5px;font-weight:500;display:inline-block}
+
+  /* ticket detail / create form */
+  .two{display:grid;grid-template-columns:1.6fr 1fr;gap:32px;margin-top:24px}
+  @media (max-width:900px){.two{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:32px}
+  .card h2{margin:0 0 6px;font-size:24px;font-weight:800;letter-spacing:-.015em}
+  .meta-line{color:var(--mut);font-size:13.5px;margin-bottom:24px}
+  .desc{font-size:16px;line-height:1.7;color:#2a2a2a;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:24px}
+  .timeline{padding:0;margin:0;list-style:none}
+  .tl-item{position:relative;padding:0 24px 24px 0;border-right:2px solid var(--line)}
+  .tl-item::before{content:"";position:absolute;right:-7px;top:6px;width:12px;height:12px;border-radius:50%;background:var(--ac);border:3px solid var(--surface)}
+  .tl-item:last-child{border-color:transparent}
+  .tl-item time{font-size:12px;color:var(--mut);font-feature-settings:"tnum"}
+  .tl-item b{display:block;margin-top:2px;font-size:14px;font-weight:600}
+  .tl-item p{margin:4px 0 0;font-size:13.5px;color:var(--mut)}
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:11.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--mut);font-weight:600;margin-bottom:7px}
+  .field input,.field textarea,.field select{width:100%;padding:13px 14px;border:1px solid var(--line);
+    border-radius:6px;font:inherit;font-size:15px;background:var(--surface);color:var(--ink);min-height:48px}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:0;border-color:var(--ac);box-shadow:0 0 0 3px rgba(236,72,153,.12)}
+  .field textarea{min-height:110px;resize:vertical;font-family:inherit}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .toggle{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:6px;background:rgba(220,38,38,.04);margin-bottom:18px;cursor:pointer}
+  .toggle b{color:var(--hamal);font-weight:700;display:block;font-size:14px}
+  .toggle small{color:var(--mut);font-size:12.5px}
+  .toggle input{margin-right:auto;width:42px;height:24px;appearance:none;background:var(--line);border-radius:999px;position:relative;cursor:pointer;flex-shrink:0;transition:.15s}
+  .toggle input:checked{background:var(--hamal)}
+  .toggle input::after{content:"";position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.18s}
+  .toggle input:checked::after{right:21px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--ink);color:#fff;
+    padding:16px;border-radius:6px;font-weight:600;min-height:54px;font-size:15px;transition:.15s}
+  .btn:hover{background:var(--ac)}
+  .btn-ghost{background:none;border:1px solid var(--line);color:var(--ink)}
+  .btn-ghost:hover{background:var(--soft);border-color:var(--ink)}
+
+  .side h4{margin:0 0 12px;font-size:12px;color:var(--mut);font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+  .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:20px}
+  .meta-grid .cell{padding:16px;background:var(--surface)}
+  .meta-grid .cell .lbl{font-size:11px;color:var(--mut);font-weight:600;margin-bottom:5px;letter-spacing:.04em}
+  .meta-grid .cell b{font-size:15px;font-weight:600}
+  .meta-grid .cell small{color:var(--mut);font-size:12px;display:block;margin-top:2px}
+
+  .fab{position:fixed;bottom:32px;left:32px;background:var(--ink);color:#fff;padding:14px 22px;border-radius:999px;
+    box-shadow:0 12px 32px -8px rgba(0,0,0,.3);font-weight:600;display:flex;align-items:center;gap:8px;font-size:14.5px;cursor:pointer;z-index:20;transition:.2s}
+  .fab:hover{background:var(--ac);transform:translateY(-2px)}
+  .fab svg{width:18px;height:18px}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-in">
+    <div class="brand"><i></i> TicketFlow</div>
+    <nav class="steps">
+      <a href="#home" class="on">דשבורד</a>
+      <a href="#tickets">תקלות</a>
+      <a href="#detail">פרטי תקלה</a>
+      <a href="#create">תקלה חדשה</a>
+    </nav>
+    <div class="me"><span>ינאי כהן · מ"פ</span><div class="av">י</div></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ╭─ Home ─────────────────╮ -->
+  <section id="home">
+    <div class="row-head">
+      <div>
+        <div class="eyebrow">● מערכת פעילה</div>
+        <h1 class="display">שלום ינאי, יש <em>4 תקלות</em> שדורשות תשומת לב.</h1>
+        <p class="sub">תמונת מצב כללית של היחידה — נכון לעכשיו. רק מה שבאמת חשוב.</p>
+      </div>
+      <button class="btn" style="width:auto;padding:14px 22px;min-height:48px"><span>＋</span> תקלה חדשה</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="lbl">שלי</div>
+        <div class="val ac">7</div>
+        <div class="delta">▲ 2 מאתמול</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">סה"כ פתוחות</div>
+        <div class="val">23</div>
+        <div class="delta">▼ 5 השבוע</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">טופלו השבוע</div>
+        <div class="val">41</div>
+        <div class="delta" style="color:var(--done)">▲ 18% מהממוצע</div>
+      </div>
+      <div class="stat urgent">
+        <div class="lbl">חמ"ל מושבת</div>
+        <div class="val">2</div>
+        <div class="delta" style="color:var(--hamal)">🚨 דורש טיפול מיידי</div>
+      </div>
+    </div>
+
+    <div class="urgent-banner">
+      <h3><span class="dot"></span> תקלות בעדיפות עליונה</h3>
+      <div class="item">
+        <div><b>חמ"ל ב' — אין תקשורת</b><small>פלוגה ב' · גדוד 891</small></div>
+        <span class="time">פתוח 14 דקות</span>
+        <span class="badge OPEN" style="background:rgba(255,255,255,.12);color:#fff">פתוח</span>
+      </div>
+      <div class="item">
+        <div><b>מערכת ROOK לא עולה</b><small>חט"פ · #2847</small></div>
+        <span class="time">פתוח 1ש 22ד</span>
+        <span class="badge IN_PROGRESS" style="background:rgba(245,158,11,.2);color:#fbbf24">בטיפול</span>
+      </div>
+      <div class="item">
+        <div><b>קשר רדיו מקוטע — אזור צפוני</b><small>ממר"ם · #2845</small></div>
+        <span class="time">פתוח 2ש 11ד</span>
+        <span class="badge OPEN" style="background:rgba(255,255,255,.12);color:#fff">פתוח</span>
+      </div>
+      <div class="item">
+        <div><b>שרת אפליקציה — קוד 502</b><small>אפליקציה · #2842</small></div>
+        <span class="time">פתוח 3ש</span>
+        <span class="badge IN_PROGRESS" style="background:rgba(245,158,11,.2);color:#fbbf24">בטיפול</span>
+      </div>
+    </div>
+
+    <div class="list">
+      <div class="list-head">
+        <h3>עדכונים אחרונים</h3>
+        <a href="#tickets">לכל התקלות ←</a>
+      </div>
+      <div class="item">
+        <div class="icon-box">📋</div>
+        <div><b>החלפת מצברים — רכב 7</b><small>לפני 12 דקות · רס"ר אבי לוי</small></div>
+        <span class="num">#2852</span>
+        <span class="badge OPEN">פתוח</span>
+      </div>
+      <div class="item">
+        <div class="icon-box">📋</div>
+        <div><b>מקרן בכיתה 4 לא דולק</b><small>לפני 38 דקות · סמ"ר נועה דנון</small></div>
+        <span class="num">#2851</span>
+        <span class="badge IN_PROGRESS">בטיפול</span>
+      </div>
+      <div class="item hot">
+        <div class="icon-box">⏱</div>
+        <div><b>תקלה ביציאת VPN במגדל 3</b><small>לפני 1ש 42ד · סמל אבי בנדה</small></div>
+        <span class="num">#2849</span>
+        <span class="badge OPEN">פתוח</span>
+      </div>
+      <div class="item">
+        <div class="icon-box">📋</div>
+        <div><b>החלפת UPS בחדר שרתים</b><small>לפני 2ש · סא"ל יוסף כהן</small></div>
+        <span class="num">#2848</span>
+        <span class="badge RESOLVED">טופל</span>
+      </div>
+      <div class="item">
+        <div class="icon-box">📋</div>
+        <div><b>טאבלט פקוד — סוללה לא נטענת</b><small>לפני 3ש · רב"ט תומר ישראלי</small></div>
+        <span class="num">#2846</span>
+        <span class="badge RESOLVED">טופל</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ╭─ Tickets list ─────────╮ -->
+  <section id="tickets">
+    <div class="eyebrow">02 · ניהול תקלות</div>
+    <h1 class="display" style="font-size:clamp(28px,4vw,42px)">כל התקלות <span style="color:var(--mut);font-weight:400">(23)</span></h1>
+    <p class="sub">סינון לפי נושא, יחידה ותפקיד המוקצה. גרירה למטה לרענון.</p>
+
+    <div class="filters" style="margin-top:32px">
+      <div class="search"><input placeholder="חפש תקלה לפי כותרת או מספר…"/></div>
+      <select class="select"><option>כל הנושאים</option><option>אמצעים</option><option>מחשב</option><option>תקשורת</option></select>
+      <select class="select"><option>כל התפקידים</option><option>חט"פ</option><option>ממר"ם</option><option>אפליקציה</option></select>
+      <button class="chip on">פתוחות</button>
+      <button class="chip">ארכיון</button>
+    </div>
+
+    <div class="tbl">
+      <div class="tbl-row hot">
+        <span class="tn">#2853</span>
+        <div class="tt"><b>חמ"ל ב' — אין תקשורת</b><small>נפתח לפני 14 דקות</small></div>
+        <span class="tag-pill col-hide">תקשורת</span>
+        <span class="col-hide" style="font-size:13.5px">פלוגה ב'</span>
+        <span class="tag-pill col-hide">ממר"ם</span>
+        <span class="badge OPEN">פתוח</span>
+      </div>
+      <div class="tbl-row">
+        <span class="tn">#2852</span>
+        <div class="tt"><b>החלפת מצברים — רכב 7</b><small>נפתח לפני 12 דקות</small></div>
+        <span class="tag-pill col-hide">אמצעים</span>
+        <span class="col-hide" style="font-size:13.5px">מסע"ר</span>
+        <span class="tag-pill col-hide">חט"פ</span>
+        <span class="badge OPEN">פתוח</span>
+      </div>
+      <div class="tbl-row">
+        <span class="tn">#2851</span>
+        <div class="tt"><b>מקרן בכיתה 4 לא דולק</b><small>נפתח לפני 38 דקות</small></div>
+        <span class="tag-pill col-hide">מחשב</span>
+        <span class="col-hide" style="font-size:13.5px">בה"ד 1</span>
+        <span class="tag-pill col-hide">אפליקציה</span>
+        <span class="badge IN_PROGRESS">בטיפול</span>
+      </div>
+      <div class="tbl-row hot">
+        <span class="tn">#2849</span>
+        <div class="tt"><b>תקלה ביציאת VPN במגדל 3</b><small>נפתח לפני 1ש 42ד</small></div>
+        <span class="tag-pill col-hide">מחשב</span>
+        <span class="col-hide" style="font-size:13.5px">מגדל 3</span>
+        <span class="tag-pill col-hide">ממר"ם</span>
+        <span class="badge OPEN">פתוח</span>
+      </div>
+      <div class="tbl-row">
+        <span class="tn">#2847</span>
+        <div class="tt"><b>מערכת ROOK לא עולה</b><small>נפתח לפני 1ש 22ד</small></div>
+        <span class="tag-pill col-hide">מחשב</span>
+        <span class="col-hide" style="font-size:13.5px">חמ"ל פיקודי</span>
+        <span class="tag-pill col-hide">חט"פ</span>
+        <span class="badge IN_PROGRESS">בטיפול</span>
+      </div>
+      <div class="tbl-row">
+        <span class="tn">#2848</span>
+        <div class="tt"><b>החלפת UPS בחדר שרתים</b><small>נסגר לפני 2ש</small></div>
+        <span class="tag-pill col-hide">חשמל</span>
+        <span class="col-hide" style="font-size:13.5px">חדר שרתים</span>
+        <span class="tag-pill col-hide">ממר"ם</span>
+        <span class="badge RESOLVED">טופל</span>
+      </div>
+      <div class="tbl-row">
+        <span class="tn">#2846</span>
+        <div class="tt"><b>טאבלט פקוד — סוללה לא נטענת</b><small>נסגר לפני 3ש</small></div>
+        <span class="tag-pill col-hide">אמצעים</span>
+        <span class="col-hide" style="font-size:13.5px">מטה החטיבה</span>
+        <span class="tag-pill col-hide">אפליקציה</span>
+        <span class="badge RESOLVED">טופל</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ╭─ Ticket detail ────────╮ -->
+  <section id="detail">
+    <div class="eyebrow">03 · פרטי תקלה</div>
+    <h1 class="display" style="font-size:clamp(28px,4vw,42px)">חמ"ל ב' — <em>אין תקשורת.</em></h1>
+
+    <div class="two">
+      <article class="card">
+        <h2>תקלה #2853</h2>
+        <div class="meta-line">נפתח לפני 14 דקות · רס"ב גלית פרץ · פלוגה ב', גדוד 891</div>
+
+        <p class="desc">בחמ"ל פלוגה ב' אין מענה למכשירי קשר ולמערכת ROOK. נבדק חיבור פיזי לכל המכשירים ונראה תקין. ייתכן ושרת התקשורת המקומי קרס.</p>
+
+        <h4 style="margin:0 0 16px;font-size:14px;font-weight:700">היסטוריית טיפול</h4>
+        <ul class="timeline">
+          <li class="tl-item">
+            <time>14:32 · עכשיו</time>
+            <b>הסטטוס עודכן ל: בטיפול</b>
+            <p>סמ"ר עומר בן-דוד · ממר"ם</p>
+          </li>
+          <li class="tl-item">
+            <time>14:28 · לפני 4 ד</time>
+            <b>הוקצה ל: ממר"ם</b>
+            <p>אוטומטית — לפי נושא תקלה</p>
+          </li>
+          <li class="tl-item">
+            <time>14:18 · לפני 14 ד</time>
+            <b>תקלה נפתחה ומסומנת כחמ"ל מושבת 🚨</b>
+            <p>רס"ב גלית פרץ</p>
+          </li>
+        </ul>
+
+        <div style="display:flex;gap:12px;margin-top:24px">
+          <button class="btn" style="background:var(--done)">סגור תקלה</button>
+          <button class="btn btn-ghost">הוסף הערה</button>
+        </div>
+      </article>
+
+      <aside class="side">
+        <h4>פרטי תקלה</h4>
+        <div class="meta-grid">
+          <div class="cell"><div class="lbl">סטטוס</div><b style="color:var(--prog)">בטיפול</b><small>14 דק' בסטטוס</small></div>
+          <div class="cell"><div class="lbl">חומרה</div><b style="color:var(--hamal)">חמ"ל מושבת</b><small>SLA: 30 דקות</small></div>
+          <div class="cell"><div class="lbl">יחידה</div><b>פלוגה ב'</b><small>גדוד 891</small></div>
+          <div class="cell"><div class="lbl">נושא</div><b>תקשורת</b><small>שרת מקומי</small></div>
+          <div class="cell"><div class="lbl">פותח</div><b>רס"ב פרץ</b><small>חמ"ל</small></div>
+          <div class="cell"><div class="lbl">מטפל</div><b>סמ"ר בן-דוד</b><small>ממר"ם</small></div>
+        </div>
+        <h4>פעולות מהירות</h4>
+        <button class="btn btn-ghost" style="margin-bottom:8px">העברה ליחידה אחרת</button>
+        <button class="btn btn-ghost" style="margin-bottom:8px">שינוי תפקיד מטפל</button>
+        <button class="btn btn-ghost">הצמדת תקלה</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ╭─ Create ───────────────╮ -->
+  <section id="create">
+    <div class="eyebrow">04 · פתיחת תקלה</div>
+    <h1 class="display" style="font-size:clamp(28px,4vw,42px)">תקלה <em>חדשה.</em></h1>
+    <p class="sub">תארו את התקלה בקצרה. נושא ויחידה ייבחרו אוטומטית — אבל ניתן לשנות.</p>
+
+    <div class="two">
+      <form class="card" onsubmit="event.preventDefault()">
+        <label class="toggle">
+          <input type="checkbox"/>
+          <div><b>🚨 חמ"ל מושבת</b><small>סמן רק אם החמ"ל אינו פעיל לחלוטין</small></div>
+        </label>
+
+        <div class="field"><label>כותרת התקלה</label><input placeholder="לדוגמה: מקרן בכיתה 4 לא דולק"/></div>
+
+        <div class="field-row">
+          <div class="field"><label>נושא</label>
+            <select><option>אמצעים</option><option>מחשב</option><option>תקשורת</option><option>חשמל</option><option>רכב</option></select>
+          </div>
+          <div class="field"><label>יחידה</label>
+            <select><option>פלוגה ב'</option><option>פלוגה א'</option><option>מטה החטיבה</option><option>חדר שרתים</option></select>
+          </div>
+        </div>
+
+        <div class="field"><label>תיאור מפורט</label>
+          <textarea placeholder="פרט מתי החל, מה נוסה עד כה, ומי דיווח על התקלה…"></textarea>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label>הקצאה ידנית</label>
+            <select><option>אוטומטית (לפי נושא)</option><option>חט"פ</option><option>ממר"ם</option><option>אפליקציה</option></select>
+          </div>
+          <div class="field"><label>חזרתיות</label>
+            <select><option>חד-פעמית</option><option>חוזרת — שבועית</option><option>חוזרת — חודשית</option></select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn">פתח תקלה ←</button>
+      </form>
+
+      <aside class="side">
+        <h4>הנחיות פתיחה</h4>
+        <div class="card" style="padding:22px;font-size:14px;line-height:1.7">
+          <p style="margin:0 0 10px"><b>✓ כותרת קצרה ומדויקת</b> — כך קל לזהות את התקלה ברשימה.</p>
+          <p style="margin:0 0 10px"><b>✓ תוכל לצרף תמונה</b> מהמכשיר לאחר פתיחה.</p>
+          <p style="margin:0"><b>✓ סימון חמ"ל</b> ידחוף את התקלה לקדמת התור ויודיע מיידית לכל הגורמים.</p>
+        </div>
+        <h4 style="margin-top:24px">תקלות דומות שטופלו</h4>
+        <div class="list" style="border-radius:6px">
+          <div class="item"><div class="icon-box">✓</div><div><b>מקרן בכיתה 2 לא דולק</b><small>נסגר לפני 3 ימים</small></div></div>
+          <div class="item"><div class="icon-box">✓</div><div><b>מקרן ראשי בחמ"ל</b><small>נסגר לפני שבוע</small></div></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+</div>
+
+<button class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>תקלה חדשה</button>
+
+<script>
+  const links=document.querySelectorAll('.steps a');
+  const secs=['home','tickets','detail','create'].map(id=>document.getElementById(id));
+  const io=new IntersectionObserver(es=>{
+    es.forEach(e=>{if(e.isIntersecting)links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id))});
+  },{rootMargin:'-40% 0px -55% 0px'});
+  secs.forEach(s=>io.observe(s));
+</script>
+</body>
+</html>

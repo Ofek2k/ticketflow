@@ -467,24 +467,6 @@ async function getNextNum(){
   return (data && data[0] ? data[0].ticket_number : 1000) + 1;
 }
 
-/* Insert a ticket with race-safe ticket_number assignment.
-   Requires a UNIQUE constraint on tickets.ticket_number (see SQL_FIXES.md).
-   On duplicate-key conflict, retries with +1 up to 8 times. */
-async function insertTicketSafe(payload){
-  let num = await getNextNum();
-  for(let attempt=0; attempt<8; attempt++){
-    const { data, error } = await supabase.from('tickets')
-      .insert({ ...payload, ticket_number: num })
-      .select().single();
-    if(!error) return { data, error: null };
-    // Postgres unique_violation code is 23505
-    const isDup = error.code==='23505' || /duplicate|unique/i.test(error.message||'');
-    if(!isDup) return { data: null, error };
-    num++;  // try next number
-  }
-  return { data: null, error: new Error('Could not assign unique ticket_number after 8 retries') };
-}
-
 /* ── REALTIME ── */
 function setupRealtime(){
   supabase.channel('public:tickets').on('postgres_changes', { event:'*', schema:'public', table:'tickets' }, async () => {
@@ -632,8 +614,6 @@ function pendingApprovableBy(me){
   const isOwner = me.role==='OWNER';
   return users.filter(u => {
     if(u.id === me.id) return false;
-    // Skip users who never completed onboarding — no name = nothing to approve
-    if(!u.fullName || !String(u.fullName).trim()) return false;
     const hasReq = u.roleStatus==='Pending' || u.requestedRole || u.requestedManager;
     if(!hasReq) return false;
     if(isOwner) return true;
@@ -641,9 +621,6 @@ function pendingApprovableBy(me){
     const targetRole = u.requestedRole || u.role;
     return targetRole === me.role;
   });
-}
-function incompleteOnboardingUsers(){
-  return users.filter(u => !u.fullName || !String(u.fullName).trim());
 }
 function canApproveRoles(me){
   if(me.role==='OWNER') return true;
@@ -700,21 +677,6 @@ function renderPage(){
   const main = document.getElementById('main');
   if(!main) return;
   main.classList.remove('page-animate'); void main.offsetWidth; main.classList.add('page-animate');
-
-  // ── permission guards (defense in depth; server-side RLS is the source of truth) ──
-  const isOwner = currentUser.role==='OWNER';
-  const isManager = currentUser.isManager || isOwner;
-  const PAGE_REQ = {
-    HOME:          () => isManager,
-    ALL_TICKETS:   () => isManager,
-    ANALYTICS:     () => isManager,
-    MANAGE_USERS:  () => isOwner,
-    ROLE_APPROVAL: () => canApproveRoles(currentUser),
-  };
-  if(PAGE_REQ[activePage] && !PAGE_REQ[activePage]()){
-    activePage = 'MY_TICKETS';
-    toast('אין לך הרשאה לדף הזה','lock');
-  }
 
   if(activePage==='HOME') return renderHome(main);
   if(activePage==='MY_TICKETS' || activePage==='ALL_TICKETS') return renderTicketList(main);
@@ -996,11 +958,9 @@ window.previewAtt = input => {
   });
 };
 window.wsubmit = async btn => {
-  let title = (document.getElementById('wt').value || '').replace(/\s+/g,' ').trim();
-  let desc  = (document.getElementById('wd').value || '').trim();
+  const title = document.getElementById('wt').value.trim();
+  const desc = document.getElementById('wd').value.trim();
   if(!title) return toast('הכנס כותרת','alert-circle');
-  if(title.length > 200) title = title.slice(0,200);
-  if(desc.length > 5000) desc = desc.slice(0,5000);
   await withBtnLoader(btn, async ()=>{
     const files = document.getElementById('wf').files;
     const attachments = [];
@@ -1015,15 +975,16 @@ window.wsubmit = async btn => {
         }
       }
     }
-    const payload = {
+    const insert = {
+      ticket_number: await getNextNum(),
       title, description:desc, topic:createData.topic||'אחר',
       unit:createData.unit, assigned_role:createData.role,
       status:'OPEN', is_hamal_down:!!createData.hamalDown,
       created_by_user_id:currentUser.id, created_by_name:currentUser.fullName,
       attachments
     };
-    if(currentUser.role==='HATAP' && payload.assigned_role==='HR') payload.forwarded_by_hatap_name = currentUser.fullName;
-    const { data:t, error } = await insertTicketSafe(payload);
+    if(currentUser.role==='HATAP' && insert.assigned_role==='HR') insert.forwarded_by_hatap_name = currentUser.fullName;
+    const { data:t, error } = await supabase.from('tickets').insert(insert).select().single();
     if(error) throw error;
     await loadData();
     toast('התקלה נפתחה!','check-circle');
@@ -1212,7 +1173,7 @@ function renderAnalytics(main){
           ${Object.entries(byTopic).sort((a,b)=>b[1]-a[1]).map(([k,v]) => {
             const pct = Math.round(v/tickets.length*100);
             return `<div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${esc(k)}</span><b>${v} (${pct}%)</b></div>
-              <div style="height:8px;background:#fafafe;border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--grad);border-radius:999px"></div></div></div>`;
+              <div style="height:8px;background:#fafafe;border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--grad);border-radius:99px"></div></div></div>`;
           }).join('')}
         </div>
       </div>
@@ -1223,7 +1184,7 @@ function renderAnalytics(main){
           ${Object.entries(byRole).sort((a,b)=>b[1]-a[1]).map(([k,v]) => {
             const pct = Math.round(v/tickets.length*100);
             return `<div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${roleLabel(k)}</span><b>${v} (${pct}%)</b></div>
-              <div style="height:8px;background:#fafafe;border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(135deg,#22d3ee,#10b981);border-radius:999px"></div></div></div>`;
+              <div style="height:8px;background:#fafafe;border-radius:99px;overflow:hidden"><div style="height:100%;width:${pct}%;background:linear-gradient(135deg,#22d3ee,#10b981);border-radius:99px"></div></div></div>`;
           }).join('')}
         </div>
       </div>
@@ -1258,45 +1219,22 @@ window.toggleFreeze = async (id, freeze) => {
 
 /* ── ROLE APPROVAL ── */
 function renderRoleApproval(main){
-  if(!canApproveRoles(currentUser)){ nav('HOME'); return; }
-  const pending = pendingApprovableBy(currentUser);
-  const incomplete = currentUser.role==='OWNER' ? incompleteOnboardingUsers() : [];
-  const scopeNote = currentUser.role==='OWNER'
-    ? 'אתה רואה את כל הבקשות (בעלים)'
-    : `אתה רואה בקשות לתפקיד ${roleLabel(currentUser.role)} בלבד`;
+  const pending = users.filter(u => u.roleStatus==='Pending' || u.requestedRole || u.requestedManager);
   main.innerHTML = `
     ${topbar()}
-    <div class="section-head"><div><h1>אישורי <span class="grad">תפקיד</span></h1><p>${pending.length} בקשות ממתינות · ${scopeNote}</p></div></div>
-    ${pending.length===0 ? '<div class="empty"><h3>אין בקשות ממתינות</h3><p>הכל מסודר.</p></div>'
-      : pending.map(u => {
-        const targetRole = u.requestedRole || u.role;
-        const targetRoleStr = JSON.stringify(targetRole).replace(/"/g,'&quot;');
-        return `<div class="card" style="margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <div class="section-head"><div><h1>אישורי <span class="grad">תפקיד</span></h1><p>${pending.length} בקשות ממתינות</p></div></div>
+    ${pending.length===0?'<div class="empty"><h3>אין בקשות ממתינות</h3></div>'
+      : pending.map(u => `<div class="card" style="margin-bottom:10px;display:flex;align-items:center;gap:14px">
         <div class="avatar">${avatarChar(u.fullName)}</div>
-        <div style="flex:1;min-width:200px">
-          <b>${esc(u.fullName||'-')}</b><br><small class="muted">${esc(u.email||'')} · נוכחי: ${roleLabel(u.role)}${u.requestedRole?` → מבקש: <b style="color:var(--p3)">${roleLabel(u.requestedRole)}</b>`:''}${u.requestedManager?' · <b style="color:var(--p3)">מבקש להיות מפקד</b>':''}</small>
+        <div style="flex:1">
+          <b>${esc(u.fullName||'-')}</b><br><small class="muted">${esc(u.email||'')} · ${roleLabel(u.role)}${u.requestedRole?` → מבקש ${roleLabel(u.requestedRole)}`:''}${u.requestedManager?' · מבקש להיות מפקד':''}</small>
         </div>
-        <button class="btn btn-ok" onclick="approveUser('${u.id}',${targetRoleStr},${!!u.requestedManager})">אשר</button>
+        <button class="btn btn-ok" onclick="approveUser('${u.id}',${JSON.stringify(u.requestedRole||u.role).replace(/"/g,'&quot;')},${!!u.requestedManager})">אשר</button>
         <button class="btn btn-ghost" onclick="rejectUser('${u.id}')">דחה</button>
-      </div>`;}).join('')}
-
-    ${incomplete.length ? `
-      <div class="section-head" style="margin-top:32px"><div><h1 style="font-size:20px">השלמת <span class="grad">פרופיל</span></h1><p>${incomplete.length} משתמשים נרשמו אך לא השלימו פרטים</p></div></div>
-      ${incomplete.map(u => `<div class="card" style="margin-bottom:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;opacity:.85">
-        <div class="avatar">?</div>
-        <div style="flex:1;min-width:200px"><b>(טרם השלים)</b><br><small class="muted">${esc(u.email||'-')} · נרשם ולא חזר</small></div>
-        <button class="btn btn-ghost" onclick="deleteIncomplete('${u.id}')">מחק</button>
       </div>`).join('')}
-    ` : ''}
   `;
   if(window.lucide) lucide.createIcons();
 }
-window.deleteIncomplete = async id => {
-  if(!confirm('למחוק את החשבון שלא הושלם?')) return;
-  const { error } = await supabase.from('users').delete().eq('id', id);
-  if(error) return modal('שגיאה', error.message, true);
-  await loadData(); render(); toast('החשבון נמחק','trash-2');
-};
 window.approveUser = async (id, role, asManager) => {
   await supabase.from('users').update({ role, is_manager:asManager, role_status:'Approved', requested_role:null, requested_manager:false }).eq('id', id);
   await loadData(); render(); toast('המשתמש אושר ✓','check');

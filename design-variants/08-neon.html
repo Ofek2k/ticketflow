@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TicketFlow · Cyber Neon</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+  :root{
+    --bg:#050818; --bg-2:#0a0e24; --surface:#0e1330; --surface-2:#141a3f;
+    --ink:#e8eaff; --mut:#7d83b8; --dim:#4a5085;
+    --line:#1f2548;
+    --neon-pink:#ff2a8a; --neon-cyan:#00ffe1; --neon-violet:#a855f7; --neon-yellow:#fde047;
+    --gn:#00ff88; --or:#ff8b3d; --rd:#ff3355;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;color:var(--ink);font:14.5px/1.55 Heebo,-apple-system,sans-serif;-webkit-font-smoothing:antialiased;background:var(--bg);min-height:100vh}
+  body{
+    background:
+      radial-gradient(900px 500px at 100% 0%, rgba(255,42,138,.18), transparent 55%),
+      radial-gradient(800px 600px at -10% 30%, rgba(168,85,247,.15), transparent 55%),
+      radial-gradient(600px 500px at 50% 100%, rgba(0,255,225,.12), transparent 55%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-image:
+      linear-gradient(rgba(0,255,225,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,255,225,.03) 1px, transparent 1px);
+    background-size:60px 60px;
+    mask-image:radial-gradient(ellipse at center, #000 30%, transparent 70%);
+  }
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+  .app{max-width:1380px;margin:0 auto;padding:20px;display:grid;grid-template-columns:240px 1fr;gap:18px;min-height:100vh}
+  @media (max-width:900px){.app{grid-template-columns:1fr;padding:14px}}
+
+  .side{position:sticky;top:20px;align-self:start;background:rgba(14,19,48,.65);backdrop-filter:blur(20px);
+    border:1px solid var(--line);box-shadow:0 24px 60px -20px rgba(168,85,247,.3), inset 0 1px 0 rgba(255,255,255,.05);
+    border-radius:20px;padding:20px;display:flex;flex-direction:column;gap:5px;height:fit-content}
+  @media (max-width:900px){.side{position:static}}
+  .brand{display:flex;align-items:center;gap:12px;padding:6px 10px 18px;border-bottom:1px solid var(--line);margin-bottom:10px}
+  .brand .logo{width:36px;height:36px;border-radius:10px;
+    background:linear-gradient(135deg,#ff2a8a 0%,#a855f7 50%,#00ffe1 100%);
+    box-shadow:0 0 24px rgba(255,42,138,.6), 0 0 40px rgba(168,85,247,.4);position:relative}
+  .brand .logo::before{content:"";position:absolute;inset:2px;border-radius:8px;background:var(--bg-2)}
+  .brand .logo::after{content:"◆";position:absolute;inset:0;display:grid;place-items:center;color:#00ffe1;font-weight:900;font-size:15px;text-shadow:0 0 8px var(--neon-cyan)}
+  .brand b{font-weight:800;font-size:16px;letter-spacing:-.01em;color:#fff}
+  .brand small{display:block;color:var(--mut);font-size:11px;font-weight:500;margin-top:2px;font-family:"JetBrains Mono",monospace;letter-spacing:.06em}
+  .nav-link{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:12px;color:var(--mut);
+    font-size:13.5px;font-weight:600;min-height:42px;transition:.18s;position:relative}
+  .nav-link:hover{background:rgba(168,85,247,.08);color:var(--ink)}
+  .nav-link.on{background:linear-gradient(135deg,rgba(255,42,138,.18),rgba(168,85,247,.12));color:#fff;
+    box-shadow:inset 0 0 0 1px rgba(255,42,138,.4), 0 0 24px rgba(255,42,138,.15)}
+  .nav-link.on::before{content:"";position:absolute;right:-2px;top:8px;bottom:8px;width:3px;border-radius:2px;
+    background:linear-gradient(180deg,#ff2a8a,#a855f7);box-shadow:0 0 12px var(--neon-pink)}
+  .nav-link.on svg{color:var(--neon-pink) !important;stroke:var(--neon-pink) !important;filter:drop-shadow(0 0 6px rgba(255,42,138,.6))}
+  .nav-link .ic svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8}
+  .nav-link .badge{margin-right:auto;font-size:10.5px;background:rgba(255,42,138,.18);color:#ff7ab8;padding:2px 8px;border-radius:999px;font-weight:800;border:1px solid rgba(255,42,138,.3)}
+  .nav-divider{font-size:10px;letter-spacing:.2em;color:var(--neon-cyan);padding:14px 10px 6px;font-weight:800;text-transform:uppercase;font-family:"JetBrains Mono",monospace;opacity:.7}
+  .side-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center;font-size:12.5px}
+  .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#ff2a8a,#a855f7);flex-shrink:0;display:grid;place-items:center;font-weight:800;color:#fff;font-size:14px;box-shadow:0 0 18px rgba(255,42,138,.5)}
+
+  main{display:flex;flex-direction:column;gap:18px;min-width:0}
+  .topbar{background:rgba(14,19,48,.65);backdrop-filter:blur(20px);border:1px solid var(--line);
+    border-radius:18px;padding:12px 16px;display:flex;align-items:center;gap:12px;
+    box-shadow:0 14px 36px -14px rgba(0,255,225,.15)}
+  .search{flex:1;display:flex;align-items:center;gap:10px;background:rgba(20,26,63,.5);border:1px solid var(--line);
+    border-radius:12px;padding:10px 14px;min-height:42px;flex-direction:row-reverse}
+  .search:focus-within{border-color:var(--neon-cyan);box-shadow:0 0 0 3px rgba(0,255,225,.15), 0 0 20px rgba(0,255,225,.1)}
+  .search input{flex:1;background:none;border:0;outline:0;color:inherit;font:inherit;font-size:14px;text-align:right}
+  .search input::placeholder{color:var(--dim)}
+  .kbd{font-size:10.5px;color:var(--neon-cyan);background:var(--bg-2);padding:3px 7px;border-radius:5px;font-family:"JetBrains Mono",monospace;border:1px solid var(--line)}
+  .iconbtn{width:42px;height:42px;border-radius:11px;background:rgba(20,26,63,.5);border:1px solid var(--line);
+    display:grid;place-items:center;color:var(--mut);position:relative;transition:.15s}
+  .iconbtn:hover{color:var(--neon-cyan);border-color:var(--neon-cyan);box-shadow:0 0 16px rgba(0,255,225,.25)}
+  .iconbtn .ping{position:absolute;top:8px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--neon-pink);box-shadow:0 0 0 2px var(--surface), 0 0 10px var(--neon-pink)}
+  .add-btn{background:linear-gradient(135deg,#ff2a8a,#a855f7);color:#fff;padding:0 18px;height:42px;border-radius:12px;
+    font-weight:700;display:flex;align-items:center;gap:8px;font-size:13.5px;
+    box-shadow:0 0 24px rgba(255,42,138,.5), inset 0 1px 0 rgba(255,255,255,.2);transition:.2s}
+  .add-btn:hover{transform:translateY(-2px);box-shadow:0 0 32px rgba(255,42,138,.7)}
+
+  .step-nav{display:flex;gap:6px;background:rgba(14,19,48,.65);backdrop-filter:blur(20px);
+    border:1px solid var(--line);border-radius:16px;padding:6px}
+  .step-nav a{flex:1;text-align:center;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600;color:var(--mut);min-height:40px;display:flex;align-items:center;justify-content:center;gap:8px}
+  .step-nav a:hover:not(.on){color:#fff}
+  .step-nav a.on{background:rgba(255,42,138,.12);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,42,138,.4)}
+  .step-nav a .num{width:20px;height:20px;border-radius:6px;background:var(--bg-2);font-size:11px;display:grid;place-items:center;font-weight:800;font-family:"JetBrains Mono",monospace}
+  .step-nav a.on .num{background:linear-gradient(135deg,#ff2a8a,#a855f7);color:#fff;box-shadow:0 0 10px rgba(255,42,138,.5)}
+
+  section{scroll-margin-top:20px}
+  .section-head{margin-bottom:14px;display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .section-head h1{margin:0;font-size:30px;font-weight:800;letter-spacing:-.025em;color:#fff}
+  .section-head h1 .grad{background:linear-gradient(135deg,#ff2a8a,#a855f7,#00ffe1);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 24px rgba(255,42,138,.4))}
+  .section-head p{margin:4px 0 0;color:var(--mut);font-size:13.5px;font-family:"JetBrains Mono",monospace;letter-spacing:.02em}
+  .section-head .meta{display:flex;gap:8px;flex-wrap:wrap}
+  .section-head .meta span{padding:6px 12px;background:rgba(14,19,48,.6);border:1px solid var(--line);border-radius:999px;color:var(--mut);font-weight:600;font-size:11.5px;font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+  .live{color:var(--neon-cyan)!important;background:rgba(0,255,225,.08)!important;border-color:rgba(0,255,225,.35)!important;display:inline-flex;align-items:center;gap:6px;box-shadow:0 0 16px rgba(0,255,225,.1)}
+  .live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--neon-cyan);box-shadow:0 0 10px var(--neon-cyan);animation:pulse 1.6s infinite}
+  @keyframes pulse{50%{opacity:.35}}
+
+  .bento{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;grid-auto-rows:minmax(120px,auto)}
+  @media (max-width:900px){.bento{grid-template-columns:repeat(2,1fr)}}
+  .tile{background:rgba(14,19,48,.65);backdrop-filter:blur(20px);border:1px solid var(--line);border-radius:18px;padding:20px;
+    position:relative;overflow:hidden;transition:.2s}
+  .tile:hover{transform:translateY(-3px);border-color:rgba(168,85,247,.5);box-shadow:0 18px 44px -16px rgba(168,85,247,.35)}
+  .tile h3{font-size:15.5px;font-weight:700;margin:0;color:#fff}
+  .tile .lbl{font-size:11px;color:var(--neon-cyan);letter-spacing:.18em;font-weight:800;text-transform:uppercase;font-family:"JetBrains Mono",monospace;opacity:.85}
+
+  .t-hero{grid-column:span 4;grid-row:span 2;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(0,255,225,.25), transparent 50%),
+      radial-gradient(circle at 0% 100%, rgba(168,85,247,.3), transparent 50%),
+      linear-gradient(135deg,#1a0833 0%,#2a0b56 50%,#3d0a44 100%);
+    color:#fff;min-height:240px;display:flex;flex-direction:column;justify-content:space-between;
+    border:1px solid rgba(255,42,138,.35);box-shadow:0 0 60px -20px rgba(255,42,138,.4), 0 24px 60px -20px rgba(168,85,247,.5)}
+  .t-hero::before{content:"";position:absolute;inset:0;background-image:
+    linear-gradient(rgba(255,42,138,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,42,138,.06) 1px, transparent 1px);
+    background-size:30px 30px;pointer-events:none;mask-image:linear-gradient(180deg,#000,transparent 80%)}
+  .t-hero .lbl{color:var(--neon-pink)!important;position:relative;font-weight:800;text-shadow:0 0 12px rgba(255,42,138,.6)}
+  .t-hero h2{font-size:32px;font-weight:800;margin:0;letter-spacing:-.03em;line-height:1.05;max-width:14ch;position:relative;
+    text-shadow:0 0 24px rgba(255,255,255,.2)}
+  .t-hero .row{display:flex;gap:24px;align-items:center;flex-wrap:wrap;position:relative}
+  .t-hero .row > div{font-size:12px;color:rgba(255,255,255,.65);font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+  .t-hero .row b{display:block;color:#fff;font-weight:700;font-size:15px;margin-bottom:2px;font-family:Heebo,sans-serif;letter-spacing:0}
+  .t-hero .cta{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#ff2a8a,#a855f7);color:#fff;
+    padding:12px 22px;border-radius:12px;font-weight:700;font-size:14px;align-self:flex-start;
+    min-height:44px;position:relative;transition:.2s;
+    box-shadow:0 0 30px rgba(255,42,138,.5), inset 0 1px 0 rgba(255,255,255,.25)}
+  .t-hero .cta:hover{transform:translateY(-2px);box-shadow:0 0 40px rgba(255,42,138,.7)}
+
+  .t-stat{grid-column:span 2;display:flex;flex-direction:column;gap:8px}
+  .t-stat .big{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1;font-family:"JetBrains Mono",monospace;font-feature-settings:"tnum"}
+  .t-stat .delta{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;margin-top:2px;padding:4px 10px;border-radius:999px;align-self:flex-start;font-family:"JetBrains Mono",monospace}
+  .delta.up{background:rgba(255,42,138,.15);color:#ff7ab8;border:1px solid rgba(255,42,138,.3)}
+  .delta.down{background:rgba(0,255,136,.12);color:#33ffaa;border:1px solid rgba(0,255,136,.3)}
+  .delta.warn{background:rgba(255,51,85,.15);color:#ff6677;border:1px solid rgba(255,51,85,.3)}
+  .spark{height:34px;margin-top:auto}
+  .spark svg{width:100%;height:100%}
+  .t-stat.pink .big{background:linear-gradient(135deg,#fff,#ff2a8a);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 24px rgba(255,42,138,.3)}
+  .t-stat.violet .big{background:linear-gradient(135deg,#fff,#a855f7);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .t-stat.cyan .big{background:linear-gradient(135deg,#fff,#00ffe1);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 24px rgba(0,255,225,.3)}
+
+  .t-list{grid-column:span 6}
+  .ev-list{display:flex;flex-direction:column;gap:8px}
+  .ev{display:grid;grid-template-columns:60px 1fr auto auto auto;gap:14px;align-items:center;padding:13px;
+    border-radius:12px;background:rgba(20,26,63,.4);border:1px solid var(--line);transition:.15s;cursor:pointer}
+  .ev:hover{background:rgba(20,26,63,.7);border-color:rgba(168,85,247,.4);transform:translateX(-2px);box-shadow:0 8px 22px -6px rgba(168,85,247,.3)}
+  .ev.hot{background:linear-gradient(135deg,rgba(255,42,138,.08),rgba(20,26,63,.5));border-color:rgba(255,42,138,.35);box-shadow:inset 3px 0 0 var(--neon-pink)}
+  .ev .num-box{text-align:center;background:var(--bg-2);border-radius:8px;padding:8px 6px;border:1px solid var(--line);font-family:"JetBrains Mono",monospace;font-size:10.5px;color:var(--neon-cyan);font-weight:800;letter-spacing:.04em}
+  .ev .t b{display:block;font-size:14.5px;font-weight:700;margin-bottom:2px;color:#fff}
+  .ev .t span{font-size:12px;color:var(--mut)}
+  .ev .tag{font-size:10.5px;padding:4px 10px;border-radius:6px;font-weight:700;font-family:"JetBrains Mono",monospace;letter-spacing:.04em;text-transform:uppercase}
+  .tag-amts{background:rgba(0,255,225,.12);color:var(--neon-cyan);border:1px solid rgba(0,255,225,.25)}
+  .tag-mch{background:rgba(168,85,247,.15);color:#c084fc;border:1px solid rgba(168,85,247,.3)}
+  .tag-tks{background:rgba(253,224,71,.12);color:#fde047;border:1px solid rgba(253,224,71,.3)}
+  .tag-pwr{background:rgba(255,139,61,.12);color:#ffa564;border:1px solid rgba(255,139,61,.3)}
+  .ev .time{font-size:11px;color:var(--mut);font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+  .badge{font-size:10.5px;padding:4px 11px;border-radius:6px;font-weight:800;border:1px solid transparent;font-family:"JetBrains Mono",monospace;letter-spacing:.06em;text-transform:uppercase}
+  .badge.OPEN{background:rgba(255,51,85,.12);color:#ff7788;border-color:rgba(255,51,85,.35);box-shadow:0 0 12px rgba(255,51,85,.15)}
+  .badge.IN_PROGRESS{background:rgba(253,224,71,.12);color:#fde047;border-color:rgba(253,224,71,.35);box-shadow:0 0 12px rgba(253,224,71,.15)}
+  .badge.RESOLVED{background:rgba(0,255,136,.12);color:#33ffaa;border-color:rgba(0,255,136,.35);box-shadow:0 0 12px rgba(0,255,136,.15)}
+  .badge.CLOSED{background:var(--bg-2);color:var(--mut);border-color:var(--line)}
+
+  .filters{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .f-search{flex:1;min-width:220px;display:flex;align-items:center;gap:10px;background:rgba(14,19,48,.6);border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-height:42px;flex-direction:row-reverse}
+  .f-search:focus-within{border-color:var(--neon-cyan)}
+  .f-search input{flex:1;background:none;border:0;outline:0;color:inherit;font:inherit;font-size:13.5px;text-align:right}
+  .f-search input::placeholder{color:var(--dim)}
+  .select{padding:10px 14px;background:rgba(14,19,48,.6);border:1px solid var(--line);border-radius:12px;color:#fff;font:inherit;font-size:13px;min-height:42px;cursor:pointer}
+  .select option{background:var(--surface);color:#fff}
+  .chip{padding:9px 16px;border-radius:999px;background:rgba(14,19,48,.6);border:1px solid var(--line);font-size:13px;color:var(--mut);min-height:38px;cursor:pointer;font-weight:600}
+  .chip.on{background:linear-gradient(135deg,#ff2a8a,#a855f7);color:#fff;border-color:transparent;box-shadow:0 0 24px rgba(255,42,138,.5)}
+
+  .tbl{padding:0;overflow:hidden}
+  .tbl-head{display:grid;grid-template-columns:80px 1fr 110px 110px 100px 90px;gap:14px;padding:14px 18px;background:rgba(20,26,63,.5);font-size:10.5px;color:var(--neon-cyan);font-weight:800;letter-spacing:.12em;text-transform:uppercase;border-bottom:1px solid var(--line);font-family:"JetBrains Mono",monospace}
+  @media (max-width:900px){.tbl-head{grid-template-columns:60px 1fr 90px;gap:10px;padding:12px}.tbl-head .col-hide{display:none}}
+  .tbl-row{display:grid;grid-template-columns:80px 1fr 110px 110px 100px 90px;gap:14px;padding:14px 18px;border-bottom:1px solid var(--line);align-items:center;cursor:pointer;transition:.15s}
+  @media (max-width:900px){.tbl-row{grid-template-columns:60px 1fr 90px;gap:10px;padding:14px}.tbl-row .col-hide{display:none}}
+  .tbl-row:last-child{border:0}
+  .tbl-row:hover{background:rgba(168,85,247,.06)}
+  .tbl-row.hot{background:linear-gradient(135deg,rgba(255,42,138,.06),transparent);border-right:3px solid var(--neon-pink);box-shadow:inset 12px 0 24px -8px rgba(255,42,138,.08)}
+  .tn{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--neon-cyan);font-weight:700;letter-spacing:.04em}
+  .tt b{display:block;font-weight:700;font-size:14.5px;margin-bottom:2px;color:#fff}
+  .tt small{color:var(--mut);font-size:12px}
+
+  .two{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;margin-top:0}
+  @media (max-width:900px){.two{grid-template-columns:1fr}}
+  .card{padding:28px}
+  .card h2{margin:0 0 4px;font-size:24px;font-weight:800;letter-spacing:-.02em;color:#fff}
+  .meta-line{color:var(--mut);font-size:13px;margin-bottom:22px;font-family:"JetBrains Mono",monospace;letter-spacing:.04em}
+  .desc{font-size:14.5px;line-height:1.75;color:#c8cce8;padding:18px 20px;
+    background:linear-gradient(135deg,rgba(255,42,138,.06),rgba(168,85,247,.04));
+    border-radius:14px;margin-bottom:22px;border:1px solid rgba(168,85,247,.25)}
+
+  .timeline{padding:0;margin:0;list-style:none}
+  .tl-item{position:relative;padding:0 22px 22px 0;border-right:2px solid var(--line)}
+  .tl-item::before{content:"";position:absolute;right:-7px;top:6px;width:12px;height:12px;border-radius:50%;
+    background:linear-gradient(135deg,#ff2a8a,#a855f7);box-shadow:0 0 16px rgba(255,42,138,.6),0 0 0 4px var(--surface)}
+  .tl-item:last-child{border-color:transparent}
+  .tl-item time{font-size:11.5px;color:var(--neon-cyan);font-family:"JetBrains Mono",monospace;letter-spacing:.04em;font-weight:700}
+  .tl-item b{display:block;margin-top:2px;font-size:14px;font-weight:700;color:#fff}
+  .tl-item p{margin:3px 0 0;font-size:12.5px;color:var(--mut)}
+
+  .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+  .meta-cell{padding:16px;background:rgba(14,19,48,.6);border:1px solid var(--line);border-radius:12px;transition:.18s}
+  .meta-cell:hover{border-color:rgba(168,85,247,.45);transform:translateY(-1px);box-shadow:0 8px 22px -8px rgba(168,85,247,.3)}
+  .meta-cell .lbl{font-size:10px;color:var(--neon-cyan);letter-spacing:.14em;font-weight:800;margin-bottom:6px;text-transform:uppercase;font-family:"JetBrains Mono",monospace}
+  .meta-cell b{font-size:15px;font-weight:700;display:block;color:#fff}
+  .meta-cell small{color:var(--mut);font-size:11.5px;display:block;margin-top:2px}
+  .meta-cell.urgent{background:linear-gradient(135deg,rgba(255,51,85,.1),rgba(14,19,48,.6));border-color:rgba(255,51,85,.35);box-shadow:0 0 18px -4px rgba(255,51,85,.2)}
+  .meta-cell.urgent b{color:#ff7788;text-shadow:0 0 10px rgba(255,51,85,.4)}
+
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:11px;color:var(--neon-cyan);font-weight:700;margin-bottom:7px;letter-spacing:.1em;text-transform:uppercase;font-family:"JetBrains Mono",monospace}
+  .field input,.field textarea,.field select{width:100%;padding:14px 16px;background:rgba(14,19,48,.6);border:1px solid var(--line);
+    border-radius:12px;color:#fff;font:inherit;font-size:14.5px;min-height:50px;transition:.15s}
+  .field input::placeholder,.field textarea::placeholder{color:var(--dim)}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:0;border-color:var(--neon-cyan);box-shadow:0 0 0 3px rgba(0,255,225,.18), 0 0 24px rgba(0,255,225,.1)}
+  .field textarea{min-height:120px;resize:vertical;font-family:inherit}
+  .field select option{background:var(--surface);color:#fff}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .toggle{display:flex;align-items:center;gap:14px;padding:18px;background:linear-gradient(135deg,rgba(255,51,85,.1),rgba(255,42,138,.04));
+    border:1px solid rgba(255,51,85,.4);border-radius:14px;margin-bottom:20px;cursor:pointer;
+    box-shadow:0 0 24px -8px rgba(255,51,85,.3)}
+  .toggle b{color:#ff7788;font-weight:800;display:block;font-size:14.5px;text-shadow:0 0 10px rgba(255,51,85,.4)}
+  .toggle small{color:var(--mut);font-size:12.5px}
+  .toggle input{margin-right:auto;width:46px;height:28px;appearance:none;background:rgba(0,0,0,.4);border:1px solid var(--line);border-radius:999px;position:relative;cursor:pointer;flex-shrink:0;transition:.18s}
+  .toggle input:checked{background:linear-gradient(135deg,#ff3355,#ff2a8a);border-color:transparent;box-shadow:0 0 16px rgba(255,51,85,.5)}
+  .toggle input::after{content:"";position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:.18s;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+  .toggle input:checked::after{right:22px}
+
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    background:linear-gradient(135deg,#ff2a8a,#a855f7);color:#fff;
+    padding:15px;border-radius:14px;font-weight:700;min-height:54px;font-size:15px;letter-spacing:.02em;
+    box-shadow:0 0 28px rgba(255,42,138,.5), inset 0 1px 0 rgba(255,255,255,.2);transition:.2s}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 0 40px rgba(255,42,138,.7)}
+  .btn-ghost{background:rgba(14,19,48,.6);color:#fff;border:1px solid var(--line);box-shadow:none}
+  .btn-ghost:hover{background:rgba(20,26,63,.7);border-color:var(--neon-cyan);transform:none;box-shadow:0 0 16px rgba(0,255,225,.15)}
+  .btn-ok{background:linear-gradient(135deg,#00ff88,#00ffe1);color:#000;box-shadow:0 0 28px rgba(0,255,136,.5)}
+  .btn-ok:hover{box-shadow:0 0 40px rgba(0,255,225,.7)}
+
+  .h4{margin:0 0 12px;font-size:11px;color:var(--neon-cyan);font-weight:800;letter-spacing:.16em;text-transform:uppercase;font-family:"JetBrains Mono",monospace}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo"></div><div><b>TicketFlow</b><small>// 891 · NEON</small></div></div>
+    <a class="nav-link on" href="#home"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 11L12 4l9 7M5 10v9h14v-9"/></svg></span>דשבורד</a>
+    <a class="nav-link" href="#tickets"><span class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 14h4"/></svg></span>כל התקלות <span class="badge">23</span></a>
+    <a class="nav-link" href="#detail"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>התקלות שלי</a>
+    <a class="nav-link" href="#create"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></span>תקלה חדשה</a>
+    <div class="nav-divider">// MGMT</div>
+    <a class="nav-link" href="#"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-9"/></svg></span>אנליטיקה</a>
+    <a class="nav-link" href="#"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg></span>משתמשים</a>
+    <a class="nav-link" href="#"><span class="ic"><svg viewBox="0 0 24 24"><path d="M3 12l4-4 4 4 4-6 6 8"/></svg></span>דוח תקינות</a>
+    <div class="nav-divider">// SYS</div>
+    <a class="nav-link" href="#"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4 12H1M23 12h-3"/></svg></span>הגדרות</a>
+    <div class="side-foot"><div class="avatar">י</div><div><b style="display:block;font-weight:700;color:#fff">ינאי כהן</b><span style="color:var(--mut);font-size:11px;font-family:'JetBrains Mono',monospace">מ"פ · OWNER</span></div></div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div class="search"><input placeholder="חפש תקלה, יחידה או משתמש…"/><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7d83b8" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><span class="kbd">⌘ K</span></div>
+      <button class="iconbtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9a6 6 0 1112 0c0 7 3 7 3 9H3c0-2 3-2 3-9z"/><path d="M10 21a2 2 0 004 0"/></svg><span class="ping"></span></button>
+      <button class="add-btn">＋ תקלה חדשה</button>
+    </div>
+
+    <div class="step-nav">
+      <a href="#home" class="on"><span class="num">01</span>דשבורד</a>
+      <a href="#tickets"><span class="num">02</span>כל התקלות</a>
+      <a href="#detail"><span class="num">03</span>פרטי תקלה</a>
+      <a href="#create"><span class="num">04</span>פתיחת תקלה</a>
+    </div>
+
+    <section id="home">
+      <div class="section-head"><div><h1>שלום ינאי, <span class="grad">המערכת חיה.</span></h1><p>// LIVE FEED · UPDATED 12 SEC AGO</p></div><div class="meta"><span class="live">מערכת פעילה</span><span>// 891.HQ</span></div></div>
+
+      <div class="bento">
+        <a class="tile t-hero" href="#detail">
+          <span class="lbl">⚠ חמ"ל מושבת — דורש טיפול מיידי</span>
+          <h2>חמ"ל ב' — אין תקשורת</h2>
+          <div class="row"><div><b>14 דקות</b>// OPEN</div><div><b>פלוגה ב'</b>// 891</div><div><b>ממר"ם</b>// HANDLER</div><div><b>SLA: 30ד</b>// BREACH IN 16M</div></div>
+          <span class="cta">לטיפול מיידי ←</span>
+        </a>
+
+        <div class="tile t-stat pink"><span class="lbl">// MINE</span><div class="big">07</div><span class="delta up">▲ +2 (24H)</span>
+          <div class="spark"><svg viewBox="0 0 100 30" preserveAspectRatio="none">
+            <defs><linearGradient id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#ff2a8a"/><stop offset="100%" stop-color="#ff2a8a" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0 18 L15 14 L30 20 L45 10 L60 14 L75 6 L90 10 L100 4" stroke="#ff2a8a" stroke-width="2" fill="none" filter="drop-shadow(0 0 4px rgba(255,42,138,.6))"/>
+            <path d="M0 18 L15 14 L30 20 L45 10 L60 14 L75 6 L90 10 L100 4 L100 30 L0 30 Z" fill="url(#g1)" opacity=".45"/>
+          </svg></div>
+        </div>
+        <div class="tile t-stat violet"><span class="lbl">// TOTAL OPEN</span><div class="big">23</div><span class="delta down">▼ −5 (7D)</span>
+          <div class="spark"><svg viewBox="0 0 100 30" preserveAspectRatio="none">
+            <defs><linearGradient id="g2" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#a855f7"/><stop offset="100%" stop-color="#a855f7" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0 10 L15 14 L30 8 L45 16 L60 11 L75 18 L90 13 L100 20" stroke="#a855f7" stroke-width="2" fill="none" filter="drop-shadow(0 0 4px rgba(168,85,247,.6))"/>
+            <path d="M0 10 L15 14 L30 8 L45 16 L60 11 L75 18 L90 13 L100 20 L100 30 L0 30 Z" fill="url(#g2)" opacity=".45"/>
+          </svg></div>
+        </div>
+        <div class="tile t-stat cyan"><span class="lbl">// RESOLVED (7D)</span><div class="big">41</div><span class="delta down">▲ +18% AVG</span>
+          <div class="spark"><svg viewBox="0 0 100 30" preserveAspectRatio="none">
+            <defs><linearGradient id="g3" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="#00ffe1"/><stop offset="100%" stop-color="#00ffe1" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0 22 L15 18 L30 20 L45 12 L60 14 L75 8 L90 10 L100 4" stroke="#00ffe1" stroke-width="2" fill="none" filter="drop-shadow(0 0 4px rgba(0,255,225,.6))"/>
+            <path d="M0 22 L15 18 L30 20 L45 12 L60 14 L75 8 L90 10 L100 4 L100 30 L0 30 Z" fill="url(#g3)" opacity=".45"/>
+          </svg></div>
+        </div>
+
+        <div class="tile t-list">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3>⚡ LIVE FEED</h3><a href="#tickets" style="font-size:11.5px;color:var(--neon-cyan);font-weight:800;font-family:'JetBrains Mono',monospace;letter-spacing:.08em">VIEW ALL →</a></div>
+          <div class="ev-list">
+            <a class="ev hot" href="#detail"><div class="num-box">#2853</div><div class="t"><b>🚨 חמ"ל ב' — אין תקשורת</b><span>פלוגה ב' · רס"ב פרץ</span></div><span class="tag tag-amts">תקשורת</span><span class="time">14M</span><span class="badge OPEN">OPEN</span></a>
+            <a class="ev" href="#detail"><div class="num-box">#2852</div><div class="t"><b>החלפת מצברים — רכב 7</b><span>מסע"ר · רס"ר אבי לוי</span></div><span class="tag tag-amts">אמצעים</span><span class="time">12M</span><span class="badge OPEN">OPEN</span></a>
+            <a class="ev" href="#detail"><div class="num-box">#2851</div><div class="t"><b>מקרן בכיתה 4 לא דולק</b><span>בה"ד 1 · סמ"ר נועה דנון</span></div><span class="tag tag-mch">מחשב</span><span class="time">38M</span><span class="badge IN_PROGRESS">WIP</span></a>
+            <a class="ev hot" href="#detail"><div class="num-box">#2849</div><div class="t"><b>תקלה ביציאת VPN במגדל 3</b><span>מגדל 3 · סמל אבי בנדה</span></div><span class="tag tag-mch">מחשב</span><span class="time">1H 42M</span><span class="badge OPEN">OPEN</span></a>
+            <a class="ev" href="#detail"><div class="num-box">#2848</div><div class="t"><b>החלפת UPS בחדר שרתים</b><span>חדר שרתים · סא"ל יוסף כהן</span></div><span class="tag tag-pwr">חשמל</span><span class="time">2H</span><span class="badge RESOLVED">DONE</span></a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tickets">
+      <div class="section-head"><div><h1>כל <span class="grad">התקלות</span></h1><p>// 23 OPEN · 41 RESOLVED THIS WEEK</p></div><div class="meta"><span class="live">SYNC ACTIVE</span></div></div>
+      <div class="filters">
+        <div class="f-search"><input placeholder="search by title or ID…"/><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7d83b8" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
+        <select class="select"><option>כל הנושאים</option><option>אמצעים</option><option>מחשב</option><option>תקשורת</option></select>
+        <select class="select"><option>כל התפקידים</option><option>חט"פ</option><option>ממר"ם</option><option>אפליקציה</option></select>
+        <button class="chip on">פתוחות</button><button class="chip">ארכיון</button>
+      </div>
+
+      <div class="tile tbl">
+        <div class="tbl-head"><span>// ID</span><span>// TICKET</span><span class="col-hide">// TOPIC</span><span class="col-hide">// UNIT</span><span class="col-hide">// HANDLER</span><span>// STATUS</span></div>
+        <div class="tbl-row hot"><span class="tn">#2853</span><div class="tt"><b>🚨 חמ"ל ב' — אין תקשורת</b><small>OPENED 14M AGO · רס"ב פרץ</small></div><span class="tag tag-amts col-hide">תקשורת</span><span class="col-hide" style="font-size:12.5px;color:var(--mut);font-family:'JetBrains Mono',monospace">פלוגה ב'</span><span class="tag tag-amts col-hide">ממר"ם</span><span class="badge OPEN">OPEN</span></div>
+        <div class="tbl-row"><span class="tn">#2852</span><div class="tt"><b>החלפת מצברים — רכב 7</b><small>OPENED 12M AGO · רס"ר לוי</small></div><span class="tag tag-amts col-hide">אמצעים</span><span class="col-hide" style="font-size:12.5px;color:var(--mut);font-family:'JetBrains Mono',monospace">מסע"ר</span><span class="tag tag-mch col-hide">חט"פ</span><span class="badge OPEN">OPEN</span></div>
+        <div class="tbl-row"><span class="tn">#2851</span><div class="tt"><b>מקרן בכיתה 4 לא דולק</b><small>OPENED 38M AGO · סמ"ר דנון</small></div><span class="tag tag-mch col-hide">מחשב</span><span class="col-hide" style="font-size:12.5px;color:var(--mut);font-family:'JetBrains Mono',monospace">בה"ד 1</span><span class="tag tag-tks col-hide">אפליקציה</span><span class="badge IN_PROGRESS">WIP</span></div>
+        <div class="tbl-row hot"><span class="tn">#2849</span><div class="tt"><b>תקלה ביציאת VPN במגדל 3</b><small>OPENED 1H 42M AGO · סמל בנדה</small></div><span class="tag tag-mch col-hide">מחשב</span><span class="col-hide" style="font-size:12.5px;color:var(--mut);font-family:'JetBrains Mono',monospace">מגדל 3</span><span class="tag tag-amts col-hide">ממר"ם</span><span class="badge OPEN">OPEN</span></div>
+        <div class="tbl-row"><span class="tn">#2847</span><div class="tt"><b>מערכת ROOK לא עולה</b><small>OPENED 1H 22M AGO · רס"ב פרץ</small></div><span class="tag tag-mch col-hide">מחשב</span><span class="col-hide" style="font-size:12.5px;color:var(--mut);font-family:'JetBrains Mono',monospace">חמ"ל פיקודי</span><span class="tag tag-mch col-hide">חט"פ</span><span class="badge IN_PROGRESS">WIP</span></div>
+        <div class="tbl-row"><span class="tn">#2848</span><div class="tt"><b>החלפת UPS בחדר שרתים</b><small>CLOSED 2H AGO · סא"ל כהן</small></div><span class="tag tag-pwr col-hide">חשמל</span><span class="col-hide" style="font-size:12.5px;color:var(--mut);font-family:'JetBrains Mono',monospace">חדר שרתים</span><span class="tag tag-amts col-hide">ממר"ם</span><span class="badge RESOLVED">DONE</span></div>
+      </div>
+    </section>
+
+    <section id="detail">
+      <div class="section-head"><div><h1>חמ"ל ב' <span class="grad">אין תקשורת</span></h1><p>// TKT #2853 · OPENED 14M AGO</p></div><div class="meta"><span class="live">LIVE</span><span style="color:#ff7788;background:rgba(255,51,85,.1);border-color:rgba(255,51,85,.35)">// SLA: 16M</span></div></div>
+
+      <div class="two">
+        <article class="tile card">
+          <h2>חמ"ל ב' — אין תקשורת</h2>
+          <div class="meta-line">// TKT #2853 · רס"ב גלית פרץ · פלוגה ב', גדוד 891</div>
+          <p class="desc">בחמ"ל פלוגה ב' אין מענה למכשירי קשר ולמערכת ROOK. נבדק חיבור פיזי לכל המכשירים ונראה תקין. ייתכן ושרת התקשורת המקומי קרס.</p>
+          <h4 class="h4">// LOG · HISTORY</h4>
+          <ul class="timeline">
+            <li class="tl-item"><time>14:32 · NOW</time><b>STATUS → בטיפול</b><p>סמ"ר עומר בן-דוד · ממר"ם</p></li>
+            <li class="tl-item"><time>14:28 · -4M</time><b>ASSIGNED → ממר"ם</b><p>auto · by topic</p></li>
+            <li class="tl-item"><time>14:18 · -14M</time><b>🚨 OPENED · חמ"ל ↓</b><p>רס"ב גלית פרץ</p></li>
+          </ul>
+          <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap"><button class="btn btn-ok">✓ סגור תקלה</button><button class="btn btn-ghost">＋ הוסף הערה</button></div>
+        </article>
+
+        <aside>
+          <h4 class="h4">// META</h4>
+          <div class="meta-grid">
+            <div class="meta-cell"><div class="lbl">STATUS</div><b style="color:#fde047">בטיפול</b><small>14M IN STATE</small></div>
+            <div class="meta-cell urgent"><div class="lbl">SEVERITY</div><b>חמ"ל ↓</b><small>SLA: 30M</small></div>
+            <div class="meta-cell"><div class="lbl">UNIT</div><b>פלוגה ב'</b><small>891</small></div>
+            <div class="meta-cell"><div class="lbl">TOPIC</div><b>תקשורת</b><small>שרת מקומי</small></div>
+            <div class="meta-cell"><div class="lbl">OPENED BY</div><b>רס"ב פרץ</b><small>חמ"ל</small></div>
+            <div class="meta-cell"><div class="lbl">HANDLER</div><b>סמ"ר בן-דוד</b><small>ממר"ם</small></div>
+          </div>
+          <h4 class="h4">// QUICK ACTIONS</h4>
+          <button class="btn btn-ghost" style="margin-bottom:8px">→ העברה ליחידה אחרת</button>
+          <button class="btn btn-ghost" style="margin-bottom:8px">⟲ שינוי תפקיד מטפל</button>
+          <button class="btn btn-ghost">📌 הצמדת תקלה</button>
+        </aside>
+      </div>
+    </section>
+
+    <section id="create">
+      <div class="section-head"><div><h1>פתיחת <span class="grad">תקלה חדשה</span></h1><p>// NEW TICKET · DESCRIBE THE ISSUE</p></div></div>
+      <div class="two">
+        <form class="tile card" onsubmit="event.preventDefault()">
+          <label class="toggle"><input type="checkbox"/><div><b>⚠ חמ"ל מושבת</b><small>סמן רק אם החמ"ל אינו פעיל לחלוטין</small></div></label>
+          <div class="field"><label>// TITLE · כותרת</label><input placeholder="לדוגמה: מקרן בכיתה 4 לא דולק"/></div>
+          <div class="field-row">
+            <div class="field"><label>// TOPIC · נושא</label><select><option>אמצעים</option><option>מחשב</option><option>תקשורת</option></select></div>
+            <div class="field"><label>// UNIT · יחידה</label><select><option>פלוגה ב'</option><option>פלוגה א'</option><option>מטה החטיבה</option></select></div>
+          </div>
+          <div class="field"><label>// DESCRIPTION · תיאור</label><textarea placeholder="פרט מתי החל, מה נוסה עד כה, ומי דיווח על התקלה…"></textarea></div>
+          <div class="field-row">
+            <div class="field"><label>// ASSIGN · הקצאה</label><select><option>אוטומטית (לפי נושא)</option><option>חט"פ</option><option>ממר"ם</option></select></div>
+            <div class="field"><label>// RECUR · חזרתיות</label><select><option>חד-פעמית</option><option>חוזרת — שבועית</option></select></div>
+          </div>
+          <button type="submit" class="btn">⚡ פתח תקלה ←</button>
+        </form>
+        <aside>
+          <h4 class="h4">// GUIDELINES</h4>
+          <div class="tile" style="padding:22px;font-size:13.5px;line-height:1.7;margin-bottom:16px;background:linear-gradient(135deg,rgba(255,42,138,.06),rgba(168,85,247,.04));border-color:rgba(168,85,247,.3)">
+            <p style="margin:0 0 10px"><b style="color:var(--neon-cyan)">✓ כותרת קצרה ומדויקת</b><br><span style="color:var(--mut)">קל לזהות את התקלה ברשימה.</span></p>
+            <p style="margin:0 0 10px"><b style="color:var(--neon-cyan)">✓ ניתן לצרף תמונה</b><br><span style="color:var(--mut)">לאחר פתיחת התקלה.</span></p>
+            <p style="margin:0"><b style="color:var(--neon-cyan)">✓ סימון חמ"ל</b><br><span style="color:var(--mut)">דחיפה לראש התור והתראה מיידית.</span></p>
+          </div>
+          <h4 class="h4">// SIMILAR (RESOLVED)</h4>
+          <div class="tile" style="padding:8px">
+            <div class="ev"><div class="num-box" style="color:#33ffaa">✓</div><div class="t"><b>מקרן בכיתה 2 לא דולק</b><span>נסגר לפני 3 ימים</span></div></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  const links=document.querySelectorAll('.step-nav a, .nav-link[href^="#"]');
+  const secs=['home','tickets','detail','create'].map(id=>document.getElementById(id));
+  const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id))})},{rootMargin:'-40% 0px -55% 0px'});
+  secs.forEach(s=>io.observe(s));
+</script>
+</body>
+</html>

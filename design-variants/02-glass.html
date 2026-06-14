@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TicketFlow · Command Glass</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800;900&display=swap');
+  :root{
+    --ink:#f4f4ff; --mut:#a9aac8; --dim:#6b6d8a; --line:rgba(255,255,255,.12);
+    --glass:rgba(255,255,255,.07); --glass-2:rgba(255,255,255,.04);
+    --ac:#ec4899; --ac2:#8b5cf6; --cy:#22d3ee;
+    --open:#fb7185; --prog:#fbbf24; --done:#34d399; --hamal:#f43f5e;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;color:var(--ink);font:15px/1.55 Heebo,-apple-system,sans-serif;
+    background:#070318;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  body::before, body::after{content:"";position:fixed;z-index:-1;border-radius:50%;
+    filter:blur(120px);opacity:.5;pointer-events:none}
+  body::before{width:680px;height:680px;background:radial-gradient(circle,var(--ac2),transparent 70%);top:-200px;right:-150px}
+  body::after{width:780px;height:780px;background:radial-gradient(circle,var(--ac),transparent 70%);bottom:-300px;left:-220px}
+  .aurora{position:fixed;inset:0;z-index:-2;
+    background:
+      radial-gradient(800px 500px at 30% 10%, rgba(34,211,238,.2), transparent 70%),
+      radial-gradient(700px 600px at 80% 80%, rgba(139,92,246,.25), transparent 70%),
+      linear-gradient(180deg,#070318 0%, #110826 50%, #0a041e 100%)}
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+
+  .glass{background:var(--glass);border:1px solid var(--line);
+    backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);
+    border-radius:20px;box-shadow:0 8px 32px -8px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.06)}
+
+  /* nav */
+  .nav{position:sticky;top:16px;z-index:20;margin:16px auto 0;max-width:1240px;padding:0 24px}
+  .nav-in{display:flex;align-items:center;gap:12px;padding:12px 18px;border-radius:999px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:17px;letter-spacing:-.01em}
+  .brand .dot{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--ac),var(--ac2));box-shadow:0 0 24px rgba(236,72,153,.5)}
+  .steps{display:flex;gap:4px;margin-right:auto;font-size:13px}
+  .steps a{padding:9px 16px;border-radius:999px;color:var(--mut);transition:.18s;min-height:38px;display:inline-flex;align-items:center;font-weight:500}
+  .steps a.on{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;font-weight:600}
+  .steps a:hover:not(.on){color:#fff;background:rgba(255,255,255,.06)}
+  .me{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mut)}
+  .me .av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;display:grid;place-items:center;font-weight:700;font-size:13px}
+
+  .wrap{max-width:1240px;margin:0 auto;padding:0 24px}
+  section{padding:64px 0}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.18em;
+    color:var(--cy);font-weight:700;margin-bottom:16px;padding:6px 12px;
+    background:rgba(34,211,238,.08);border:1px solid rgba(34,211,238,.25);border-radius:999px}
+  .display{font-size:clamp(32px,5vw,56px);line-height:1.05;margin:0 0 12px;letter-spacing:-.025em;font-weight:800;max-width:18ch}
+  .display span{background:linear-gradient(135deg,#fff,#a78bfa 40%,#22d3ee 80%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--mut);max-width:58ch;font-size:16px}
+  .row-head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:32px}
+  .live{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--cy);
+    background:rgba(34,211,238,.08);padding:6px 12px;border-radius:999px;border:1px solid rgba(34,211,238,.25)}
+  .live::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--cy);
+    box-shadow:0 0 8px var(--cy);animation:pulse 1.6s infinite}
+  @keyframes pulse{50%{opacity:.4}}
+
+  /* stat tiles */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+  @media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .tile{padding:20px;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+  .tile:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.2)}
+  .tile .lbl{font-size:12px;color:var(--mut);font-weight:500;margin-bottom:6px;letter-spacing:.04em}
+  .tile .val{font-size:38px;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .tile .delta{font-size:12px;color:var(--mut);margin-top:8px;display:flex;align-items:center;gap:4px}
+  .tile.s1 .val{background:linear-gradient(135deg,#fff,var(--ac));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .tile.s2 .val{background:linear-gradient(135deg,#fff,var(--ac2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .tile.s3 .val{background:linear-gradient(135deg,#fff,var(--done));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .tile.s4{border-color:rgba(244,63,94,.35);background:rgba(244,63,94,.06)}
+  .tile.s4 .val{background:linear-gradient(135deg,#fff,var(--hamal));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .tile .spark{height:28px;margin-top:10px}
+  .tile .spark svg{width:100%;height:100%}
+
+  /* urgent panel */
+  .urgent{padding:24px;margin-bottom:24px;background:linear-gradient(135deg,rgba(244,63,94,.12),rgba(139,92,246,.06));border-color:rgba(244,63,94,.3)}
+  .urgent h3{margin:0 0 14px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .urgent h3 .dot{width:8px;height:8px;border-radius:50%;background:var(--hamal);box-shadow:0 0 10px var(--hamal);animation:pulse 1.4s infinite}
+  .u-item{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;padding:12px;
+    background:var(--glass-2);border-radius:12px;margin-bottom:8px;cursor:pointer;transition:.15s}
+  .u-item:hover{background:var(--glass);border:1px solid rgba(244,63,94,.3)}
+  .u-item:last-child{margin-bottom:0}
+  .u-item b{display:block;font-weight:600;font-size:14px;margin-bottom:3px}
+  .u-item small{color:var(--mut);font-size:12px}
+  .u-item .time{font-size:12px;color:var(--hamal);font-weight:600;font-feature-settings:"tnum"}
+
+  /* recent list */
+  .list{padding:0;overflow:hidden}
+  .list-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line)}
+  .list-head h3{margin:0;font-weight:700;font-size:15px}
+  .list-head a{font-size:12.5px;color:var(--mut)}
+  .item{display:grid;grid-template-columns:40px 1fr auto auto;gap:14px;align-items:center;padding:14px 22px;border-bottom:1px solid var(--line);cursor:pointer;transition:.15s}
+  .item:last-child{border:0}
+  .item:hover{background:var(--glass-2)}
+  .ic-box{width:40px;height:40px;border-radius:10px;background:var(--glass-2);display:grid;place-items:center;font-size:17px}
+  .item.hot .ic-box{background:rgba(244,63,94,.15);box-shadow:inset 0 0 0 1px rgba(244,63,94,.3)}
+  .item b{display:block;font-weight:600;font-size:14.5px;margin-bottom:3px}
+  .item small{color:var(--mut);font-size:12.5px}
+  .item .num{font-size:12px;color:var(--dim);font-feature-settings:"tnum"}
+  .badge{font-size:11px;padding:5px 11px;border-radius:999px;font-weight:600;letter-spacing:.02em}
+  .badge.OPEN{background:rgba(251,113,133,.15);color:var(--open);box-shadow:inset 0 0 0 1px rgba(251,113,133,.3)}
+  .badge.IN_PROGRESS{background:rgba(251,191,36,.15);color:var(--prog);box-shadow:inset 0 0 0 1px rgba(251,191,36,.3)}
+  .badge.RESOLVED{background:rgba(52,211,153,.15);color:var(--done);box-shadow:inset 0 0 0 1px rgba(52,211,153,.3)}
+  .badge.CLOSED{background:var(--glass-2);color:var(--mut)}
+
+  /* filters */
+  .filters{display:flex;gap:10px;align-items:center;margin:32px 0 24px;flex-wrap:wrap}
+  .search{flex:1;min-width:220px;position:relative}
+  .search input{width:100%;padding:13px 44px 13px 16px;border:1px solid var(--line);border-radius:12px;
+    font:inherit;font-size:14px;background:var(--glass-2);min-height:46px;color:#fff;
+    backdrop-filter:blur(12px)}
+  .search input::placeholder{color:var(--dim)}
+  .search input:focus{outline:0;border-color:var(--ac);box-shadow:0 0 0 3px rgba(236,72,153,.15)}
+  .search::before{content:"⌕";position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--mut)}
+  .select{padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--glass-2);
+    font:inherit;font-size:13px;min-height:46px;cursor:pointer;color:#fff;backdrop-filter:blur(12px)}
+  .select option{background:#0f0828;color:#fff}
+  .chip{padding:9px 16px;border-radius:999px;border:1px solid var(--line);background:var(--glass-2);
+    font-size:13px;color:var(--mut);min-height:40px;cursor:pointer;font-weight:500;backdrop-filter:blur(12px)}
+  .chip.on{background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border-color:transparent;font-weight:600}
+  .chip:hover:not(.on){color:#fff;border-color:rgba(255,255,255,.3)}
+
+  /* table */
+  .tbl{padding:0;overflow:hidden}
+  .tbl-row{display:grid;grid-template-columns:80px 1fr 130px 130px 110px 90px;gap:16px;padding:16px 22px;border-bottom:1px solid var(--line);align-items:center;cursor:pointer;transition:.15s}
+  @media (max-width:900px){.tbl-row{grid-template-columns:60px 1fr 90px;gap:10px;padding:14px}.tbl-row .col-hide{display:none}}
+  .tbl-row:last-child{border:0}
+  .tbl-row:hover{background:var(--glass-2)}
+  .tbl-row.hot{background:rgba(244,63,94,.05);border-right:3px solid var(--hamal)}
+  .tn{font-family:ui-monospace,monospace;font-size:12.5px;color:var(--dim);font-feature-settings:"tnum"}
+  .tt b{display:block;font-weight:600;font-size:14.5px;margin-bottom:3px}
+  .tt small{color:var(--mut);font-size:12.5px}
+  .tag-pill{font-size:11.5px;color:var(--mut);background:var(--glass-2);padding:4px 10px;border-radius:6px;font-weight:500;display:inline-block;box-shadow:inset 0 0 0 1px var(--line)}
+
+  /* detail */
+  .two{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-top:24px}
+  @media (max-width:900px){.two{grid-template-columns:1fr}}
+  .card{padding:32px}
+  .card h2{margin:0 0 6px;font-size:24px;font-weight:800;letter-spacing:-.015em}
+  .meta-line{color:var(--mut);font-size:13.5px;margin-bottom:24px}
+  .desc{font-size:15.5px;line-height:1.7;color:#dcdde8;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:24px}
+  .timeline{padding:0;margin:0;list-style:none}
+  .tl-item{position:relative;padding:0 24px 22px 0;border-right:2px solid var(--line)}
+  .tl-item::before{content:"";position:absolute;right:-7px;top:6px;width:12px;height:12px;border-radius:50%;
+    background:linear-gradient(135deg,var(--ac),var(--ac2));box-shadow:0 0 10px rgba(236,72,153,.5)}
+  .tl-item:last-child{border-color:transparent}
+  .tl-item time{font-size:11.5px;color:var(--mut);font-feature-settings:"tnum"}
+  .tl-item b{display:block;margin-top:2px;font-size:14px;font-weight:600}
+  .tl-item p{margin:4px 0 0;font-size:13px;color:var(--mut)}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:11.5px;color:var(--mut);font-weight:500;margin-bottom:6px;letter-spacing:.02em}
+  .field input,.field textarea,.field select{width:100%;padding:13px 14px;border:1px solid var(--line);
+    border-radius:12px;background:var(--glass-2);font:inherit;font-size:14.5px;color:#fff;min-height:48px;backdrop-filter:blur(12px)}
+  .field input::placeholder,.field textarea::placeholder{color:var(--dim)}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:0;border-color:var(--ac);background:rgba(236,72,153,.06);box-shadow:0 0 0 3px rgba(236,72,153,.15)}
+  .field textarea{min-height:110px;resize:vertical;font-family:inherit}
+  .field select option{background:#0f0828;color:#fff}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .toggle{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid rgba(244,63,94,.3);
+    border-radius:12px;background:rgba(244,63,94,.06);margin-bottom:18px;cursor:pointer}
+  .toggle b{color:var(--hamal);font-weight:700;display:block;font-size:14px}
+  .toggle small{color:var(--mut);font-size:12px}
+  .toggle input{margin-right:auto;width:42px;height:24px;appearance:none;background:rgba(255,255,255,.1);
+    border-radius:999px;position:relative;cursor:pointer;flex-shrink:0;transition:.15s}
+  .toggle input:checked{background:var(--hamal)}
+  .toggle input::after{content:"";position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.18s}
+  .toggle input:checked::after{right:21px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;
+    padding:15px;border-radius:14px;font-weight:600;min-height:52px;font-size:14.5px;transition:.18s;
+    box-shadow:0 8px 24px -6px rgba(236,72,153,.5)}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 12px 32px -6px rgba(236,72,153,.7)}
+  .btn-ghost{background:var(--glass-2);color:#fff;box-shadow:inset 0 0 0 1px var(--line)}
+  .btn-ghost:hover{background:var(--glass);transform:none}
+  .btn-ok{background:linear-gradient(135deg,#34d399,#22d3ee);box-shadow:0 8px 24px -6px rgba(52,211,153,.5)}
+
+  .side h4{margin:0 0 10px;font-size:11.5px;color:var(--mut);font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+  .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+  .meta-grid .cell{padding:16px}
+  .meta-grid .cell .lbl{font-size:11px;color:var(--mut);font-weight:500;margin-bottom:5px;letter-spacing:.04em}
+  .meta-grid .cell b{font-size:14.5px;font-weight:600}
+  .meta-grid .cell small{color:var(--mut);font-size:11.5px;display:block;margin-top:2px}
+
+  .fab{position:fixed;bottom:24px;left:24px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;
+    padding:14px 22px;border-radius:999px;box-shadow:0 14px 36px -6px rgba(236,72,153,.6);font-weight:600;
+    display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer;z-index:20;transition:.2s}
+  .fab:hover{transform:translateY(-3px);box-shadow:0 20px 44px -6px rgba(236,72,153,.8)}
+
+  /* sparkline gradients */
+  .sg1 stop[offset="0%"]{stop-color:var(--ac)}
+  .sg1 stop[offset="100%"]{stop-color:var(--ac);stop-opacity:0}
+</style>
+</head>
+<body>
+<div class="aurora"></div>
+
+<header class="nav">
+  <div class="nav-in glass">
+    <div class="brand"><span class="dot"></span> TicketFlow</div>
+    <nav class="steps">
+      <a href="#home" class="on">דשבורד</a>
+      <a href="#tickets">תקלות</a>
+      <a href="#detail">פרטי תקלה</a>
+      <a href="#create">תקלה חדשה</a>
+    </nav>
+    <div class="me"><span>ינאי כהן · מ"פ</span><div class="av">י</div></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Home -->
+  <section id="home">
+    <div class="row-head">
+      <div>
+        <span class="eyebrow">◆ מערכת פעילה <span class="live" style="margin-right:6px">4 פעילים</span></span>
+        <h1 class="display">שלום ינאי, יש <span>4 תקלות דחופות.</span></h1>
+        <p class="sub">תמונת מצב חיה של היחידה. עדכוני סטטוס בזמן אמת מכל הגורמים המבצעיים.</p>
+      </div>
+      <button class="btn" style="width:auto;padding:13px 22px;min-height:46px">＋ תקלה חדשה</button>
+    </div>
+
+    <div class="stats">
+      <div class="tile glass s1">
+        <div class="lbl">שלי</div><div class="val">7</div>
+        <div class="delta">▲ 2 מאתמול</div>
+        <div class="spark"><svg viewBox="0 0 100 28" preserveAspectRatio="none">
+          <defs><linearGradient class="sg1" id="g1" x1="0" x2="0" y1="0" y2="1"><stop offset="0%"/><stop offset="100%"/></linearGradient></defs>
+          <path d="M0 18 L15 14 L30 20 L45 10 L60 14 L75 6 L90 10 L100 4" stroke="#ec4899" stroke-width="1.8" fill="none"/>
+          <path d="M0 18 L15 14 L30 20 L45 10 L60 14 L75 6 L90 10 L100 4 L100 28 L0 28 Z" fill="url(#g1)" opacity=".3"/>
+        </svg></div>
+      </div>
+      <div class="tile glass s2">
+        <div class="lbl">סה"כ פתוחות</div><div class="val">23</div>
+        <div class="delta">▼ 5 השבוע</div>
+        <div class="spark"><svg viewBox="0 0 100 28" preserveAspectRatio="none">
+          <path d="M0 10 L15 12 L30 8 L45 14 L60 11 L75 16 L90 13 L100 18" stroke="#8b5cf6" stroke-width="1.8" fill="none"/>
+        </svg></div>
+      </div>
+      <div class="tile glass s3">
+        <div class="lbl">טופלו השבוע</div><div class="val">41</div>
+        <div class="delta" style="color:var(--done)">▲ 18%</div>
+        <div class="spark"><svg viewBox="0 0 100 28" preserveAspectRatio="none">
+          <path d="M0 22 L15 18 L30 20 L45 12 L60 14 L75 8 L90 10 L100 4" stroke="#34d399" stroke-width="1.8" fill="none"/>
+        </svg></div>
+      </div>
+      <div class="tile glass s4">
+        <div class="lbl">חמ"ל מושבת</div><div class="val">2</div>
+        <div class="delta" style="color:var(--hamal)">🚨 דורש טיפול מיידי</div>
+      </div>
+    </div>
+
+    <div class="urgent glass">
+      <h3><span class="dot"></span> תקלות בעדיפות עליונה (4)</h3>
+      <div class="u-item">
+        <div><b>חמ"ל ב' — אין תקשורת</b><small>פלוגה ב' · גדוד 891</small></div>
+        <span class="time">פתוח 14 ד</span>
+        <span class="badge OPEN">פתוח</span>
+      </div>
+      <div class="u-item">
+        <div><b>מערכת ROOK לא עולה</b><small>חט"פ · #2847</small></div>
+        <span class="time">פתוח 1ש 22ד</span>
+        <span class="badge IN_PROGRESS">בטיפול</span>
+      </div>
+      <div class="u-item">
+        <div><b>קשר רדיו מקוטע — אזור צפוני</b><small>ממר"ם · #2845</small></div>
+        <span class="time">פתוח 2ש 11ד</span>
+        <span class="badge OPEN">פתוח</span>
+      </div>
+      <div class="u-item">
+        <div><b>שרת אפליקציה — קוד 502</b><small>אפליקציה · #2842</small></div>
+        <span class="time">פתוח 3ש</span>
+        <span class="badge IN_PROGRESS">בטיפול</span>
+      </div>
+    </div>
+
+    <div class="list glass">
+      <div class="list-head"><h3>⚡ עדכונים אחרונים</h3><a href="#tickets">לכל התקלות ←</a></div>
+      <div class="item"><div class="ic-box">📋</div><div><b>החלפת מצברים — רכב 7</b><small>לפני 12 דקות · רס"ר אבי לוי</small></div><span class="num">#2852</span><span class="badge OPEN">פתוח</span></div>
+      <div class="item"><div class="ic-box">📋</div><div><b>מקרן בכיתה 4 לא דולק</b><small>לפני 38 דקות · סמ"ר נועה דנון</small></div><span class="num">#2851</span><span class="badge IN_PROGRESS">בטיפול</span></div>
+      <div class="item hot"><div class="ic-box">⏱</div><div><b>תקלה ביציאת VPN במגדל 3</b><small>לפני 1ש 42ד · סמל אבי בנדה</small></div><span class="num">#2849</span><span class="badge OPEN">פתוח</span></div>
+      <div class="item"><div class="ic-box">📋</div><div><b>החלפת UPS בחדר שרתים</b><small>לפני 2ש · סא"ל יוסף כהן</small></div><span class="num">#2848</span><span class="badge RESOLVED">טופל</span></div>
+      <div class="item"><div class="ic-box">📋</div><div><b>טאבלט פקוד — סוללה לא נטענת</b><small>לפני 3ש · רב"ט תומר ישראלי</small></div><span class="num">#2846</span><span class="badge RESOLVED">טופל</span></div>
+    </div>
+  </section>
+
+  <!-- Tickets -->
+  <section id="tickets">
+    <span class="eyebrow">◆ ניהול תקלות</span>
+    <h1 class="display" style="font-size:clamp(28px,4vw,44px)">כל <span>התקלות.</span></h1>
+    <p class="sub">23 תקלות פעילות · 41 נסגרו השבוע · עדכון אחרון לפני 2 דקות.</p>
+
+    <div class="filters">
+      <div class="search"><input placeholder="חפש תקלה לפי כותרת או מספר…"/></div>
+      <select class="select"><option>כל הנושאים</option><option>אמצעים</option><option>מחשב</option><option>תקשורת</option></select>
+      <select class="select"><option>כל התפקידים</option><option>חט"פ</option><option>ממר"ם</option><option>אפליקציה</option></select>
+      <button class="chip on">פתוחות</button>
+      <button class="chip">ארכיון</button>
+    </div>
+
+    <div class="tbl glass">
+      <div class="tbl-row hot"><span class="tn">#2853</span><div class="tt"><b>🚨 חמ"ל ב' — אין תקשורת</b><small>נפתח לפני 14 דקות</small></div><span class="tag-pill col-hide">תקשורת</span><span class="col-hide" style="font-size:13px;color:var(--mut)">פלוגה ב'</span><span class="tag-pill col-hide">ממר"ם</span><span class="badge OPEN">פתוח</span></div>
+      <div class="tbl-row"><span class="tn">#2852</span><div class="tt"><b>החלפת מצברים — רכב 7</b><small>נפתח לפני 12 דקות</small></div><span class="tag-pill col-hide">אמצעים</span><span class="col-hide" style="font-size:13px;color:var(--mut)">מסע"ר</span><span class="tag-pill col-hide">חט"פ</span><span class="badge OPEN">פתוח</span></div>
+      <div class="tbl-row"><span class="tn">#2851</span><div class="tt"><b>מקרן בכיתה 4 לא דולק</b><small>נפתח לפני 38 דקות</small></div><span class="tag-pill col-hide">מחשב</span><span class="col-hide" style="font-size:13px;color:var(--mut)">בה"ד 1</span><span class="tag-pill col-hide">אפליקציה</span><span class="badge IN_PROGRESS">בטיפול</span></div>
+      <div class="tbl-row hot"><span class="tn">#2849</span><div class="tt"><b>תקלה ביציאת VPN במגדל 3</b><small>נפתח לפני 1ש 42ד</small></div><span class="tag-pill col-hide">מחשב</span><span class="col-hide" style="font-size:13px;color:var(--mut)">מגדל 3</span><span class="tag-pill col-hide">ממר"ם</span><span class="badge OPEN">פתוח</span></div>
+      <div class="tbl-row"><span class="tn">#2847</span><div class="tt"><b>מערכת ROOK לא עולה</b><small>נפתח לפני 1ש 22ד</small></div><span class="tag-pill col-hide">מחשב</span><span class="col-hide" style="font-size:13px;color:var(--mut)">חמ"ל פיקודי</span><span class="tag-pill col-hide">חט"פ</span><span class="badge IN_PROGRESS">בטיפול</span></div>
+      <div class="tbl-row"><span class="tn">#2848</span><div class="tt"><b>החלפת UPS בחדר שרתים</b><small>נסגר לפני 2ש</small></div><span class="tag-pill col-hide">חשמל</span><span class="col-hide" style="font-size:13px;color:var(--mut)">חדר שרתים</span><span class="tag-pill col-hide">ממר"ם</span><span class="badge RESOLVED">טופל</span></div>
+      <div class="tbl-row"><span class="tn">#2846</span><div class="tt"><b>טאבלט פקוד — סוללה לא נטענת</b><small>נסגר לפני 3ש</small></div><span class="tag-pill col-hide">אמצעים</span><span class="col-hide" style="font-size:13px;color:var(--mut)">מטה החטיבה</span><span class="tag-pill col-hide">אפליקציה</span><span class="badge RESOLVED">טופל</span></div>
+    </div>
+  </section>
+
+  <!-- Detail -->
+  <section id="detail">
+    <span class="eyebrow">◆ פרטי תקלה</span>
+    <h1 class="display" style="font-size:clamp(28px,4vw,44px)">חמ"ל ב' — <span>אין תקשורת.</span></h1>
+
+    <div class="two">
+      <article class="card glass">
+        <h2>תקלה #2853 <span class="live" style="margin-right:8px">חי</span></h2>
+        <div class="meta-line">נפתח לפני 14 דקות · רס"ב גלית פרץ · פלוגה ב', גדוד 891</div>
+
+        <p class="desc">בחמ"ל פלוגה ב' אין מענה למכשירי קשר ולמערכת ROOK. נבדק חיבור פיזי לכל המכשירים ונראה תקין. ייתכן ושרת התקשורת המקומי קרס.</p>
+
+        <h4 style="margin:0 0 16px;font-size:13px;font-weight:700">היסטוריית טיפול</h4>
+        <ul class="timeline">
+          <li class="tl-item">
+            <time>14:32 · עכשיו</time>
+            <b>הסטטוס עודכן ל: בטיפול</b>
+            <p>סמ"ר עומר בן-דוד · ממר"ם</p>
+          </li>
+          <li class="tl-item">
+            <time>14:28 · לפני 4 ד</time>
+            <b>הוקצה ל: ממר"ם</b>
+            <p>אוטומטית — לפי נושא תקלה</p>
+          </li>
+          <li class="tl-item">
+            <time>14:18 · לפני 14 ד</time>
+            <b>🚨 תקלה נפתחה ומסומנת כחמ"ל מושבת</b>
+            <p>רס"ב גלית פרץ</p>
+          </li>
+        </ul>
+
+        <div style="display:flex;gap:12px;margin-top:24px">
+          <button class="btn btn-ok">✓ סגור תקלה</button>
+          <button class="btn btn-ghost">＋ הוסף הערה</button>
+        </div>
+      </article>
+
+      <aside class="side">
+        <h4>פרטי תקלה</h4>
+        <div class="meta-grid">
+          <div class="cell glass"><div class="lbl">סטטוס</div><b style="color:var(--prog)">בטיפול</b><small>14 ד' בסטטוס</small></div>
+          <div class="cell glass" style="border-color:rgba(244,63,94,.3)"><div class="lbl">חומרה</div><b style="color:var(--hamal)">חמ"ל מושבת</b><small>SLA: 30 ד'</small></div>
+          <div class="cell glass"><div class="lbl">יחידה</div><b>פלוגה ב'</b><small>גדוד 891</small></div>
+          <div class="cell glass"><div class="lbl">נושא</div><b>תקשורת</b><small>שרת מקומי</small></div>
+          <div class="cell glass"><div class="lbl">פותח</div><b>רס"ב פרץ</b><small>חמ"ל</small></div>
+          <div class="cell glass"><div class="lbl">מטפל</div><b>סמ"ר בן-דוד</b><small>ממר"ם</small></div>
+        </div>
+        <h4>פעולות מהירות</h4>
+        <button class="btn btn-ghost" style="margin-bottom:8px">→ העברה ליחידה אחרת</button>
+        <button class="btn btn-ghost" style="margin-bottom:8px">⟲ שינוי תפקיד מטפל</button>
+        <button class="btn btn-ghost">📌 הצמדת תקלה</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Create -->
+  <section id="create">
+    <span class="eyebrow">◆ פתיחת תקלה</span>
+    <h1 class="display" style="font-size:clamp(28px,4vw,44px)">תקלה <span>חדשה.</span></h1>
+    <p class="sub">תארו את התקלה בקצרה. נושא ויחידה ייבחרו אוטומטית — אבל ניתן לשנות.</p>
+
+    <div class="two">
+      <form class="card glass" onsubmit="event.preventDefault()">
+        <label class="toggle">
+          <input type="checkbox"/>
+          <div><b>🚨 חמ"ל מושבת</b><small>סמן רק אם החמ"ל אינו פעיל לחלוטין</small></div>
+        </label>
+
+        <div class="field"><label>כותרת התקלה</label><input placeholder="לדוגמה: מקרן בכיתה 4 לא דולק"/></div>
+
+        <div class="field-row">
+          <div class="field"><label>נושא</label>
+            <select><option>אמצעים</option><option>מחשב</option><option>תקשורת</option><option>חשמל</option><option>רכב</option></select>
+          </div>
+          <div class="field"><label>יחידה</label>
+            <select><option>פלוגה ב'</option><option>פלוגה א'</option><option>מטה החטיבה</option><option>חדר שרתים</option></select>
+          </div>
+        </div>
+
+        <div class="field"><label>תיאור מפורט</label>
+          <textarea placeholder="פרט מתי החל, מה נוסה עד כה, ומי דיווח על התקלה…"></textarea>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label>הקצאה ידנית</label>
+            <select><option>אוטומטית (לפי נושא)</option><option>חט"פ</option><option>ממר"ם</option><option>אפליקציה</option></select>
+          </div>
+          <div class="field"><label>חזרתיות</label>
+            <select><option>חד-פעמית</option><option>חוזרת — שבועית</option><option>חוזרת — חודשית</option></select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn">פתח תקלה ←</button>
+      </form>
+
+      <aside class="side">
+        <h4>הנחיות פתיחה</h4>
+        <div class="card glass" style="padding:22px;font-size:13.5px;line-height:1.7;margin-bottom:18px">
+          <p style="margin:0 0 10px"><b style="color:var(--cy)">✓ כותרת קצרה ומדויקת</b> — כך קל לזהות את התקלה ברשימה.</p>
+          <p style="margin:0 0 10px"><b style="color:var(--cy)">✓ ניתן לצרף תמונה</b> מהמכשיר לאחר פתיחה.</p>
+          <p style="margin:0"><b style="color:var(--cy)">✓ סימון חמ"ל</b> ידחוף את התקלה לקדמת התור ויודיע מיידית לכל הגורמים.</p>
+        </div>
+        <h4>תקלות דומות שטופלו</h4>
+        <div class="list glass">
+          <div class="item"><div class="ic-box" style="background:rgba(52,211,153,.15);color:var(--done)">✓</div><div><b>מקרן בכיתה 2 לא דולק</b><small>נסגר לפני 3 ימים</small></div></div>
+          <div class="item"><div class="ic-box" style="background:rgba(52,211,153,.15);color:var(--done)">✓</div><div><b>מקרן ראשי בחמ"ל</b><small>נסגר לפני שבוע</small></div></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+</div>
+
+<button class="fab"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>תקלה חדשה</button>
+
+<script>
+  const links=document.querySelectorAll('.steps a');
+  const secs=['home','tickets','detail','create'].map(id=>document.getElementById(id));
+  const io=new IntersectionObserver(es=>{
+    es.forEach(e=>{if(e.isIntersecting)links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id))});
+  },{rootMargin:'-40% 0px -55% 0px'});
+  secs.forEach(s=>io.observe(s));
+</script>
+</body>
+</html>

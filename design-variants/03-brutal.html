@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TicketFlow · חמ"ל ברוטאלי</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+  :root{
+    --bg:#f4f1e8; --ink:#0a0a0a; --paper:#fffdf6;
+    --yellow:#fff200; --red:#ef4444; --hamal:#dc2626; --green:#10b981; --orange:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.45 Heebo,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  body{background:
+    linear-gradient(var(--bg),var(--bg)),
+    repeating-linear-gradient(45deg,transparent 0 14px, rgba(0,0,0,.03) 14px 15px);
+    background-blend-mode:multiply}
+  h1,h2,h3,h4{font-weight:900;letter-spacing:-.02em;margin:0;line-height:.98}
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  .mono{font-family:"Space Mono",ui-monospace,monospace}
+
+  /* nav */
+  .nav{position:sticky;top:0;background:var(--ink);color:var(--paper);
+    border-bottom:4px solid var(--ink);z-index:10}
+  .nav-in{max-width:1300px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:20px}
+  .brand{font-weight:900;font-size:18px;letter-spacing:.02em;
+    background:var(--yellow);color:#000;padding:6px 12px;border:3px solid #000;transform:rotate(-1.5deg);display:inline-block}
+  .steps{display:flex;gap:0;margin-right:auto;border:3px solid var(--paper)}
+  .steps a{padding:10px 16px;color:var(--paper);font-weight:800;font-size:12.5px;
+    letter-spacing:.04em;border-left:3px solid var(--paper);min-height:42px;display:inline-flex;align-items:center}
+  .steps a:last-child{border-left:0}
+  .steps a.on{background:var(--yellow);color:#000}
+  .steps a:hover:not(.on){background:var(--red);color:#fff}
+  .me{font-family:"Space Mono",monospace;font-size:12px;color:var(--paper);padding:6px 12px;border:2px solid var(--paper)}
+  .me b{background:var(--yellow);color:#000;padding:2px 6px;margin-right:6px}
+
+  .wrap{max-width:1300px;margin:0 auto;padding:0 24px}
+  section{padding:56px 0;border-bottom:4px solid var(--ink)}
+  section:last-of-type{border:0;padding-bottom:96px}
+  .head-row{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;margin-bottom:32px;flex-wrap:wrap}
+  .eyebrow{display:inline-block;background:var(--ink);color:var(--paper);
+    padding:6px 12px;font-size:11.5px;letter-spacing:.18em;font-weight:800;margin-bottom:14px;transform:rotate(-1deg);font-family:"Space Mono",monospace}
+  .display{font-size:clamp(48px,8vw,120px);max-width:14ch}
+  .display .stamp{background:var(--red);color:#fff;padding:0 .15em;display:inline-block;transform:rotate(-2deg)}
+  .display .stamp.y{background:var(--yellow);color:#000}
+  .display .under{text-decoration:underline;text-decoration-thickness:8px;text-underline-offset:8px;text-decoration-color:var(--yellow)}
+  .sub{font-size:17px;max-width:52ch;font-weight:600}
+
+  /* stat cards */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:4px solid var(--ink);margin-bottom:28px}
+  @media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--paper);padding:24px;border-left:4px solid var(--ink);transition:.12s;cursor:pointer;position:relative;min-height:160px;display:flex;flex-direction:column;justify-content:space-between}
+  .stat:first-child{border-left:0}
+  .stat:hover{background:var(--yellow)}
+  .stat .lbl{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.16em;font-weight:700;text-transform:uppercase}
+  .stat .val{font-size:62px;line-height:.85;font-weight:900;letter-spacing:-.03em}
+  .stat .delta{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;font-family:"Space Mono",monospace}
+  .stat.urgent{background:var(--hamal);color:#fff}
+  .stat.urgent:hover{background:#b91c1c}
+  .stat.urgent .val{background:var(--yellow);color:#000;padding:0 8px;align-self:flex-start}
+
+  /* urgent banner */
+  .urgent-banner{background:var(--ink);color:var(--paper);border:4px solid var(--ink);margin-bottom:28px}
+  .ub-head{background:var(--hamal);padding:14px 22px;display:flex;justify-content:space-between;align-items:center;font-family:"Space Mono",monospace;font-weight:700;font-size:13px;letter-spacing:.15em;text-transform:uppercase;border-bottom:4px solid var(--ink)}
+  .ub-head .dot{width:12px;height:12px;border-radius:50%;background:var(--yellow);box-shadow:0 0 12px var(--yellow);animation:p 1s infinite}
+  @keyframes p{50%{opacity:.3}}
+  .ub-item{display:grid;grid-template-columns:1fr auto auto;gap:14px;align-items:center;padding:18px 22px;border-bottom:2px dashed rgba(255,255,255,.2);cursor:pointer;transition:.12s}
+  .ub-item:last-child{border:0}
+  .ub-item:hover{background:rgba(220,38,38,.2)}
+  .ub-item b{display:block;font-weight:800;font-size:15px;text-transform:uppercase}
+  .ub-item small{opacity:.65;font-size:12px;font-family:"Space Mono",monospace;letter-spacing:.04em}
+  .ub-item .time{font-family:"Space Mono",monospace;font-size:13px;font-weight:700;color:var(--yellow)}
+  .ub-pill{font-size:10.5px;font-weight:800;padding:5px 10px;text-transform:uppercase;letter-spacing:.08em;border:2px solid currentColor}
+  .ub-pill.OPEN{background:var(--paper);color:#000;border-color:var(--paper)}
+  .ub-pill.IN_PROGRESS{background:var(--yellow);color:#000;border-color:var(--yellow)}
+
+  /* recent list */
+  .list{background:var(--paper);border:4px solid var(--ink)}
+  .list-head{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:4px solid var(--ink);background:var(--ink);color:var(--paper)}
+  .list-head h3{font-size:14px;letter-spacing:.18em;text-transform:uppercase;font-family:"Space Mono",monospace}
+  .list-head a{font-size:11.5px;color:var(--yellow);font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-family:"Space Mono",monospace}
+  .item{display:grid;grid-template-columns:48px 1fr auto auto;gap:14px;align-items:center;padding:18px 22px;border-bottom:3px solid var(--ink);cursor:pointer;transition:.12s}
+  .item:last-child{border:0}
+  .item:hover{background:var(--yellow)}
+  .item .ic{width:48px;height:48px;background:var(--ink);color:var(--paper);display:grid;place-items:center;font-size:20px;border:3px solid var(--ink)}
+  .item.hot .ic{background:var(--hamal);border-color:var(--hamal);color:#fff}
+  .item b{display:block;font-weight:800;font-size:15px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.02em}
+  .item small{font-family:"Space Mono",monospace;font-size:11.5px;color:#555;letter-spacing:.04em}
+  .item .num{font-family:"Space Mono",monospace;font-size:12px;font-weight:700;padding:4px 8px;background:#000;color:var(--paper)}
+  .badge{font-size:11px;padding:6px 12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border:2px solid var(--ink);font-family:"Space Mono",monospace}
+  .badge.OPEN{background:var(--hamal);color:#fff;border-color:var(--hamal)}
+  .badge.IN_PROGRESS{background:var(--yellow);color:#000}
+  .badge.RESOLVED{background:var(--green);color:#fff;border-color:var(--green)}
+  .badge.CLOSED{background:#888;color:#fff;border-color:#888}
+
+  /* filters */
+  .filters{display:flex;gap:0;border:4px solid var(--ink);background:var(--paper);width:fit-content;margin-bottom:0}
+  .filters-wrap{margin-top:32px;display:flex;gap:18px;flex-wrap:wrap;align-items:stretch;margin-bottom:24px}
+  .search{flex:1;min-width:240px;border:4px solid var(--ink);background:var(--paper);display:flex;align-items:center;padding:0 16px}
+  .search::before{content:"⌕";font-size:22px;margin-left:10px;font-weight:900}
+  .search input{flex:1;padding:14px 0;border:0;font:inherit;font-size:15px;background:none;font-weight:600;outline:0;color:var(--ink)}
+  .search input::placeholder{color:#888;font-weight:500}
+  .chip{padding:14px 22px;font-weight:800;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;
+    border-left:4px solid var(--ink);min-height:54px;color:var(--ink);font-family:"Space Mono",monospace}
+  .chip:first-child{border-left:0}
+  .chip.on{background:var(--ink);color:var(--paper)}
+  .chip:hover:not(.on){background:var(--yellow)}
+
+  /* table */
+  .tbl{border:4px solid var(--ink);background:var(--paper)}
+  .tbl-head{display:grid;grid-template-columns:80px 1fr 130px 130px 110px 90px;gap:16px;padding:14px 22px;background:var(--ink);color:var(--paper);font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;border-bottom:4px solid var(--ink)}
+  @media (max-width:900px){.tbl-head{grid-template-columns:60px 1fr 90px;gap:10px;padding:12px}.tbl-head .col-hide{display:none}}
+  .tbl-row{display:grid;grid-template-columns:80px 1fr 130px 130px 110px 90px;gap:16px;padding:16px 22px;border-bottom:3px solid var(--ink);align-items:center;cursor:pointer;transition:.12s}
+  @media (max-width:900px){.tbl-row{grid-template-columns:60px 1fr 90px;gap:10px;padding:14px}.tbl-row .col-hide{display:none}}
+  .tbl-row:last-child{border:0}
+  .tbl-row:hover{background:var(--yellow)}
+  .tbl-row.hot{background:rgba(220,38,38,.08);border-right:6px solid var(--hamal)}
+  .tn{font-family:"Space Mono",monospace;font-size:12.5px;font-weight:700;background:#000;color:var(--paper);padding:4px 8px;display:inline-block;width:fit-content}
+  .tt b{display:block;font-weight:800;font-size:14.5px;margin-bottom:2px;text-transform:uppercase;letter-spacing:.02em}
+  .tt small{color:#555;font-size:12px;font-family:"Space Mono",monospace}
+  .tag-pill{font-size:11px;font-weight:800;background:var(--paper);padding:4px 9px;border:2px solid var(--ink);text-transform:uppercase;display:inline-block;letter-spacing:.04em;font-family:"Space Mono",monospace}
+
+  /* detail */
+  .two{display:grid;grid-template-columns:1.5fr 1fr;gap:0;margin-top:24px;border:4px solid var(--ink)}
+  @media (max-width:900px){.two{grid-template-columns:1fr}}
+  .card{background:var(--paper);padding:32px;border-left:4px solid var(--ink)}
+  .two .card:first-child{border-left:0}
+  @media (max-width:900px){.two .card{border-left:0;border-bottom:4px solid var(--ink)}}
+  .card h2{font-size:32px;margin-bottom:4px;text-transform:uppercase}
+  .meta-line{font-family:"Space Mono",monospace;font-size:12.5px;color:#555;margin-bottom:24px;letter-spacing:.06em;border-bottom:3px solid var(--ink);padding-bottom:18px}
+  .desc{font-size:16px;line-height:1.7;font-weight:500;padding:18px 20px;background:var(--yellow);border:3px solid var(--ink);margin-bottom:28px}
+  .tl-head{font-family:"Space Mono",monospace;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;margin-bottom:16px;background:var(--ink);color:var(--paper);padding:6px 12px;display:inline-block}
+  .timeline{padding:0;margin:0;list-style:none}
+  .tl-item{display:grid;grid-template-columns:auto 1fr;gap:14px;padding:14px 0;border-bottom:2px dashed var(--ink)}
+  .tl-item:last-child{border:0}
+  .tl-item .tl-time{font-family:"Space Mono",monospace;font-weight:700;font-size:12px;background:#000;color:var(--paper);padding:6px 10px;align-self:start;letter-spacing:.04em}
+  .tl-item b{display:block;font-weight:800;font-size:14px;margin-bottom:3px;text-transform:uppercase}
+  .tl-item p{margin:0;font-size:13px;font-family:"Space Mono",monospace;color:#555}
+
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+    font-weight:800;margin-bottom:7px;font-family:"Space Mono",monospace}
+  .field input,.field textarea,.field select{width:100%;padding:14px 16px;border:3px solid var(--ink);background:var(--paper);
+    font:inherit;font-size:15px;font-weight:600;min-height:52px;border-radius:0;color:var(--ink)}
+  .field input:focus,.field textarea:focus,.field select:focus{outline:0;background:var(--yellow);transform:translate(-3px,-3px);box-shadow:6px 6px 0 var(--ink)}
+  .field textarea{min-height:120px;resize:vertical;font-family:inherit}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .toggle-row{display:flex;align-items:center;gap:14px;padding:18px;background:var(--hamal);color:#fff;border:3px solid var(--ink);margin-bottom:22px;cursor:pointer;transform:rotate(-.5deg)}
+  .toggle-row b{display:block;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+  .toggle-row small{font-size:11.5px;opacity:.85;font-family:"Space Mono",monospace;letter-spacing:.04em}
+  .toggle-row input{margin-right:auto;width:50px;height:28px;appearance:none;background:#000;border:2px solid var(--paper);position:relative;cursor:pointer;flex-shrink:0;transition:.15s}
+  .toggle-row input:checked{background:var(--yellow)}
+  .toggle-row input::after{content:"";position:absolute;top:2px;right:2px;width:20px;height:20px;background:var(--paper);transition:.18s}
+  .toggle-row input:checked::after{right:24px;background:#000}
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+    background:var(--ink);color:var(--yellow);padding:18px;font-family:"Space Mono",monospace;font-weight:800;
+    font-size:14px;letter-spacing:.1em;text-transform:uppercase;min-height:58px;
+    border:3px solid var(--ink);transition:.12s;cursor:pointer}
+  .btn:hover{background:var(--yellow);color:#000;transform:translate(-3px,-3px);box-shadow:6px 6px 0 var(--ink)}
+  .btn-red{background:var(--hamal);color:#fff;border-color:var(--hamal)}
+  .btn-red:hover{background:#b91c1c;color:#fff}
+  .btn-green{background:var(--green);color:#fff;border-color:var(--green)}
+  .btn-green:hover{background:var(--green);color:#000}
+  .btn-ghost{background:var(--paper);color:var(--ink)}
+
+  /* side panel */
+  .side-h{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.18em;text-transform:uppercase;font-weight:800;margin:0 0 12px;background:var(--ink);color:var(--paper);padding:5px 10px;display:inline-block}
+  .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:3px solid var(--ink);background:var(--paper);margin-bottom:22px}
+  .meta-grid .cell{padding:16px;border-left:3px solid var(--ink);border-bottom:3px solid var(--ink)}
+  .meta-grid .cell:nth-child(2n){border-left:0}
+  .meta-grid .cell:nth-last-child(-n+2){border-bottom:0}
+  .meta-grid .cell .lbl{font-family:"Space Mono",monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:6px}
+  .meta-grid .cell b{font-size:15.5px;font-weight:900;text-transform:uppercase;letter-spacing:.02em}
+  .meta-grid .cell small{font-family:"Space Mono",monospace;font-size:11px;color:#555;display:block;margin-top:3px;letter-spacing:.04em}
+
+  .fab{position:fixed;bottom:24px;left:24px;background:var(--ink);color:var(--yellow);
+    padding:18px 26px;font-family:"Space Mono",monospace;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+    border:3px solid var(--ink);display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;z-index:20;
+    box-shadow:6px 6px 0 var(--hamal);transition:.12s}
+  .fab:hover{background:var(--yellow);color:#000;box-shadow:6px 6px 0 var(--ink);transform:translate(-2px,-2px)}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-in">
+    <div class="brand">TICKETFLOW//</div>
+    <nav class="steps">
+      <a href="#home" class="on">01·דשבורד</a>
+      <a href="#tickets">02·תקלות</a>
+      <a href="#detail">03·פרטים</a>
+      <a href="#create">04·חדש</a>
+    </nav>
+    <div class="me"><b>מ"פ</b>ינאי כהן</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Home -->
+  <section id="home">
+    <div class="head-row">
+      <div>
+        <span class="eyebrow">★ STATUS: ACTIVE · LIVE FEED</span>
+        <h1 class="display">4 <span class="stamp">חמ"ל</span><br><span class="under">דורש</span><br>טיפול.</h1>
+      </div>
+      <p class="sub">פלטפורמת תקלות לחיה. עדכון בזמן אמת מכל הגורמים המבצעיים. אין תקלות לא מטופלות. נקודה.</p>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="lbl">// שלי</div>
+        <div class="val">7</div>
+        <div class="delta">↑ 2 מאתמול</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">// סה"כ פתוחות</div>
+        <div class="val">23</div>
+        <div class="delta">↓ 5 השבוע</div>
+      </div>
+      <div class="stat">
+        <div class="lbl">// טופלו השבוע</div>
+        <div class="val">41</div>
+        <div class="delta" style="color:var(--green)">↑ 18%</div>
+      </div>
+      <div class="stat urgent">
+        <div class="lbl">// חמ"ל מושבת</div>
+        <div class="val">2</div>
+        <div class="delta">★ דחוף מאוד</div>
+      </div>
+    </div>
+
+    <div class="urgent-banner">
+      <div class="ub-head"><span><span class="dot" style="display:inline-block;vertical-align:middle;margin-left:6px"></span>★ עדיפות עליונה — 4 תקלות</span><span class="mono">14:32</span></div>
+      <div class="ub-item">
+        <div><b>חמ"ל ב' — אין תקשורת</b><small>פלוגה ב' · גדוד 891 · #2853</small></div>
+        <span class="time">14ד</span>
+        <span class="ub-pill OPEN">פתוח</span>
+      </div>
+      <div class="ub-item">
+        <div><b>מערכת ROOK לא עולה</b><small>חט"פ · חמ"ל פיקודי · #2847</small></div>
+        <span class="time">1ש 22ד</span>
+        <span class="ub-pill IN_PROGRESS">בטיפול</span>
+      </div>
+      <div class="ub-item">
+        <div><b>קשר רדיו מקוטע — אזור צפוני</b><small>ממר"ם · #2845</small></div>
+        <span class="time">2ש 11ד</span>
+        <span class="ub-pill OPEN">פתוח</span>
+      </div>
+      <div class="ub-item">
+        <div><b>שרת אפליקציה — קוד 502</b><small>אפליקציה · #2842</small></div>
+        <span class="time">3ש 00ד</span>
+        <span class="ub-pill IN_PROGRESS">בטיפול</span>
+      </div>
+    </div>
+
+    <div class="list">
+      <div class="list-head">
+        <h3>// LATEST · עדכונים אחרונים</h3>
+        <a href="#tickets">→ לכל התקלות</a>
+      </div>
+      <div class="item">
+        <div class="ic">📋</div>
+        <div><b>החלפת מצברים — רכב 7</b><small>12D ago · רס"ר אבי לוי</small></div>
+        <span class="num">#2852</span>
+        <span class="badge OPEN">פתוח</span>
+      </div>
+      <div class="item">
+        <div class="ic">📋</div>
+        <div><b>מקרן בכיתה 4 לא דולק</b><small>38D ago · סמ"ר נועה דנון</small></div>
+        <span class="num">#2851</span>
+        <span class="badge IN_PROGRESS">בטיפול</span>
+      </div>
+      <div class="item hot">
+        <div class="ic">⏱</div>
+        <div><b>תקלה ביציאת VPN במגדל 3</b><small>1H 42D ago · סמל אבי בנדה</small></div>
+        <span class="num">#2849</span>
+        <span class="badge OPEN">פתוח</span>
+      </div>
+      <div class="item">
+        <div class="ic">📋</div>
+        <div><b>החלפת UPS בחדר שרתים</b><small>2H ago · סא"ל יוסף כהן</small></div>
+        <span class="num">#2848</span>
+        <span class="badge RESOLVED">טופל</span>
+      </div>
+      <div class="item">
+        <div class="ic">📋</div>
+        <div><b>טאבלט פקוד — סוללה לא נטענת</b><small>3H ago · רב"ט תומר ישראלי</small></div>
+        <span class="num">#2846</span>
+        <span class="badge RESOLVED">טופל</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tickets -->
+  <section id="tickets">
+    <div class="head-row">
+      <div>
+        <span class="eyebrow">02 // ניהול תקלות</span>
+        <h1 class="display" style="font-size:clamp(40px,7vw,80px)">23 תקלות<br><span class="under">פתוחות.</span></h1>
+      </div>
+      <p class="sub"><b>FILTER</b> לפי נושא, יחידה ותפקיד · <b>SORT</b> לפי זמן · <b>SEARCH</b> מהיר</p>
+    </div>
+
+    <div class="filters-wrap">
+      <div class="search"><input placeholder="חפש לפי כותרת או מספר תקלה…"/></div>
+      <div class="filters">
+        <button class="chip on">פתוחות</button>
+        <button class="chip">בטיפול</button>
+        <button class="chip">ארכיון</button>
+      </div>
+    </div>
+
+    <div class="tbl">
+      <div class="tbl-head">
+        <span>// #</span>
+        <span>// תקלה</span>
+        <span class="col-hide">// נושא</span>
+        <span class="col-hide">// יחידה</span>
+        <span class="col-hide">// מטפל</span>
+        <span>// סטטוס</span>
+      </div>
+      <div class="tbl-row hot">
+        <span class="tn">#2853</span>
+        <div class="tt"><b>🚨 חמ"ל ב' — אין תקשורת</b><small>OPENED 14M AGO · BY רס"ב פרץ</small></div>
+        <span class="tag-pill col-hide">תקשורת</span>
+        <span class="col-hide mono" style="font-size:12px">פלוגה ב'</span>
+        <span class="tag-pill col-hide">ממר"ם</span>
+        <span class="badge OPEN">פתוח</span>
+      </div>
+      <div class="tbl-row">
+        <span class="tn">#2852</span>
+        <div class="tt"><b>החלפת מצברים — רכב 7</b><small>OPENED 12M AGO · BY רס"ר לוי</small></div>
+        <span class="tag-pill col-hide">אמצעים</span>
+        <span class="col-hide mono" style="font-size:12px">מסע"ר</span>
+        <span class="tag-pill col-hide">חט"פ</span>
+        <span class="badge OPEN">פתוח</span>
+      </div>
+      <div class="tbl-row">
+        <span class="tn">#2851</span>
+        <div class="tt"><b>מקרן בכיתה 4 לא דולק</b><small>OPENED 38M AGO · BY סמ"ר דנון</small></div>
+        <span class="tag-pill col-hide">מחשב</span>
+        <span class="col-hide mono" style="font-size:12px">בה"ד 1</span>
+        <span class="tag-pill col-hide">אפליקציה</span>
+        <span class="badge IN_PROGRESS">בטיפול</span>
+      </div>
+      <div class="tbl-row hot">
+        <span class="tn">#2849</span>
+        <div class="tt"><b>תקלה ביציאת VPN במגדל 3</b><small>OPENED 1H 42M AGO · BY סמל בנדה</small></div>
+        <span class="tag-pill col-hide">מחשב</span>
+        <span class="col-hide mono" style="font-size:12px">מגדל 3</span>
+        <span class="tag-pill col-hide">ממר"ם</span>
+        <span class="badge OPEN">פתוח</span>
+      </div>
+      <div class="tbl-row">
+        <span class="tn">#2847</span>
+        <div class="tt"><b>מערכת ROOK לא עולה</b><small>OPENED 1H 22M AGO · BY רס"ב פרץ</small></div>
+        <span class="tag-pill col-hide">מחשב</span>
+        <span class="col-hide mono" style="font-size:12px">חמ"ל פיקודי</span>
+        <span class="tag-pill col-hide">חט"פ</span>
+        <span class="badge IN_PROGRESS">בטיפול</span>
+      </div>
+      <div class="tbl-row">
+        <span class="tn">#2848</span>
+        <div class="tt"><b>החלפת UPS בחדר שרתים</b><small>CLOSED 2H AGO · BY סא"ל כהן</small></div>
+        <span class="tag-pill col-hide">חשמל</span>
+        <span class="col-hide mono" style="font-size:12px">חדר שרתים</span>
+        <span class="tag-pill col-hide">ממר"ם</span>
+        <span class="badge RESOLVED">טופל</span>
+      </div>
+      <div class="tbl-row">
+        <span class="tn">#2846</span>
+        <div class="tt"><b>טאבלט פקוד — סוללה לא נטענת</b><small>CLOSED 3H AGO · BY רב"ט ישראלי</small></div>
+        <span class="tag-pill col-hide">אמצעים</span>
+        <span class="col-hide mono" style="font-size:12px">מטה החטיבה</span>
+        <span class="tag-pill col-hide">אפליקציה</span>
+        <span class="badge RESOLVED">טופל</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Detail -->
+  <section id="detail">
+    <div class="head-row">
+      <div>
+        <span class="eyebrow">03 // פרטי תקלה ★ LIVE</span>
+        <h1 class="display" style="font-size:clamp(40px,7vw,84px)">חמ"ל ב'<br><span class="stamp">DOWN.</span></h1>
+      </div>
+      <p class="sub"><b>#2853</b> · נפתח לפני 14 דקות · רס"ב גלית פרץ · פלוגה ב', גדוד 891</p>
+    </div>
+
+    <div class="two">
+      <article class="card">
+        <h2>תקלה #2853</h2>
+        <div class="meta-line">// OPENED 14:18 · CRITICAL · SLA-DEADLINE: 14:48</div>
+
+        <p class="desc"><b>תיאור:</b> בחמ"ל פלוגה ב' אין מענה למכשירי קשר ולמערכת ROOK. נבדק חיבור פיזי לכל המכשירים ונראה תקין. ייתכן ושרת התקשורת המקומי קרס.</p>
+
+        <span class="tl-head">// היסטוריית טיפול</span>
+        <ul class="timeline">
+          <li class="tl-item">
+            <span class="tl-time">14:32</span>
+            <div><b>סטטוס → בטיפול</b><p>סמ"ר עומר בן-דוד · ממר"ם</p></div>
+          </li>
+          <li class="tl-item">
+            <span class="tl-time">14:28</span>
+            <div><b>הוקצה → ממר"ם</b><p>auto-assigned · לפי נושא תקלה</p></div>
+          </li>
+          <li class="tl-item">
+            <span class="tl-time">14:18</span>
+            <div><b>🚨 נפתח · חמ"ל מושבת</b><p>רס"ב גלית פרץ</p></div>
+          </li>
+        </ul>
+
+        <div style="display:flex;gap:14px;margin-top:28px;flex-wrap:wrap">
+          <button class="btn btn-green" style="flex:1">✓ סגור תקלה</button>
+          <button class="btn btn-ghost" style="flex:1">＋ הוסף הערה</button>
+        </div>
+      </article>
+
+      <aside class="card">
+        <span class="side-h">// פרטי תקלה</span>
+        <div class="meta-grid">
+          <div class="cell"><div class="lbl">סטטוס</div><b style="color:var(--orange)">בטיפול</b><small>14M IN STATE</small></div>
+          <div class="cell" style="background:var(--hamal);color:#fff"><div class="lbl">חומרה</div><b>חמ"ל ↓</b><small style="color:rgba(255,255,255,.7)">SLA: 30M</small></div>
+          <div class="cell"><div class="lbl">יחידה</div><b>פלוגה ב'</b><small>גדוד 891</small></div>
+          <div class="cell"><div class="lbl">נושא</div><b>תקשורת</b><small>שרת מקומי</small></div>
+          <div class="cell"><div class="lbl">פותח</div><b>רס"ב פרץ</b><small>חמ"ל</small></div>
+          <div class="cell"><div class="lbl">מטפל</div><b>סמ"ר בן-דוד</b><small>ממר"ם</small></div>
+        </div>
+        <span class="side-h">// פעולות מהירות</span>
+        <button class="btn btn-ghost" style="margin-bottom:10px">→ העברה ליחידה אחרת</button>
+        <button class="btn btn-ghost" style="margin-bottom:10px">⟲ שינוי תפקיד מטפל</button>
+        <button class="btn btn-ghost">📌 הצמדת תקלה</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- Create -->
+  <section id="create">
+    <div class="head-row">
+      <div>
+        <span class="eyebrow">04 // פתיחת תקלה</span>
+        <h1 class="display" style="font-size:clamp(40px,7vw,84px)">תקלה<br><span class="stamp y">חדשה.</span></h1>
+      </div>
+      <p class="sub">תארו את התקלה בקצרה. נושא ויחידה ייבחרו אוטומטית. ניתן לשנות.</p>
+    </div>
+
+    <div class="two">
+      <form class="card" onsubmit="event.preventDefault()">
+        <label class="toggle-row">
+          <input type="checkbox"/>
+          <div><b>🚨 חמ"ל מושבת</b><small>סמן רק אם החמ"ל אינו פעיל לחלוטין</small></div>
+        </label>
+
+        <div class="field"><label>// כותרת התקלה</label><input placeholder="לדוגמה: מקרן בכיתה 4 לא דולק"/></div>
+
+        <div class="field-row">
+          <div class="field"><label>// נושא</label>
+            <select><option>אמצעים</option><option>מחשב</option><option>תקשורת</option><option>חשמל</option><option>רכב</option></select>
+          </div>
+          <div class="field"><label>// יחידה</label>
+            <select><option>פלוגה ב'</option><option>פלוגה א'</option><option>מטה החטיבה</option><option>חדר שרתים</option></select>
+          </div>
+        </div>
+
+        <div class="field"><label>// תיאור מפורט</label>
+          <textarea placeholder="פרט מתי החל, מה נוסה עד כה, ומי דיווח על התקלה…"></textarea>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label>// הקצאה</label>
+            <select><option>אוטומטית (לפי נושא)</option><option>חט"פ</option><option>ממר"ם</option><option>אפליקציה</option></select>
+          </div>
+          <div class="field"><label>// חזרתיות</label>
+            <select><option>חד-פעמית</option><option>חוזרת — שבועית</option><option>חוזרת — חודשית</option></select>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-red">★ פתח תקלה</button>
+      </form>
+
+      <aside class="card">
+        <span class="side-h">// הנחיות פתיחה</span>
+        <div style="background:var(--yellow);padding:20px;border:3px solid var(--ink);font-size:14px;line-height:1.7;font-weight:600;margin-bottom:22px">
+          <p style="margin:0 0 10px"><b>✓ כותרת קצרה ומדויקת</b><br><small style="font-family:'Space Mono',monospace;font-weight:500">כך קל לזהות את התקלה ברשימה.</small></p>
+          <p style="margin:0 0 10px"><b>✓ ניתן לצרף תמונה</b><br><small style="font-family:'Space Mono',monospace;font-weight:500">לאחר פתיחת התקלה.</small></p>
+          <p style="margin:0"><b>✓ סימון חמ"ל = דחוף</b><br><small style="font-family:'Space Mono',monospace;font-weight:500">ידחוף לראש התור ויתריע מיידית.</small></p>
+        </div>
+
+        <span class="side-h">// דומות שטופלו</span>
+        <div class="list" style="border-width:3px">
+          <div class="item" style="padding:14px 18px"><div class="ic" style="background:var(--green);border-color:var(--green)">✓</div><div><b>מקרן בכיתה 2 לא דולק</b><small>CLOSED 3D AGO</small></div></div>
+          <div class="item" style="padding:14px 18px"><div class="ic" style="background:var(--green);border-color:var(--green)">✓</div><div><b>מקרן ראשי בחמ"ל</b><small>CLOSED 7D AGO</small></div></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+</div>
+
+<button class="fab">＋ תקלה חדשה</button>
+
+<script>
+  const links=document.querySelectorAll('.steps a');
+  const secs=['home','tickets','detail','create'].map(id=>document.getElementById(id));
+  const io=new IntersectionObserver(es=>{
+    es.forEach(e=>{if(e.isIntersecting)links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id))});
+  },{rootMargin:'-40% 0px -55% 0px'});
+  secs.forEach(s=>io.observe(s));
+</script>
+</body>
+</html>
