@@ -104,7 +104,20 @@ main{display:flex;flex-direction:column;gap:18px;min-width:0}
 
 /* ── BENTO ── */
 .bento{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;grid-auto-rows:minmax(120px,auto)}
-@media (max-width:900px){.bento{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:900px){
+  .bento{grid-template-columns:repeat(2,1fr);gap:10px}
+  .bento .t-hero{grid-column:1/-1;grid-row:auto;min-height:auto;padding:18px}
+  .bento .t-hero h2{font-size:22px;max-width:none}
+  .bento .t-hero .row{gap:14px}
+  .bento .t-hero .row > div{font-size:11.5px}
+  .bento .t-hero .row b{font-size:14px}
+  .bento .t-stat{grid-column:span 1}
+  .bento .t-stat .big{font-size:28px}
+  .bento .t-stat .spark{display:none}
+  .bento .t-list{grid-column:1/-1}
+  .bento .t-list .ev{grid-template-columns:auto 1fr auto;gap:8px;padding:10px}
+  .bento .t-list .ev .num-box,.bento .t-list .ev .tag,.bento .t-list .ev .time{display:none}
+}
 .tile{background:#fff;border:1px solid rgba(255,255,255,.9);border-radius:20px;padding:20px;
   position:relative;overflow:hidden;transition:.2s;box-shadow:var(--shadow-1)}
 .tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-2)}
@@ -668,9 +681,11 @@ function renderApp(){
         ${navLink('CREATE','תקלה חדשה','plus-circle')}
         ${isManager ? navLink('ALL_TICKETS','כל התקלות','layers') : ''}
         ${navLink('PROFILE','פרופיל','user-circle')}
+        <a class="nav-link" href="guide.html" target="_blank" rel="noopener"><span class="ic"><i data-lucide="book-open"></i></span><span>מדריך</span></a>
 
         ${isManager ? `<div class="nav-divider">ניהול</div>` : ''}
         ${isManager ? navLink('ANALYTICS','אנליטיקה','bar-chart-3') : ''}
+        ${isManager ? navLink('NOTIFICATIONS','התראות','bell-ring') : ''}
         ${isOwner ? navLink('MANAGE_USERS','משתמשים','users') : ''}
         ${canApprove ? navLink('ROLE_APPROVAL','אישורי תפקיד','shield-check', pendingCount||null) : ''}
 
@@ -708,6 +723,7 @@ function renderPage(){
     HOME:          () => isManager,
     ALL_TICKETS:   () => isManager,
     ANALYTICS:     () => isManager,
+    NOTIFICATIONS: () => isManager,
     MANAGE_USERS:  () => isOwner,
     ROLE_APPROVAL: () => canApproveRoles(currentUser),
   };
@@ -722,6 +738,7 @@ function renderPage(){
   if(activePage==='DETAILS') return renderDetails(main);
   if(activePage==='PROFILE') return renderProfile(main);
   if(activePage==='ANALYTICS') return renderAnalytics(main);
+  if(activePage==='NOTIFICATIONS') return renderNotifications(main);
   if(activePage==='MANAGE_USERS') return renderManageUsers(main);
   if(activePage==='ROLE_APPROVAL') return renderRoleApproval(main);
   main.innerHTML = `<div class="empty"><h3>הדף לא קיים</h3></div>`;
@@ -1182,6 +1199,122 @@ function renderProfile(main){
     });
   };
 }
+
+/* ── NOTIFICATIONS ── */
+function renderNotifications(main){
+  // Build a list of "interesting" events from current tickets state:
+  // 1. New tickets (last 24h)
+  // 2. Hamal-down tickets that are still open
+  // 3. Tickets over SLA (>60min open)
+  // 4. Pending role-approval requests (for users I can approve)
+  const now = Date.now();
+  const items = [];
+
+  tickets.filter(t => t.isHamalDown && !t.isClosed).forEach(t => {
+    items.push({
+      type:'hamal', icon:'alert-triangle', color:'#ef4444',
+      title:`🚨 חמ"ל מושבת — ${esc(t.title)}`,
+      meta:`#${t.ticketNumber} · ${esc(t.unit||'-')} · ${esc(roleLabel(t.assignedRole))}`,
+      time: new Date(t.createdAt).getTime(),
+      onClick: `nav('DETAILS',${t.id})`
+    });
+  });
+
+  tickets.filter(t => !t.isClosed && !t.isHamalDown && (now - new Date(t.createdAt)) > 3600000).forEach(t => {
+    items.push({
+      type:'overdue', icon:'clock', color:'#f59e0b',
+      title:`⏱ תקלה חורגת — ${esc(t.title)}`,
+      meta:`#${t.ticketNumber} · פתוחה ${elapsedStr(t.createdAt)} · ${esc(roleLabel(t.assignedRole))}`,
+      time: new Date(t.createdAt).getTime(),
+      onClick: `nav('DETAILS',${t.id})`
+    });
+  });
+
+  tickets.filter(t => (now - new Date(t.createdAt)) < 86400000).forEach(t => {
+    items.push({
+      type:'new', icon:'plus-circle', color:'#10b981',
+      title:`✨ תקלה חדשה — ${esc(t.title)}`,
+      meta:`#${t.ticketNumber} · ${esc(t.createdByName||'-')} · ${esc(t.unit||'-')}`,
+      time: new Date(t.createdAt).getTime(),
+      onClick: `nav('DETAILS',${t.id})`
+    });
+  });
+
+  pendingApprovableBy(currentUser).forEach(u => {
+    items.push({
+      type:'role', icon:'shield-check', color:'#8b5cf6',
+      title:`🛡️ בקשת אישור תפקיד — ${esc(u.fullName)}`,
+      meta:`${esc(u.email||'')} · מבקש ${roleLabel(u.requestedRole||u.role)}${u.requestedManager?' · להיות מפקד':''}`,
+      time: now,
+      onClick: `nav('ROLE_APPROVAL')`
+    });
+  });
+
+  // de-dupe (a new hamal ticket appears in both "hamal" and "new") — keep highest priority
+  const dedup = new Map();
+  const priority = { hamal:4, overdue:3, role:2, new:1 };
+  items.forEach(it => {
+    const key = `${it.type}-${it.title}`;
+    if(!dedup.has(key) || priority[it.type] > priority[dedup.get(key).type]) dedup.set(key, it);
+  });
+  const list = [...dedup.values()].sort((a,b) => (priority[b.type]-priority[a.type]) || (b.time-a.time));
+
+  const groupCount = { hamal:0, overdue:0, role:0, new:0 };
+  list.forEach(it => groupCount[it.type]++);
+
+  main.innerHTML = `
+    ${topbar()}
+    <div class="section-head">
+      <div><h1>מרכז <span class="grad">התראות</span></h1><p>${list.length} פריטים דורשים תשומת לב</p></div>
+      <div class="meta">
+        ${groupCount.hamal?`<span style="color:#dc2626;background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3)">🚨 חמ"ל: ${groupCount.hamal}</span>`:''}
+        ${groupCount.overdue?`<span style="color:#b45309;background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.3)">⏱ חורגות: ${groupCount.overdue}</span>`:''}
+        ${groupCount.role?`<span style="color:#7c3aed;background:rgba(139,92,246,.12);border-color:rgba(139,92,246,.3)">🛡️ אישורים: ${groupCount.role}</span>`:''}
+        ${groupCount.new?`<span style="color:#059669;background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.3)">✨ חדשות 24ש: ${groupCount.new}</span>`:''}
+      </div>
+    </div>
+
+    ${list.length===0 ? '<div class="empty"><h3>אין התראות פעילות</h3><p>שקט מבצעי 🎉</p></div>'
+      : `<div class="tile" style="padding:8px"><div style="display:flex;flex-direction:column;gap:6px">${list.map(it => `
+          <div onclick="${it.onClick}" style="display:flex;align-items:center;gap:14px;padding:14px;border-radius:12px;border:1px solid var(--line);background:#fafafe;cursor:pointer;transition:.15s" onmouseover="this.style.background='#fff';this.style.borderColor='${it.color}'" onmouseout="this.style.background='#fafafe';this.style.borderColor='var(--line)'">
+            <div style="width:42px;height:42px;border-radius:11px;background:${it.color}1a;color:${it.color};display:grid;place-items:center;flex-shrink:0"><i data-lucide="${it.icon}" style="width:20px;height:20px"></i></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700;font-size:14.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.title}</div>
+              <div style="font-size:12.5px;color:var(--mut);margin-top:2px">${it.meta}</div>
+            </div>
+            <span style="font-size:11.5px;color:var(--mut);font-feature-settings:'tnum'">${it.type==='role'?'עכשיו':timeAgo(new Date(it.time))}</span>
+          </div>`).join('')}</div></div>`}
+
+    <div class="card" style="margin-top:18px">
+      <h3 style="margin:0 0 12px;font-size:15px">הגדרות התראות</h3>
+      <label style="display:flex;align-items:center;gap:12px;padding:12px;background:#fafafe;border-radius:12px;cursor:pointer">
+        <input type="checkbox" id="notif-overdue" ${(currentUser.settings||{}).notifyOverdue?'checked':''} onchange="updateNotifSetting('notifyOverdue',this.checked)" style="width:18px;height:18px"/>
+        <div style="flex:1"><b style="font-size:13.5px">התרעה על תקלות חורגות זמן</b><div style="font-size:12px;color:var(--mut);margin-top:2px">תקבל הודעת דפדפן על כל תקלה שפתוחה מעל הסף שתגדיר</div></div>
+      </label>
+      <div style="margin-top:10px;padding:12px;background:#fafafe;border-radius:12px;display:flex;align-items:center;gap:12px">
+        <label style="font-size:13.5px;font-weight:600">סף חריגה (דקות):</label>
+        <input type="number" id="notif-time" value="${(currentUser.settings||{}).overdueTime||60}" min="5" max="1440" onchange="updateNotifSetting('overdueTime',parseInt(this.value)||60)" style="width:90px;padding:8px 10px;border:1px solid var(--line);border-radius:8px"/>
+      </div>
+      <button class="btn btn-ghost" style="margin-top:12px" onclick="requestNotifPermission(this)">
+        <i data-lucide="bell"></i> הפעל הודעות דפדפן
+      </button>
+    </div>
+  `;
+  if(window.lucide) lucide.createIcons();
+}
+window.updateNotifSetting = async (key, value) => {
+  const settings = { ...(currentUser.settings||{}), [key]: value };
+  const { error } = await supabase.from('users').update({ settings }).eq('id', currentUser.id);
+  if(error) return modal('שגיאה', error.message, true);
+  currentUser.settings = settings;
+  toast('ההגדרה נשמרה','check');
+};
+window.requestNotifPermission = async btn => {
+  if(!('Notification' in window)) return toast('דפדפן לא תומך','x');
+  const result = await Notification.requestPermission();
+  if(result==='granted'){ toast('הופעלו ✓','bell'); new Notification('TicketFlow', { body:'התראות הופעלו בהצלחה' }); }
+  else toast('הרשאה נדחתה','x');
+};
 
 /* ── ANALYTICS ── */
 function renderAnalytics(main){
